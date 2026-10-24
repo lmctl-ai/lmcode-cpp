@@ -71,7 +71,7 @@ this header and every host move together. Version 5 includes structured `while` 
 
 ## What load() guarantees
 
-Wrong magic, another version (v3 included), a schema-hash mismatch, truncation, trailing bytes, unknown constant tags,
+Wrong magic, another version (v3/v4 included), a schema-hash mismatch, truncation, trailing bytes, unknown constant tags,
 undecodable instructions, out-of-range constant/local/import/context indexes, calls whose import kind or arity differ, ordinary
 jumps that miss an instruction start, go backwards outside a paired `LOOP_BACK` or cross a loop boundary, malformed or misnested
 range/while loops, unknown
