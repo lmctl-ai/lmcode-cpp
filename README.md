@@ -23,6 +23,18 @@ functions in a `dslvm::Registry`, loads the file with the exact schema bytes, an
 the registry offers. lmscript never executes the DSL; this SDK never reads the schema's content, only its bytes (for the
 SHA-256 binding).
 
+## Gallery
+
+| **Bytecode Conformance Suite** | **Unit Tests & Invariants** |
+| --- | --- |
+| <img src="docs/images/conformance.png" width="440"> | <img src="docs/images/unit-tests.png" width="440"> |
+| All 51 core bytecode vectors pass across opcodes, types, error paths, and control flow.<br>`make conformance` | 103 unit tests verifying VM type invariants, line tables, and registry semantics.<br>`make test` |
+
+| **Standard Library Conformance** | **Same Bytecode, Four Runtimes** |
+| --- | --- |
+| <img src="docs/images/stdlib-conformance.png" width="440"> | <img src="docs/images/same-bytecode-four-runtimes.png" width="440"> |
+| 61 stdlib vectors covering collections, math, string, and testing catalogs.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
+
 ## Embedding it in twenty lines
 
 ```cpp
@@ -61,18 +73,6 @@ code; lmscript's own compile failures are exit 2. `Error::code` is `LOAD_BAD_BYT
 `RUN_ERROR` (a VM error), `RUN_HOST` (thrown by a host closure) or `APP_FAIL`. When a non-empty line table maps the faulting
 opcode, `Error` carries numeric `line`/`column` and prefixes the message with `dsl line N:C: `; the standard JSON result includes
 those fields; a zero column means the line is known and only `line` is emitted. Empty line tables preserve the original message and omit the fields. Server hosts (lmweb) keep their own protocol.
-
-## Gallery
-
-| **Bytecode Conformance Suite** | **Unit Tests & Invariants** |
-| --- | --- |
-| <img src="docs/images/conformance.png" width="440"> | <img src="docs/images/unit-tests.png" width="440"> |
-| All 51 core bytecode vectors pass across opcodes, types, error paths, and control flow.<br>`make conformance` | 103 unit tests verifying VM type invariants, line tables, and registry semantics.<br>`make test` |
-
-| **Standard Library Conformance** | **Same Bytecode, Four Runtimes** |
-| --- | --- |
-| <img src="docs/images/stdlib-conformance.png" width="440"> | <img src="docs/images/same-bytecode-four-runtimes.png" width="440"> |
-| 61 stdlib vectors covering collections, math, string, and testing catalogs.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
 
 ## Versioning rule
 
