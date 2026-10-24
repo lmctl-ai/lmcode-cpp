@@ -15,10 +15,11 @@ def make_schema(path):
 
 def workloads(n):
     return {
-        "str-list": (f'let l = str_list(); for (i in range(0, {n})) {{ l.add("x"); }} t.int(l.len()); t.int(str_len(l.at({n-1}))); t.bool(l.contains("x")); t.int(l.index_of("x"));', [f"int {n}", "int 1", "bool true", "int 0"]),
-        "str-map": (f'let m = str_map(); for (i in range(0, {n})) {{ m.set("k" + str(i), "v"); }} t.int(m.len()); t.bool(m.has("k{n//2}")); t.str(m.get_or("missing", "fallback")); t.str(m.key_at({n-1})); t.bool(m.remove("k{n//2}"));', [f"int {n}", "bool true", "str fallback", f"str k{n-1}", "bool true"]),
+        "startup": ('t.int(1);', ["int 1"]),
+        "str-list": (f'let l = str_list(); for (i in range(0, {n})) {{ l.add("x"); }} t.int(l.len()); t.int(str_len(l.at({n-1}))); t.bool(l.contains("x")); t.int(l.index_of("x")); t.int(str_len(l.join("")));', [f"int {n}", "int 1", "bool true", "int 0", f"int {n}"]),
+        "str-map": (f'let m = str_map(); for (i in range(0, {n})) {{ m.set("k" + str(i), "v"); }} m.set("k{n//2}", "updated"); m.set("reinsert", "z"); t.int(m.len()); t.bool(m.has("k{n//2}")); t.str(m.get("k{n//2}")); t.str(m.get_or("missing", "fallback")); t.str(m.key_at({n-1})); for (i in range(0, {n})) {{ if (i % 2 == 0) {{ m.remove("k" + str(i)); }} }} t.int(m.len()); t.str(m.key_at(0)); t.str(m.get("k{n//2+1}"));', [f"int {n+1}", "bool true", "str updated", "str fallback", f"str k{n-1}", f"int {n//2+1}", "str k1", f"str v"]),
         "string-heavy": (f'let x = str_repeat("ab", {n}); let r = str_replace(x, "ab", "x"); t.int(str_len(r)); let p = str_split(str_repeat("a,", {n}), ","); t.int(p.len()); t.bool(str_match(str_repeat("a", {n}), "a*"));', [f"int {n}", f"int {n+1}", "bool true"]),
-        "file-100mb": ('let p = test_temp_dir() + "/bench.bin"; let x = str_repeat("x", 50000000) + str_repeat("y", 50000000); file_write(p, x); t.int(str_len(file_read(p))); file_append(p, "z"); t.int(str_len(file_read(p))); t.int(file_lines(p).len());', ["int 100000000", "int 100000001", "int 1"]),
+        "file-200mb": ('let p = test_temp_dir() + "/bench.bin"; let x = str_repeat("x", 50000000) + str_repeat("y", 50000000); file_write(p, x); t.int(str_len(file_read(p))); file_append(p, str_repeat("z", 50000000) + str_repeat("w", 50000000)); t.int(str_len(file_read(p))); t.int(file_lines(p).len());', ["int 100000000", "int 200000000", "int 1"]),
     }
 
 def compile_vector(root, name, source, expected):
@@ -32,8 +33,10 @@ def compile_vector(root, name, source, expected):
     return vector
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--size", type=int, default=1000); ap.add_argument("--repeat", type=int, default=3); ap.add_argument("--runner", action="append", default=[])
-    args = ap.parse_args(); runners = {}
+    ap = argparse.ArgumentParser(); ap.add_argument("--size", type=int, default=1000); ap.add_argument("--repeat", type=int, default=3); ap.add_argument("--timeout", type=float, default=300); ap.add_argument("--runner", action="append", default=[])
+    args = ap.parse_args()
+    if args.size <= 0 or args.repeat <= 0 or args.timeout <= 0: raise SystemExit("--size, --repeat, and --timeout must be positive")
+    runners = {}
     for item in args.runner:
         name, command = item.split("=", 1); runners[name] = shlex.split(command)
     if not runners and (ROOT / "build/conformance").exists(): runners["cpp"] = [str(ROOT / "build/conformance")]
@@ -43,11 +46,11 @@ def main():
         for name, (source, expected) in workloads(args.size).items():
             vector = compile_vector(Path(scratch), name, source, expected)
             for runner, command in runners.items():
-                warm = subprocess.run(command + [str(vector)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                warm = subprocess.run(command + [str(vector)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=args.timeout)
                 if warm.returncode: raise SystemExit(f"{runner}/{name} warmup failed: {warm.stderr[-1000:]}")
                 samples = []
                 for _ in range(args.repeat):
-                    start = time.perf_counter(); run = subprocess.run(command + [str(vector)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True); seconds = time.perf_counter() - start
+                    start = time.perf_counter(); run = subprocess.run(command + [str(vector)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=args.timeout); seconds = time.perf_counter() - start
                     if run.returncode or not run.stdout.rstrip().endswith("PASS 1/1 vectors"): raise SystemExit(f"{runner}/{name} failed: {run.stdout[-500:]} {run.stderr[-500:]}")
                     samples.append(seconds)
                 results.append({"runner":runner,"workload":name,"size":args.size,"warmup":"pass","repetitions":args.repeat,"seconds":samples})
