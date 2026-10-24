@@ -18,7 +18,7 @@ class MergeTests(unittest.TestCase):
 
     def test_canonical_matches_all_compatibility_fragments(self):
         types, functions = {}, {}
-        for name in ['string', 'math', 'collections', 'testing']:
+        for name in ['string', 'math', 'collections']:
             fragment = json.loads((root / f'stdlib/{name}.schema-fragment.json').read_text())
             types.update(fragment.get('types', {}))
             functions.update(fragment.get('functions', {}))
@@ -27,7 +27,7 @@ class MergeTests(unittest.TestCase):
         self.assertEqual(standard['name'], 'lmcode_std_v1')
         count = sum(len(overloads) for overloads in functions.values())
         count += sum(len(overloads) for item in types.values() for overloads in item['methods'].values())
-        self.assertEqual(count, 69)
+        self.assertEqual(count, 67)
 
     def test_preserves_host_metadata_and_input(self):
         host = self.host()

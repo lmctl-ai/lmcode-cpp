@@ -26,7 +26,7 @@ struct Stub {
   static std::string fmt(double f) { char buf[64]; std::snprintf(buf, sizeof buf, "%.15g", f); return buf; }
   explicit Stub(bool) {
     using namespace dslvm;
-    reg.set_std_output(&printed);
+    dslvm::stdlib::register_testing(reg, &printed);
     reg.function("printed", {}, "string", [&](Args&) { return Value::string(printed.str()); });
     // Portable fixture adapter: raw bytes are supplied independently of UTF-8
     // source literals, and binary results are traced as unambiguous hex.

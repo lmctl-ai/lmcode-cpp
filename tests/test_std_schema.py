@@ -27,7 +27,14 @@ class StdSchemaTests(unittest.TestCase):
     def test_canonical_metadata_and_count(self):
         self.assertEqual(CANONICAL["name"], "lmcode_std_v1")
         self.assertEqual(set(CANONICAL), {"dsl.schema", "name", "types", "functions"})
-        self.assertEqual(len(merge.canonical_signatures(CANONICAL)), 69)
+        self.assertEqual(len(merge.canonical_signatures(CANONICAL)), 67)
+
+    def test_testing_stays_in_host_schema(self):
+        host = self.host()
+        host["functions"]["print"] = [{"params": ["string"], "returns": "void"}]
+        merged = merge.merge_schema(host, CANONICAL)
+        self.assertNotIn("print", CANONICAL["functions"])
+        self.assertEqual(merge.remove_standard(merged, CANONICAL)["functions"], host["functions"])
 
     def test_merge_preserves_metadata_and_does_not_mutate_input(self):
         host = self.host()
@@ -73,7 +80,8 @@ class StdSchemaTests(unittest.TestCase):
 
     def test_fragments_are_subsets_of_canonical(self):
         fragment_signatures = set()
-        for path in sorted((ROOT / "stdlib").glob("*.schema-fragment.json")):
+        for name in ("string", "math", "collections"):
+            path = ROOT / "stdlib" / (name + ".schema-fragment.json")
             fragment = json.loads(path.read_text())
             fragment_signatures.update(merge.signature_strings(fragment))
         self.assertEqual(fragment_signatures, merge.canonical_signatures(CANONICAL))
@@ -93,7 +101,7 @@ class StdSchemaTests(unittest.TestCase):
             from_stdin = subprocess.run([sys.executable, str(ROOT / "scripts/merge-std-schema.py"), "--normalize-signatures", "-", "-"], input="z()->void\n", text=True, capture_output=True, check=True)
             self.assertIn("z()->void", from_stdin.stdout.splitlines())
 
-    def test_compiler_emits_the_canonical_69_signatures(self):
+    def test_compiler_emits_the_canonical_signatures(self):
         import os
         import shutil
         import subprocess
