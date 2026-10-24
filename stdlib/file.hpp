@@ -87,6 +87,10 @@ template<class Path> inline std::string read_path(const Path& native, const std:
   char buffer[64 * 1024];
   while (input.read(buffer, sizeof buffer) || input.gcount()) data.append(buffer, static_cast<size_t>(input.gcount()));
   if (input.bad() || !input.eof()) throw failure(function, original, os_reason());
+  // EOF leaves failbit set after the final read; clear it before checking close.
+  input.clear();
+  input.close();
+  if (input.fail()) throw failure(function, original, os_reason());
   return data;
 }
 
