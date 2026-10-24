@@ -41,7 +41,7 @@ convert explicitly (validated or lossy). Rust follows the same rule with a byte-
 ## Stdlib conformance vectors
 
 `conformance/stdlib-vectors/` holds language-neutral cases: `NAME.dsl` (source), `NAME.dslb` (bytecode compiled by `lmscript` against the
-catalog schema), `NAME.expect` (expected output or error) and a manifest entry. The runner registers the full string catalog and compares
+catalog schema), `NAME.expect` (expected output or error) and a manifest entry. The runner registers the catalogs selected by each schema and compares
 results, so every SDK that ships a catalog function must pass the vectors that use it. Failure errors use the same codes as the main vectors.
 
 ## Math functions (`math_*`)
@@ -63,7 +63,7 @@ For float powers, any base to either signed zero exponent and base `+1` to any e
 
 The 11 `math-*.dsl` vectors in `conformance/stdlib-vectors/` use `math.schema.json` and compiler-emitted bytecode. They cover every overload, wrapping arithmetic, exact large integer roots, ties-away rounding, NaN rules, signed zero and located domain errors. Together with the 18 string vectors, the optional catalog suite contains 29 vectors.
 
-## Collections catalog (schema proposal)
+## Collections catalog
 
 Collections are ordinary schema object types with methods; `len()` and `at(i)` make them `foreach`-able. No compiler or VM change.
 A fragment (`stdlib/collections.schema-fragment.json`) declares `types` and `functions`; each SDK ships `register_collections`.
@@ -97,3 +97,23 @@ C++ hosts vendor `include/dslvm.hpp` plus the stdlib headers they use (`stdlib/s
 with every vendored file pinned (path, sha256) in `sdk.lock`. The host schema embeds the fragment entries unchanged; a host with a narrower type keeps it under its own name.
 
 C++ uses `dslvm::stdlib::Collections` with stable-address `std::deque` storage per type. Native hosts create objects through `make_str_list(values)`, `make_int_list(values)`, `make_float_list(values)` and `make_str_map()` so host-returned collections obey the same shared arena limit. List elements are in `.items`; maps store insertion-ordered key/value pairs in `.items`. `reset()` invalidates every handle and is permitted only between runs after all prior handles have expired. Collection `clear()` methods remove elements without freeing an arena slot or invalidating their receiver.
+
+## Collection/testing integration in the SDKs
+
+| SDK | Collections binder | Testing binder / sink |
+| --- | --- | --- |
+| C++ | `register_collections(registry, arena)` | `register_testing(registry, ostream*)`; null selects stdout |
+| Go | `stdlib.RegisterCollections(registry, arena)`; arena optional | `stdlib.RegisterTesting(registry, io.Writer)`; nil selects stdout |
+| C# | `CollectionsCatalog.RegisterCollections(registry)` | `TestingCatalog.RegisterTesting(registry, Stream)`; null selects stdout |
+| Rust | `stdlib::register_collections(&mut registry)` | `stdlib::register_testing(&mut registry, Option<Sink>)`; None selects stdout |
+
+Go exports collection types with snapshot `Values()`/`Entries()` accessors;
+C# exposes read-only `Values`/`Entries` views. Rust and C++ collection structs
+expose their item storage to host callbacks. Strings remain bytes at these boundaries.
+
+The optional suite now contains 61 vectors: 18 string, 11 math, and 32
+collection/testing cases. `runtime_error_exact` pins error codes and complete
+base messages after removal of an SDK source-location prefix. Captured print
+output is compared as hexadecimal bytes. The assertion comparison is exactly
+`abs(a-b) <= tolerance`: equal infinities fail because their difference is NaN;
+an infinite tolerance can accept an infinite difference.
