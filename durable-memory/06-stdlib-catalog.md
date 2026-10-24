@@ -6,7 +6,7 @@ no opcodes and no VM behavior; a host may ship all of it, part of it, or its own
 
 ## Built-in lmcode std v1
 
-The canonical public surface is `std/lmcode-std.schema.json`, a schema-2 fragment named `lmcode_std_v1` with `types` and `functions` (and an empty context). Version 1 contains the existing 16 string signatures, 16 numeric signatures, 35 collection signatures (four types), and `print`/`assert_close`: 69 canonical signatures total. It adds no VM opcodes or dependencies. The implementation-group fragments below remain compatibility fixtures, not independent standard definitions; a generated-surface parity check prevents drift from the canonical file.
+The canonical public surface is `std/lmcode-std.schema.json`, a schema-2 fragment named `lmcode_std_v1` with `types` and `functions` (and an empty context). The built-in standard has exactly four areas: string (16 signatures), math (16), collections (35), and file read/write (5), totaling 72 canonical signatures. Testing, print, assertions, and domain helpers are not std. The optional testing fragment is separate and is not pinned as part of canonical std. It adds no VM opcodes or dependencies. The implementation-group fragments below remain compatibility fixtures, not independent standard definitions; a generated-surface parity check prevents drift from the canonical file.
 
 All four SDKs copy the canonical file byte-for-byte from lmcode-cpp and pin its source commit, std version and SHA-256 in `std.lock`. Sync verification and CI check the actual bytes. The schema name carries version 1 because current compilers require a name and reject arbitrary metadata fields. The schema is exactly the surface a future compiler can inject. Compiler injection is not implemented here, and schema-hash binding continues to use the exact schema bytes supplied to compilation/loading.
 
@@ -21,7 +21,7 @@ All four SDKs copy the canonical file byte-for-byte from lmcode-cpp and pin its 
 
 Default construction installs std without requiring an import, host schema declaration, host-owned arena or host registration call. C++ keeps the VM definitions in `include/dslvm.hpp` and loads `stdlib/std.hpp` at the end; the aggregator includes the implementation-group headers. Hosts vendor the VM and every `stdlib/*.hpp` together through their pinned sync script. Standalone inclusion of an individual catalog header remains supported. Go must keep default registration in the core package (compatibility catalog packages can re-export it) to avoid a core-to-catalog import cycle.
 
-Existing C++ group binders remain available: manual registration into an opted-out registry preserves their existing behavior. Calling a group binder after default std registration is idempotent; an explicit testing sink configures the built-in output. New hosts use default std and remove group-registration code. A host may not replace an existing built-in parameter tuple with another implementation or return type; ordinary duplicate registration is still an error.
+Existing C++ group binders remain available: manual registration into an opted-out registry preserves their existing behavior. Calling a built-in group binder after default std registration is idempotent. Testing remains explicitly registered and declared by a host; it is never installed by register_std. New hosts use default std and remove group-registration code. A host may not replace an existing built-in parameter tuple with another implementation or return type; ordinary duplicate registration is still an error.
 
 ### Signatures and schema self-check
 
@@ -41,7 +41,34 @@ C++ native callbacks create lists/maps through `registry.std_collections().make_
 
 Adapters must remain small and preserve ownership and meaning. A type needing state sharing, a different lifetime or different mutation semantics remains a host type under its own name (or the host opts out); std is not expanded to emulate it. HTML/header-name snapshots fit the common lists. DOM node/document lists, physics matrices and SSH ResultList remain domain objects.
 
-`assert_close` remains the universally identical absolute-tolerance comparator described below, not a promise of finite physical inputs or relative error. Finite-only domain variants and their diagnostics remain separate host methods/functions; they are not added to std or silently coerced. The standard print writes bytes and a newline to the selected sink; host output methods that require flushing or routing can keep a thin adapter.
+`print` and `assert_close` belong to the optional testing catalog, not std. Hosts retain their own declarations and explicit registration. Finite-only domain variants and their diagnostics remain separate host functions; no migration of the remaining assertion helpers is planned.
+
+## File read/write catalog (`file_*`)
+
+`stdlib/file.hpp` and its compatibility fragment implement five built-in functions using only OS/standard-library facilities. They add no sandbox or root checks. Relative paths resolve against the process cwd, symlinks are followed, and file contents are always raw bytes: no encoding conversion or newline translation.
+
+| Function | Exact behavior |
+| --- | --- |
+| `file_read(path) -> string` | Read the complete regular file, including empty content, NUL and invalid UTF-8 bytes. |
+| `file_write(path, bytes) -> void` | Create or truncate a regular file, write all bytes, check flush/close errors. |
+| `file_append(path, bytes) -> void` | Create if missing; otherwise append all bytes, checking flush/close errors. |
+| `file_exists(path) -> bool` | True for a regular file when metadata can be read, even if its content is unreadable. False for missing paths, broken symlinks, directories and other nonregular objects. Metadata errors other than missing/not-a-directory trap. |
+| `file_lines(path) -> StrList` | Read bytes then split on every LF byte, preserving empty fields, CR bytes and a final empty field: empty file gives `[""]`, `"a\n"` gives `["a", ""]`, `"\n"` gives `["", ""]`. The resulting list uses the registry-owned arena. |
+
+Read/write/append/lines reject directories and other nonregular objects. Every failure traps with `RUN_HOST` and base message `FUNCTION: PATH: REASON`, e.g. `file_read: missing.bin: No such file or directory`. PATH is the original path bytes (including embedded bytes in the diagnostic); REASON is the OS reason and is platform-dependent. Tests compare the function/path prefix and a nonempty reason, not localized OS wording. Short writes, read errors and flush/close errors trap; writes are not transactional and a failed write can leave a partial/truncated file. No arbitrary content-size cap is imposed.
+
+Paths are native OS paths used as given. Unix passes path bytes unchanged. Windows interprets VM path bytes as strict UTF-8, converts to UTF-16 and uses wide OS APIs; absolute drive/UNC paths use the extended-length prefix when required, and long relative paths are resolved against cwd first. Invalid UTF-8 on Windows and embedded NUL on every OS trap with the corresponding invalid-argument/OS conversion reason instead of silently truncating. The content byte-string contract is independent of path encoding.
+
+Shared file vectors use a test-only `test_temp_dir() -> string` callback, declared in their manifest schema rather than std. Each vector runner creates a fresh temporary directory and cleans it after the case. Vectors cover empty/NUL/non-UTF-8 content, >1 MiB data, append, truncation, LF splitting, missing paths, directories and an unwritable path. An existing regular file used as an intermediate directory component provides a deterministic unwritable-path failure even when the test process is privileged. Optional testing callbacks remain explicitly registered by the vector runner.
+
+## Open items / left in hosts and why
+
+- Printing and assertions stay in host schemas or the optional testing catalog: output routing, flushing, tolerance rules and finite-domain checks differ. The other 13 assertion hosts are not migration targets.
+- DOM/document/node lists, SSH ResultList and physics/matrix objects remain domain types because their ownership or semantics do not match value collections.
+- Native file wrappers with root restrictions, stream state, special encoding or domain-specific error handling remain host APIs; std offers only unrestricted byte file operations.
+- Compiler-side implicit schema injection is separate future work; current hosts generate effective schemas using the pinned merge helper.
+- File OS reason wording and NaN payloads are platform-specific; shared tests pin portable behavior rather than those representations.
+- CSV/JSON catalogs are future work only. They can later build on StrList, StrMap and byte-clean strings to exchange data between tools; no format parser or dependency is introduced now.
 
 ## Byte-string rule
 
@@ -125,7 +152,7 @@ Constructors: `str_list()`, `int_list()`, `float_list()`, `str_map()` return a n
 `str_split(string, string) -> StrList`: splits on every non-overlapping occurrence of a non-empty separator, left to right, byte-wise; `"a,,b"` gives `["a","","b"]`,
 `""` gives `[""]`, an empty separator is a host error `"str_split: separator must not be empty"`. No numeric `join` (float formatting is not part of the collection contract).
 
-## Testing catalog
+## Optional testing catalog (not std)
 
 `print(string) -> void` writes the bytes plus `\n` to the host's output sink (stdout by default; the sink is replaceable so vectors can capture it).
 `assert_close(float, float, float) -> void` is a host error `"assert_close failed: <a> vs <b> (tol <t>)"` (floats formatted with 15 significant digits in the C locale, independent of the host process locale) unless `|a-b| <= tol`; NaN on either side fails. Diagnostics spell every NaN `nan`, regardless of sign or payload, matching all four SDKs.
