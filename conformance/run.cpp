@@ -19,6 +19,32 @@
 #include <sstream>
 #include <vector>
 
+// Fixture setup uses native long paths on Windows independently of the catalog
+// under test; the DSL still receives ordinary absolute paths.
+static std::filesystem::path fixture_native_path(std::filesystem::path path) {
+#ifdef _WIN32
+  path.make_preferred();
+  auto native = path.native();
+  if (native.rfind(LR"(\\?\)", 0) == 0) return path;
+  if (native.rfind(LR"(\\)", 0) == 0) return std::filesystem::path(LR"(\\?\UNC\)" + native.substr(2));
+  return std::filesystem::path(LR"(\\?\)" + native);
+#else
+  return path;
+#endif
+}
+struct TempCleanup {
+  const std::string& directory;
+  bool done = false;
+  bool clean() {
+    if (done || directory.empty()) return true;
+    std::error_code error;
+    std::filesystem::remove_all(fixture_native_path(std::filesystem::u8path(directory)), error);
+    done = !error;
+    return done;
+  }
+  ~TempCleanup() { try { clean(); } catch (...) { } }
+};
+
 struct Thing { int64_t id; };
 struct Stub {
   std::vector<std::string> trace; std::vector<std::unique_ptr<Thing>> things; Thing root{0}, variable{0};
@@ -32,6 +58,14 @@ struct Stub {
     using namespace dslvm;
     dslvm::stdlib::register_testing(reg, &printed);
     reg.function("test_temp_dir", {}, "string", [&](Args&) { return Value::string(temp_dir); });
+    reg.function("test_long_path", {}, "string", [&](Args&) {
+      auto directory = std::filesystem::u8path(temp_dir);
+      for (int i = 0; i < 7; ++i) directory /= "segment-" + std::string(40, 'a') + std::to_string(i);
+      std::error_code error;
+      std::filesystem::create_directories(fixture_native_path(directory), error);
+      if (error) throw Error("fixture: cannot create long-path directory: " + error.message());
+      return Value::string((directory / std::filesystem::u8path(u8"résumé-文件-😀.bin")).u8string());
+    });
     reg.function("printed", {}, "string", [&](Args&) { return Value::string(printed.str()); });
     // Portable fixture adapter: raw bytes are supplied independently of UTF-8
     // source literals, and binary results are traced as unambiguous hex.
@@ -127,7 +161,8 @@ int main(int argc, char** argv) {
       if (p != std::string::npos) { size_t q = mf.find("\"schema\": \"", p), next = mf.find("\"name\": \"", p + 1); if (q != std::string::npos && q < next) { q += 11; schemaFile = dir + "/" + mf.substr(q, mf.find('"', q) - q); } } }
     std::string bytes = dslvm::read_file(dir + "/" + name + ".dslb"), schema = dslvm::read_file(schemaFile);
     Stub stub(schema.find("\"str_list\"") != std::string::npos);
-    if (schemaFile.find("file.schema.json") != std::string::npos) {
+    TempCleanup temp_cleanup{stub.temp_dir};
+    if (schema.find("\"test_temp_dir\"") != std::string::npos) {
       std::error_code temp_error;
       const auto base = std::filesystem::temp_directory_path(temp_error);
       if (temp_error) { std::cerr << name << ": cannot find temp directory: " << temp_error.message() << "\n"; return 2; }
@@ -159,7 +194,7 @@ int main(int argc, char** argv) {
       // the implementation to retain a nonempty OS reason suffix.
       const std::string expected_path = lines.size() >= 3 && !lines[2].empty() ? stub.temp_dir + "/" + lines[2] : stub.temp_dir;
       const std::string expected_prefix = lines.size() >= 3 ? lines[1] + ": " + expected_path + ": " : "";
-      ok = loaded && !ran && lines.size() == 3 && error_code == lines[0] && bare_error.compare(0, expected_prefix.size(), expected_prefix) == 0 && bare_error.size() > expected_prefix.size();
+      ok = loaded && !ran && lines.size() == 3 && error_code == lines[0] && bare_error.compare(0, expected_prefix.size(), expected_prefix) == 0 && bare_error.find_first_not_of(" \t\r\n", expected_prefix.size()) != std::string::npos;
     }
     else if (kind == "runtime_error") ok = loaded && !ran && error.find(lines.at(0)) != std::string::npos;
     else if (kind == "runtime_error_at") {
@@ -170,7 +205,7 @@ int main(int argc, char** argv) {
     else { std::cerr << name << ": unknown expectation kind '" << kind << "'\n"; return 2; }
     if (ok) std::cout << "ok - " << name << " (" << kind << ")\n";
     else { failed++; std::cout << "FAIL - " << name << " (" << kind << ")\n"; if (!error.empty()) std::cout << "    error: " << error << "\n"; for (auto& t : stub.trace) std::cout << "    got:  " << t << "\n"; for (auto& l : lines) std::cout << "    want: " << l << "\n"; }
-    if (!stub.temp_dir.empty()) { std::error_code cleanup_error; std::filesystem::remove_all(std::filesystem::u8path(stub.temp_dir), cleanup_error); }
+    if (!temp_cleanup.clean()) { if (ok) ++failed; std::cerr << "FAIL - " << name << ": temporary directory cleanup failed\n"; }
   }
   std::cout << (failed ? "FAIL " : "PASS ") << (names.size() - failed) << "/" << names.size() << " vectors\n";
   return failed ? 1 : 0;

@@ -1,4 +1,4 @@
-# Optional catalog vectors
+# Standard and optional catalog vectors
 
 The 18 string vectors cover all 16 functions in
 `stdlib/string.schema-fragment.json`, plus negative/oversized repeat failures.
@@ -21,16 +21,19 @@ make conformance
 Set `LMSCRIPT_BIN` to choose the compiler and `TMPDIR` to choose scratch storage.
 The wrapper places one line before the source body; source-located errors thus
 refer to body line plus one. Expectations are never regenerated from VM output.
-The optional catalog is separate from the 51 core runtime vectors so SDKs can
+The catalog suite is separate from the 51 core runtime vectors so SDKs can
 adopt functions independently without silently skipping the core contract.
 
 ## File catalog
 
-The seven `file-*` vectors use `file.schema.json` and the runner's
+The 16 `file-*` vectors use `file.schema.json` and the runner's
 `test_temp_dir() -> string` fixture. The runner creates a fresh directory for
 each case and removes it afterward. File content is checked as bytes; the
 large case writes 1,200,000 bytes, and the line cases preserve CR bytes and
-final empty fields.
+final empty fields. Unicode filenames and paths longer than 260 characters are
+covered by `test_long_path() -> string`, which creates nested directories and
+returns an ordinary absolute path. Both fixtures belong only to the test host
+schema. Cleanup also runs after load or execution failures.
 
 `runtime_error_file` has three payload lines: `RUN_HOST`, the function name,
 and the path relative to `test_temp_dir()` (an empty path means the directory
@@ -43,14 +46,16 @@ The additional 11 `math-*` vectors use `math.schema.json` to cover all 16 intege
 ## Collections and testing
 
 The 32 additional collection/testing vectors use `collections.schema.json`;
-the complete optional suite contains 61 vectors. They cover every list/map
+the complete catalog suite contains 77 vectors (61 string/math/collection/testing
+and 16 file cases). They cover every list/map
 method, mutation chaining, insertion order, replacement without reordering,
 removal with index shifting, raw-byte keys/values, NaN lookup, empty iteration,
 split edge cases, and the shared 65536-object arena limit. Each vector starts
 with a fresh collection arena. The core suite's legacy `IntList` fixture must
 not be registered alongside the collection catalog's methods.
 
-`print` writes raw bytes plus LF to a captured sink. The fixture-only
+Testing is explicitly registered and declared by this test host; it is not
+part of built-in std. `print` writes raw bytes plus LF to a captured sink. The fixture-only
 `printed() -> string` returns that entire sink without decoding; `t.hex`
 checks the result. Assertion vectors cover tolerance boundaries, NaNs,
 negative tolerance and equal infinities.

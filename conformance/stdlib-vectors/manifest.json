@@ -4,7 +4,7 @@
   "generated_by": "lmscript (one wrapper line preceding NAME.dsl)",
   "schema": "schema.json",
   "host": {
-    "description": "Register the string, math, collections, testing, and file catalog functions. Context t is Trace: int records int N, float records float %.15g, bool records bool true|false, hex records hex SPACE followed by lowercase hexadecimal bytes (two digits per byte, no decoding). bytes(string) decodes an even-length ASCII hexadecimal fixture literal to raw bytes, without recording a trace. test_temp_dir() returns a fresh per-vector directory for file cases. Strings, offsets and lengths are bytes. runtime_error_file requires RUN_HOST, the function/path prefix, and a nonempty OS reason while allowing localized diagnostics. runtime_error_exact requires RUN_HOST and equality of the complete message after removing only the SDK source-location prefix."
+    "description": "Register the string, math, collections, testing, and file catalog functions. Context t is Trace: int records int N, float records float %.15g, bool records bool true|false, hex records hex SPACE followed by lowercase hexadecimal bytes (two digits per byte, no decoding). bytes(string) decodes an even-length ASCII hexadecimal fixture literal to raw bytes, without recording a trace. test_temp_dir() returns a fresh per-vector directory for file cases. Strings, offsets and lengths are bytes. runtime_error_file requires RUN_HOST, the function/path prefix, and a nonempty OS reason while allowing localized diagnostics. runtime_error_exact requires RUN_HOST and equality of the complete message after removing only the SDK source-location prefix. test_long_path() creates nested directories under the per-vector temporary directory, returning an ordinary absolute UTF-8 path longer than 260 characters ending in r\u00e9sum\u00e9-\u6587\u4ef6-\ud83d\ude00.bin; the runner uses native extended-length paths for Windows fixture setup and cleanup, but does not return the extended prefix. File error reasons must contain at least one non-whitespace character."
   },
   "vectors": [
     {
@@ -1100,6 +1100,146 @@
         "trace": [
           "hex ff00610a0ac3a90a"
         ]
+      }
+    },
+    {
+      "name": "file-append-directory",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-append-directory.dsl",
+      "bytecode": "file-append-directory.dslb",
+      "mutated": false,
+      "expect": {
+        "runtime_error_file": {
+          "code": "RUN_HOST",
+          "function": "file_append",
+          "relative_path": "."
+        }
+      }
+    },
+    {
+      "name": "file-append-unwritable",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-append-unwritable.dsl",
+      "bytecode": "file-append-unwritable.dslb",
+      "mutated": false,
+      "expect": {
+        "runtime_error_file": {
+          "code": "RUN_HOST",
+          "function": "file_append",
+          "relative_path": "blocker/child"
+        }
+      }
+    },
+    {
+      "name": "file-empty-append",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-empty-append.dsl",
+      "bytecode": "file-empty-append.dslb",
+      "mutated": false,
+      "expect": {
+        "trace": [
+          "bool false",
+          "bool true",
+          "int 0",
+          "hex 00ff",
+          "int 0",
+          "hex 61"
+        ]
+      }
+    },
+    {
+      "name": "file-lines-boundaries",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-lines-boundaries.dsl",
+      "bytecode": "file-lines-boundaries.dslb",
+      "mutated": false,
+      "expect": {
+        "trace": [
+          "int 2",
+          "hex 00",
+          "hex 00",
+          "int 2",
+          "hex ff0000",
+          "hex 610d6200"
+        ]
+      }
+    },
+    {
+      "name": "file-lines-directory",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-lines-directory.dsl",
+      "bytecode": "file-lines-directory.dslb",
+      "mutated": false,
+      "expect": {
+        "runtime_error_file": {
+          "code": "RUN_HOST",
+          "function": "file_lines",
+          "relative_path": "."
+        }
+      }
+    },
+    {
+      "name": "file-lines-missing",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-lines-missing.dsl",
+      "bytecode": "file-lines-missing.dslb",
+      "mutated": false,
+      "expect": {
+        "runtime_error_file": {
+          "code": "RUN_HOST",
+          "function": "file_lines",
+          "relative_path": "missing-lines.bin"
+        }
+      }
+    },
+    {
+      "name": "file-long-path",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-long-path.dsl",
+      "bytecode": "file-long-path.dslb",
+      "mutated": false,
+      "expect": {
+        "trace": [
+          "bool true",
+          "bool true",
+          "hex ff0061"
+        ]
+      }
+    },
+    {
+      "name": "file-unicode-path",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-unicode-path.dsl",
+      "bytecode": "file-unicode-path.dslb",
+      "mutated": false,
+      "expect": {
+        "trace": [
+          "bool true",
+          "hex 00ff0d0a"
+        ]
+      }
+    },
+    {
+      "name": "file-write-directory",
+      "covers": "raw file bytes, portable native paths and failure contracts",
+      "schema": "file.schema.json",
+      "source": "file-write-directory.dsl",
+      "bytecode": "file-write-directory.dslb",
+      "mutated": false,
+      "expect": {
+        "runtime_error_file": {
+          "code": "RUN_HOST",
+          "function": "file_write",
+          "relative_path": "."
+        }
       }
     }
   ]
