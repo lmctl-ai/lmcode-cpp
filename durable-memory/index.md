@@ -21,6 +21,7 @@ scripts/matrix.sh                     # Cross-SDK verification across cpp, rust,
 | [04-gotchas-and-limits.md](04-gotchas-and-limits.md) | Bytecode format versioning, trust boundaries, vendoring contracts |
 | [05-open-items.md](05-open-items.md) | Backlog, potential optimizations, and future format versions |
 | [06-stdlib-catalog.md](06-stdlib-catalog.md) | Catalog contract, standard library modules, byte-string rules, vector authoring |
+| [07-stdlib-performance.md](07-stdlib-performance.md) | Standard catalog benchmarks, StrList/StrMap performance measurements |
 
 ## Adding a conformance vector or function
 
