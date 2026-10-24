@@ -61,7 +61,7 @@ Integer domain errors have code `RUN_HOST`, with exact messages `math_pow: integ
 
 For float powers, any base to either signed zero exponent and base `+1` to any exponent return `1`, including NaN operands. Base `-1` to an infinite exponent also returns `1`. Other NaN inputs produce NaN. Finite negative bases with non-integral finite exponents produce NaN; signed-zero powers retain the IEEE odd-integer sign rules. Overflow produces signed infinity and underflow produces signed zero or a representable subnormal. Float operations retain infinity and NaN classification; NaN payload and sign are not part of the catalog contract. Finite non-exact libm results use the shared 1e-12 relative trace tolerance, rather than requiring cross-platform bit identity.
 
-The 11 `math-*.dsl` vectors in `conformance/stdlib-vectors/` use `math.schema.json` and compiler-emitted bytecode. They cover every overload, wrapping arithmetic, exact large integer roots, ties-away rounding, NaN rules, signed zero and located domain errors. Together with the 18 string vectors, the optional catalog suite contains 29 vectors.
+The 11 `math-*.dsl` vectors in `conformance/stdlib-vectors/` use `math.schema.json` and compiler-emitted bytecode. They cover every overload, wrapping arithmetic, exact large integer roots, ties-away rounding, NaN rules, signed zero and located domain errors. Together with the 18 string vectors, the string/math portion contains 29 vectors.
 
 ## Collections catalog
 
@@ -71,8 +71,8 @@ A fragment (`stdlib/collections.schema-fragment.json`) declares `types` and `fun
 Common rules (every list and map type):
 - Elements are values by kind: `StrList` holds byte strings, `IntList` int64, `FloatList` binary64. Insertion order is preserved.
 - Index arguments are 0-based; an out-of-range `at`/`set` is a host error `"<Type>.<method>: index out of range: <i>"` (code `RUN_HOST`).
-- Objects are owned by a per-registration arena (C++: a `Collections` object the host keeps alive; Rust/Go/C#: the context object arena). A handle is valid for
-  the whole run and must not be shared between runs. Arena limit: 65536 objects total across all four types, then host error `"<Type> object limit exceeded (65536)"`.
+- C++ and Go bind a `Collections` arena to the registry; hosts may reset it between runs only after old handles expire. Go creates a private arena when none is supplied. Rust and C# store collection values in each run's `Context` arena. Handles must not be shared between runs.
+- The shared collection budget is 65536 allocated objects across all four types, excluding unrelated host context objects. The next allocation raises `"<Type> object limit exceeded (65536)"` with code `RUN_HOST`. Clearing a collection does not reset this budget.
 - Mutators return the receiver (`returns: "<Type>"`) so calls chain. `clear()` keeps the object valid.
 
 | Type | Methods |
