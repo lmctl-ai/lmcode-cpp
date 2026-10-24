@@ -4,6 +4,9 @@
 #include <filesystem>
 #include <system_error>
 #ifdef _WIN32
+#pragma push_macro("NOMINMAX")
+#pragma push_macro("WIN32_LEAN_AND_MEAN")
+#pragma push_macro("VOID")
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -11,6 +14,9 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#pragma pop_macro("VOID")
+#pragma pop_macro("WIN32_LEAN_AND_MEAN")
+#pragma pop_macro("NOMINMAX")
 #endif
 namespace fixture_fs {
 #ifdef _WIN32

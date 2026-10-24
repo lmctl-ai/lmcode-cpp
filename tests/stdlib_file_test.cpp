@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
   }
   int checks = 0;
   auto check = [&](bool ok) { if (!ok) { std::cerr << "file check " << checks+1 << " failed\n"; std::abort(); } ++checks; };
+  check(Value::none().kind == Value::VOID); // Native test cleanup must not leak Windows macros.
   const auto root = std::filesystem::temp_directory_path() / ("lmcode-file-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
   std::error_code ec;
   check(std::filesystem::create_directory(root));
