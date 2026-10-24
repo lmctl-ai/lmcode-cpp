@@ -5,6 +5,7 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -84,17 +85,23 @@ class StdSchemaTests(unittest.TestCase):
             source = directory / "host.json"
             source.write_text(json.dumps(self.host()))
             merged = directory / "merged.json"
-            subprocess.run(["python3", str(ROOT / "scripts/merge-std-schema.py"), str(source), str(merged)], check=True)
+            subprocess.run([sys.executable, str(ROOT / "scripts/merge-std-schema.py"), str(source), str(merged)], check=True)
             self.assertEqual(json.loads(source.read_text()), self.host())
             normalized = directory / "signatures.txt"
-            subprocess.run(["python3", str(ROOT / "scripts/merge-std-schema.py"), "--normalize-signatures", str(source), str(normalized)], check=True)
+            subprocess.run([sys.executable, str(ROOT / "scripts/merge-std-schema.py"), "--normalize-signatures", str(source), str(normalized)], check=True)
             self.assertEqual(normalized.read_text().splitlines(), sorted(set(normalized.read_text().splitlines())))
-            from_stdin = subprocess.run(["python3", str(ROOT / "scripts/merge-std-schema.py"), "--normalize-signatures", "-", "-"], input="z()->void\n", text=True, capture_output=True, check=True)
+            from_stdin = subprocess.run([sys.executable, str(ROOT / "scripts/merge-std-schema.py"), "--normalize-signatures", "-", "-"], input="z()->void\n", text=True, capture_output=True, check=True)
             self.assertIn("z()->void", from_stdin.stdout.splitlines())
 
     def test_compiler_emits_the_canonical_69_signatures(self):
+        import os
+        import shutil
         import subprocess
-        output = subprocess.check_output(["lmscript", "--dsl-signatures", str(ROOT / "std/lmcode-std.schema.json")], text=True)
+        selected = os.environ.get("LMSCRIPT_BIN", "lmscript")
+        compiler = shutil.which(selected) or selected
+        # npm installs a .cmd launcher on Windows, which needs the command shell.
+        batch = os.name == "nt" and Path(compiler).suffix.lower() in (".cmd", ".bat")
+        output = subprocess.check_output([compiler, "--dsl-signatures", str(ROOT / "std/lmcode-std.schema.json")], text=True, shell=batch)
         compiler_signatures = set(output.splitlines())
         self.assertEqual(compiler_signatures, merge.canonical_signatures(CANONICAL))
 
