@@ -128,7 +128,7 @@ Constructors: `str_list()`, `int_list()`, `float_list()`, `str_map()` return a n
 ## Testing catalog
 
 `print(string) -> void` writes the bytes plus `\n` to the host's output sink (stdout by default; the sink is replaceable so vectors can capture it).
-`assert_close(float, float, float) -> void` is a host error `"assert_close failed: <a> vs <b> (tol <t>)"` (floats formatted with 15 significant digits in the C locale, independent of the host process locale) unless `|a-b| <= tol`; NaN on either side fails.
+`assert_close(float, float, float) -> void` is a host error `"assert_close failed: <a> vs <b> (tol <t>)"` (floats formatted with 15 significant digits in the C locale, independent of the host process locale) unless `|a-b| <= tol`; NaN on either side fails. Diagnostics spell every NaN `nan`, regardless of sign or payload, matching all four SDKs.
 
 ## Host adoption
 

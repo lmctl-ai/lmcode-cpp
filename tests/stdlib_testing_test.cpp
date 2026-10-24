@@ -38,6 +38,8 @@ int main(int argc, char** argv) {
 
   const double nan = std::numeric_limits<double>::quiet_NaN();
   const double inf = std::numeric_limits<double>::infinity();
+  try { testing_assert_close(std::copysign(nan, -1.0), 1.0, 0.1); check(false); }
+  catch (const dslvm::Error& e) { check(e.code == "RUN_HOST" && e.message == "assert_close failed: nan vs 1 (tol 0.1)"); }
   for (const auto& args : {
          dslvm::Args{dslvm::Value::real(nan), dslvm::Value::real(1), dslvm::Value::real(1)},
          dslvm::Args{dslvm::Value::real(1), dslvm::Value::real(nan), dslvm::Value::real(1)},
