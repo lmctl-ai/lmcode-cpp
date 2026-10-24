@@ -1,0 +1,26 @@
+$ build/dslvm_test
+ok - method on the wrong object type: method Thing.id called on a Trace
+ok - signatures() lists the sorted canonical strings
+ok - duplicate registration: registry: function 'f() -> void' is registered twice
+ok - duplicate overload parameter tuple: registry: function 'f(int) -> float' is registered twice
+ok - overloads are keyed by parameter types and canonical imports
+ok - canonical overload imports dispatch the selected closure
+ok - canonical method overload imports dispatch the selected closure
+ok - unbound imports carry LOAD_UNBOUND
+ok - schema mismatch carries LOAD_SCHEMA_MISMATCH
+ok - malformed files carry LOAD_BAD_BYTECODE
+ok - host-thrown errors carry RUN_HOST
+ok - VM errors carry RUN_ERROR
+ok - VM errors use the faulting opcode pc for line locations
+ok - host errors are located at the call opcode
+ok - empty line tables preserve unlocated errors
+ok - column zero keeps a line-only location and line zero stays unknown
+ok - JSON results carry full, line-only and absent locations
+{"ok": false, "phase": "load", "code": "LOAD_UNBOUND", "message": "x"}
+{"ok": false, "phase": "run", "code": "RUN_HOST", "message": "host said no"}
+{"ok": false, "phase": "app", "code": "APP_FAIL", "message": "nothing to do"}
+{"ok": true, "result": 42}
+ok - result lines and exit codes 3 (load/run) and 4 (application)
+ok - 5000 operands on the stack run without a cap (max_stack is a reservation hint only)
+ok - a 32 MiB concatenation succeeds (no string cap)
+PASS 103 checks
