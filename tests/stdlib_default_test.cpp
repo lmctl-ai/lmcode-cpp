@@ -50,9 +50,11 @@ int main(int argc, char** argv) {
   auto check = [&](bool ok) { if (!ok) { std::cerr << "default std check " << checks + 1 << " failed\n"; std::abort(); } ++checks; };
   Registry registry;
   check(registry.has_std());
-  check(registry.std_signatures().size() == 67);
+  check(registry.std_signatures().size() == 72);
   check(registry.host_signatures().empty());
-  check(registry.signatures().size() == 67);
+  check(contains(registry.std_signatures(), "fn file_read(string) -> string"));
+  check(contains(registry.std_signatures(), "fn file_lines(string) -> StrList"));
+  check(registry.signatures().size() == 72);
   check(contains(registry.std_signatures(), "fn str_split(string, string) -> StrList"));
   check(contains(registry.std_signatures(), "method StrList.at(int) -> string"));
   check(!contains(registry.signatures(), "fn assert_close(float, float, float) -> void"));
@@ -63,14 +65,14 @@ int main(int argc, char** argv) {
   register_std(registry);
   register_string(registry);
   register_math(registry);
-  check(registry.std_signatures().size() == 67);
+  check(registry.std_signatures().size() == 72);
 
   // Opt-out leaves a genuinely empty registry until a host opts back in.
   Registry disabled(StdMode::Disabled);
   check(!disabled.has_std());
   check(disabled.signatures().empty());
   register_std(disabled);
-  check(disabled.has_std() && disabled.std_signatures().size() == 67);
+  check(disabled.has_std() && disabled.std_signatures().size() == 72);
 
   // Host-only and merged schema views both validate. Extra, missing, and
   // wrong-return signatures are rejected by the same self-check.
@@ -98,7 +100,7 @@ int main(int argc, char** argv) {
   std::ostringstream sink;
   Registry output;
   register_testing(output, &sink);
-  check(output.std_signatures().size() == 67 && output.host_signatures().size() == 2);
+  check(output.std_signatures().size() == 72 && output.host_signatures().size() == 2);
   check(!output.matches_schema_signatures({}));
   check(output.matches_schema_signatures(output.host_signatures()));
   auto print = output.function_by_signature("fn print(string) -> void");

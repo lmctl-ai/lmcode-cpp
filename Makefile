@@ -2,7 +2,7 @@ CXX ?= g++
 CXXFLAGS ?= -std=c++17 -O1 -Wall -Wextra -pedantic
 BUILD ?= build
 
-.PHONY: test test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-std conformance all clean
+.PHONY: test test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std conformance all clean
 all: test conformance
 
 $(BUILD)/dslvm_test: tests/dslvm_test.cpp include/dslvm.hpp
@@ -15,7 +15,7 @@ $(BUILD)/conformance: conformance/run.cpp include/dslvm.hpp stdlib/string.hpp st
 
 test: $(BUILD)/dslvm_test
 	$(BUILD)/dslvm_test
-	$(MAKE) test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-std
+	$(MAKE) test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std
 
 $(BUILD)/stdlib_string_test: tests/stdlib_string_test.cpp stdlib/string.hpp include/dslvm.hpp
 	@mkdir -p $(BUILD)
@@ -84,3 +84,15 @@ test-std: $(BUILD)/stdlib_default_test
 	$(BUILD)/stdlib_default_test
 	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_default_test)" std
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_std_schema.py
+
+$(BUILD)/stdlib_file_test: tests/stdlib_file_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ tests/stdlib_file_test.cpp
+
+$(BUILD)/stdlib_file_header.o: tests/stdlib_file_header.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -std=c++17 -Wall -Wextra -Werror -I include -c -o $@ tests/stdlib_file_header.cpp
+
+test-file-stdlib: $(BUILD)/stdlib_file_test $(BUILD)/stdlib_file_header.o
+	$(BUILD)/stdlib_file_test
+	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_file_test)" file

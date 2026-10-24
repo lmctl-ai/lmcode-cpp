@@ -5,6 +5,7 @@ HOST="${1:-$ROOT/build/stdlib_string_test}"
 CATALOG="${2:-string}"
 SCHEMA="$ROOT/tests/$CATALOG.schema.json"
 FRAGMENT="$ROOT/stdlib/$CATALOG.schema-fragment.json"
+if [[ "$CATALOG" == file ]]; then SCHEMA="$ROOT/tests/file.schema.json"; fi
 if [[ "$CATALOG" == std ]]; then SCHEMA="$ROOT/std/lmcode-std.schema.json"; FRAGMENT="$SCHEMA"; fi
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/dsl-string-signatures-XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT

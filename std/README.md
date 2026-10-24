@@ -6,10 +6,10 @@ is the schema-language version and bytecode version 5 is separate. It is directl
 readable by the current `lmscript --dsl-signatures` command. The merge helper adds
 only its declarations to a host schema, preserving host metadata.
 
-The file combines string, math, collection declarations: 67 canonical
+The file combines string, math, collection and file declarations: 72 canonical
 signatures. The old `stdlib/*.schema-fragment.json` files are compatibility
 subsets, except the explicitly optional testing fragment, which is outside std. Other SDKs copy this file exactly and pin its SHA-256 and source revision
-in `std.lock`; they must not regenerate it locally.
+in `std.lock`; they must not regenerate it locally. The source SDK also checks its canonical bytes against the local `std.lock` digest.
 
 Until implicit compiler injection is available, merge it at build time:
 
