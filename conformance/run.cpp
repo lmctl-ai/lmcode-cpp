@@ -4,6 +4,8 @@
 #include "dslvm.hpp"
 #include "../stdlib/string.hpp"
 #include "../stdlib/math.hpp"
+#include "../stdlib/collections.hpp"
+#include "../stdlib/testing.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -19,13 +21,18 @@ struct IntList { std::vector<int64_t> values{0, 1, 2, 3}; };
 struct Stub {
   std::vector<std::string> trace; std::vector<std::unique_ptr<Thing>> things; Thing root{0}, variable{0};
   IntList xs;
+  dslvm::stdlib::Collections collections;
+  std::ostringstream printed;
   dslvm::Registry reg;
   Thing* make(int64_t id) { things.push_back(std::make_unique<Thing>(Thing{id})); return things.back().get(); }
   static std::string fmt(double f) { char buf[64]; std::snprintf(buf, sizeof buf, "%.15g", f); return buf; }
-  Stub() {
+  explicit Stub(bool collection_catalog) {
     using namespace dslvm;
     stdlib::register_string(reg);
     stdlib::register_math(reg);
+    stdlib::register_testing(reg, &printed);
+    if (collection_catalog) stdlib::register_collections(reg, collections);
+    reg.function("printed", {}, "string", [&](Args&) { return Value::string(printed.str()); });
     // Portable fixture adapter: raw bytes are supplied independently of UTF-8
     // source literals, and binary results are traced as unambiguous hex.
     reg.function("bytes", {"string"}, "string", [](Args& a) {
@@ -42,8 +49,8 @@ struct Stub {
     });
     reg.method("Trace", "hex", {"string"}, "void", [&](void*, Args& a) { trace.push_back("hex " + hex(a[0].s)); return Value::none(); });
     reg.context("t", "Trace").context("root", "Thing").context("v", "Var").context("xs", "IntList");
-    reg.method("IntList", "len", {}, "int", [](void* self, Args&) { return Value::integer(int64_t(static_cast<IntList*>(self)->values.size())); });
-    reg.method("IntList", "at", {"int"}, "int", [](void* self, Args& a) { return Value::integer(static_cast<IntList*>(self)->values.at(size_t(a[0].i))); });
+    if (!collection_catalog) reg.method("IntList", "len", {}, "int", [](void* self, Args&) { return Value::integer(int64_t(static_cast<IntList*>(self)->values.size())); });
+    if (!collection_catalog) reg.method("IntList", "at", {"int"}, "int", [](void* self, Args& a) { return Value::integer(static_cast<IntList*>(self)->values.at(size_t(a[0].i))); });
     reg.method("Trace", "int", {"int"}, "void", [&](void*, Args& a) { trace.push_back("int " + std::to_string(a[0].i)); return Value::none(); });
     reg.method("Trace", "float", {"float"}, "void", [&](void*, Args& a) { trace.push_back("float " + fmt(a[0].f)); return Value::none(); });
     reg.method("Trace", "str", {"string"}, "void", [&](void*, Args& a) { trace.push_back("str " + a[0].s); return Value::none(); });
@@ -121,14 +128,20 @@ int main(int argc, char** argv) {
     { std::ifstream m(dir + "/manifest.json"); std::stringstream ss; ss << m.rdbuf(); std::string mf = ss.str(); size_t p = mf.find("\"name\": \"" + name + "\"");
       if (p != std::string::npos) { size_t q = mf.find("\"schema\": \"", p), next = mf.find("\"name\": \"", p + 1); if (q != std::string::npos && q < next) { q += 11; schemaFile = dir + "/" + mf.substr(q, mf.find('"', q) - q); } } }
     std::string bytes = dslvm::read_file(dir + "/" + name + ".dslb"), schema = dslvm::read_file(schemaFile);
-    Stub stub; std::string result, error, error_code; bool loaded = false, ran = false, error_has_location = false, error_has_column = false; uint32_t error_line = 0; uint16_t error_column = 0;
+    Stub stub(schema.find("\"str_list\"") != std::string::npos); std::string result, error, error_code, bare_error; bool loaded = false, ran = false, error_has_location = false, error_has_column = false; uint32_t error_line = 0; uint16_t error_column = 0;
     try { dslvm::Program p = dslvm::Program::load(bytes, schema, stub.reg); loaded = true; dslvm::Context c; c.set("t", &stub.trace); c.set("root", &stub.root); c.set("v", &stub.variable); c.set("xs", &stub.xs); p.run(c, stub.reg); ran = true; }
-    catch (const dslvm::Error& e) { error = e.what(); error_code = e.code; error_has_location = e.has_location; error_has_column = e.has_column; error_line = e.line; error_column = e.column; }
+    catch (const dslvm::Error& e) { error = e.what(); bare_error = error;
+      if (e.has_location) {
+        std::string prefix = "dsl line " + std::to_string(e.line) + (e.has_column ? ":" + std::to_string(e.column) : "") + ": ";
+        if (bare_error.compare(0, prefix.size(), prefix) == 0) bare_error.erase(0, prefix.size());
+      }
+      error_code = e.code; error_has_location = e.has_location; error_has_column = e.has_column; error_line = e.line; error_column = e.column; }
     bool ok;
     if (kind == "trace") {
       ok = ran && stub.trace.size() == lines.size();
       if (ok) for (size_t i = 0; i < lines.size(); ++i) if (!trace_line_matches(stub.trace[i], lines[i])) { ok = false; break; }
     }
+    else if (kind == "runtime_error_exact") ok = loaded && !ran && lines.size() == 2 && error_code == lines[0] && bare_error == lines[1];
     else if (kind == "runtime_error") ok = loaded && !ran && error.find(lines.at(0)) != std::string::npos;
     else if (kind == "runtime_error_at") {
       uint32_t line = lines.size() > 1 ? uint32_t(std::stoul(lines[1])) : 0; uint16_t column = lines.size() > 2 ? uint16_t(std::stoul(lines[2])) : 0;
