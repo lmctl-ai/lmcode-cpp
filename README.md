@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
 `Registry` is declared with the schema's types (parameter types and return type, as strings); a name may have several overloads with distinct parameter tuples, while registering the same parameter tuple twice is refused. `load()` resolves canonical import signatures (including parameter and return types), and refuses a file whose imports the registry does not provide, before anything runs. `reg.signatures()` lists the
 sorted canonical strings (`context g: Greeter`, `fn now() -> string`, `method Greeter.say(string) -> void`), exactly what
 `lmscript --dsl-signatures SCHEMA` prints, so a host's test diffs the two sources of truth. That is a consistency
-check, not a defense: by design the VM performs no call-time type checks; bytecode is trusted like the host's
+check, not a defense: by design the VM performs no comprehensive call-time argument or return checks; it still checks method receiver kinds and other defensive VM invariants. Bytecode is trusted like the host's
 own code. `Value` carries `INT` (int64), `FLOAT` (binary64), `STR`, `BOOL` and `OBJ` (a host pointer plus the schema type name); a
 void method returns `Value::none()`. Host code throws `dslvm::Error` to report a run-time failure.
 
@@ -142,7 +142,7 @@ ASCII letters. `str_substr(s,start,count)` clamps negative starts to zero and ov
 beyond the end return empty. `str_find` returns `-1` when absent. `str_replace` replaces non-overlapping matches and leaves the
 input unchanged for an empty search string. It preflights the result size before allocation and throws `dslvm::Error`
 (code `RUN_HOST`, message `str_replace: result must be at most 67108864 bytes`) above 64 MiB, including no-op copies. `str_trim` removes ASCII space and bytes `0x09` through `0x0d`. Integer and float
-parsing use locale-independent `std::from_chars` and require a complete, in-range decimal token with at most one leading sign.
+ parsing validates a complete, in-range decimal token with at most one leading sign; integer conversion uses `std::from_chars`, while float conversion uses `strtod_l`/`_strtod_l` in a per-call C numeric locale.
 Whitespace, embedded NULs, hexadecimal forms, overflow and unrepresentable floating-point underflow are invalid; `str_to_int`/`str_to_float` return zero on failure, and `str_is_int`/
 `str_is_float` distinguish failure (float `nan`/infinity are invalid). `str_repeat` rejects negative counts and results above
 64 MiB with `dslvm::Error` (code `RUN_HOST`, message
