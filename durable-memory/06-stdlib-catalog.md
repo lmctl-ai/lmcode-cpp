@@ -52,7 +52,7 @@ Adapters must remain small and preserve ownership and meaning. A type needing st
 | `file_read(path) -> string` | Read the complete regular file, including empty content, NUL and invalid UTF-8 bytes. |
 | `file_write(path, bytes) -> void` | Create or truncate a regular file, write all bytes, check flush/close errors. |
 | `file_append(path, bytes) -> void` | Create if missing; otherwise append all bytes, checking flush/close errors. |
-| `file_exists(path) -> bool` | True for a regular file when metadata can be read, even if its content is unreadable. False for missing paths, broken symlinks, directories and other nonregular objects. Metadata errors other than missing/not-a-directory trap. |
+| `file_exists(path) -> bool` | True for a regular file when metadata can be read, even if its content is unreadable. False for empty/missing paths, broken symlinks, directories and other nonregular objects. Metadata errors other than missing/not-a-directory trap. |
 | `file_lines(path) -> StrList` | Read bytes then split on every LF byte, preserving empty fields, CR bytes and a final empty field: empty file gives `[""]`, `"a\n"` gives `["a", ""]`, `"\n"` gives `["", ""]`. The resulting list uses the registry-owned arena. |
 
 Read/write/append/lines reject directories and other nonregular objects. Every failure traps with `RUN_HOST` and base message `FUNCTION: PATH: REASON`, e.g. `file_read: missing.bin: No such file or directory`. PATH is the original path bytes (including embedded bytes in the diagnostic); REASON is the OS reason and is platform-dependent. Tests compare the function/path prefix and a nonempty reason, not localized OS wording. Short writes, read errors and flush/close errors trap; writes are not transactional and a failed write can leave a partial/truncated file. No arbitrary content-size cap is imposed.
@@ -177,8 +177,8 @@ Go exports collection types with snapshot `Values()`/`Entries()` accessors;
 C# exposes read-only `Values`/`Entries` views. Rust and C++ collection structs
 expose their item storage to host callbacks. Strings remain bytes at these boundaries.
 
-The optional suite now contains 61 vectors: 18 string, 11 math, and 32
-collection/testing cases. `runtime_error_exact` pins error codes and complete
+The shared suite contains 68 vectors: 18 string, 11 math, 32
+collection/optional-testing cases, and 7 file cases. `runtime_error_exact` pins error codes and complete
 base messages after removal of an SDK source-location prefix. Captured print
 output is compared as hexadecimal bytes. The assertion comparison is exactly
 `abs(a-b) <= tolerance`: equal infinities fail because their difference is NaN;

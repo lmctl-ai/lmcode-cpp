@@ -34,12 +34,16 @@ int main(int argc, char** argv) {
   std::string large(1024 * 1024 + 17, '\x7f');
   call("fn file_write(string, string) -> void", {Value::string(path.string()), Value::string(large)});
   check(call("fn file_read(string) -> string", {Value::string(path.string())}).s == large);
+  check(!call("fn file_exists(string) -> bool", {Value::string("")}).b);
   const auto appended = root / "append-created";
   call("fn file_append(string, string) -> void", {Value::string(appended.u8string()), Value::string("created")});
   check(call("fn file_read(string) -> string", {Value::string(appended.u8string())}).s == "created");
   check(!call("fn file_exists(string) -> bool", {Value::string((path / "child").u8string())}).b);
-  const auto relative = std::filesystem::relative(appended, std::filesystem::current_path());
-  check(call("fn file_read(string) -> string", {Value::string(relative.u8string())}).s == "created");
+  const auto previous_cwd = std::filesystem::current_path();
+  std::filesystem::current_path(root);
+  const auto relative_content = call("fn file_read(string) -> string", {Value::string("append-created")}).s;
+  std::filesystem::current_path(previous_cwd);
+  check(relative_content == "created");
 #ifndef _WIN32
   const auto byte_path = root / std::string("name-\xff", 6);
   call("fn file_write(string, string) -> void", {Value::string(byte_path.native()), Value::string(binary)});
@@ -95,7 +99,16 @@ int main(int argc, char** argv) {
   catch (const Error& e) { failed = e.code == "RUN_HOST" && e.message.rfind("file_exists: ", 0) == 0; }
   check(failed);
 #endif
-  std::filesystem::remove_all(root, ec);
+  auto cleanup_root = root;
+#ifdef _WIN32
+  auto cleanup_wide = std::filesystem::absolute(root).make_preferred().native();
+  if (cleanup_wide.rfind(L"\\\\?\\", 0) != 0) {
+    if (cleanup_wide.rfind(L"\\\\", 0) == 0) cleanup_wide = L"\\\\?\\UNC" + cleanup_wide.substr(1);
+    else cleanup_wide = L"\\\\?\\" + cleanup_wide;
+  }
+  cleanup_root = std::filesystem::path(cleanup_wide);
+#endif
+  std::filesystem::remove_all(cleanup_root, ec);
   check(!ec);
   std::cout << "stdlib file: " << checks << " checks passed\n";
 }

@@ -6,6 +6,7 @@
 #include "../stdlib/math.hpp"
 #include "../stdlib/collections.hpp"
 #include "../stdlib/testing.hpp"
+#include "../stdlib/file.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -13,6 +14,8 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <filesystem>
+#include <chrono>
 #include <sstream>
 #include <vector>
 
@@ -21,12 +24,14 @@ struct Stub {
   std::vector<std::string> trace; std::vector<std::unique_ptr<Thing>> things; Thing root{0}, variable{0};
   dslvm::stdlib::IntList xs{{0, 1, 2, 3}};
   std::ostringstream printed;
+  std::string temp_dir;
   dslvm::Registry reg;
   Thing* make(int64_t id) { things.push_back(std::make_unique<Thing>(Thing{id})); return things.back().get(); }
   static std::string fmt(double f) { char buf[64]; std::snprintf(buf, sizeof buf, "%.15g", f); return buf; }
   explicit Stub(bool) {
     using namespace dslvm;
     dslvm::stdlib::register_testing(reg, &printed);
+    reg.function("test_temp_dir", {}, "string", [&](Args&) { return Value::string(temp_dir); });
     reg.function("printed", {}, "string", [&](Args&) { return Value::string(printed.str()); });
     // Portable fixture adapter: raw bytes are supplied independently of UTF-8
     // source literals, and binary results are traced as unambiguous hex.
@@ -121,7 +126,20 @@ int main(int argc, char** argv) {
     { std::ifstream m(dir + "/manifest.json"); std::stringstream ss; ss << m.rdbuf(); std::string mf = ss.str(); size_t p = mf.find("\"name\": \"" + name + "\"");
       if (p != std::string::npos) { size_t q = mf.find("\"schema\": \"", p), next = mf.find("\"name\": \"", p + 1); if (q != std::string::npos && q < next) { q += 11; schemaFile = dir + "/" + mf.substr(q, mf.find('"', q) - q); } } }
     std::string bytes = dslvm::read_file(dir + "/" + name + ".dslb"), schema = dslvm::read_file(schemaFile);
-    Stub stub(schema.find("\"str_list\"") != std::string::npos); std::string result, error, error_code, bare_error; bool loaded = false, ran = false, error_has_location = false, error_has_column = false; uint32_t error_line = 0; uint16_t error_column = 0;
+    Stub stub(schema.find("\"str_list\"") != std::string::npos);
+    if (schemaFile.find("file.schema.json") != std::string::npos) {
+      std::error_code temp_error;
+      const auto base = std::filesystem::temp_directory_path(temp_error);
+      if (temp_error) { std::cerr << name << ": cannot find temp directory: " << temp_error.message() << "\n"; return 2; }
+      for (unsigned attempt = 0; attempt != 100; ++attempt) {
+        const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
+        const auto temp = base / ("lmcode-file-vector-" + name + "-" + std::to_string(stamp) + "-" + std::to_string(attempt));
+        if (std::filesystem::create_directory(temp, temp_error)) { stub.temp_dir = temp.u8string(); break; }
+        if (temp_error && temp_error != std::errc::file_exists) break;
+      }
+      if (stub.temp_dir.empty()) { std::cerr << name << ": cannot create fresh temp directory: " << temp_error.message() << "\n"; return 2; }
+    }
+    std::string result, error, error_code, bare_error; bool loaded = false, ran = false, error_has_location = false, error_has_column = false; uint32_t error_line = 0; uint16_t error_column = 0;
     try { dslvm::Program p = dslvm::Program::load(bytes, schema, stub.reg); loaded = true; dslvm::Context c; c.set("t", &stub.trace); c.set("root", &stub.root); c.set("v", &stub.variable); c.set("xs", &stub.xs); p.run(c, stub.reg); ran = true; }
     catch (const dslvm::Error& e) { error = e.what(); bare_error = error;
       if (e.has_location) {
@@ -135,6 +153,14 @@ int main(int argc, char** argv) {
       if (ok) for (size_t i = 0; i < lines.size(); ++i) if (!trace_line_matches(stub.trace[i], lines[i])) { ok = false; break; }
     }
     else if (kind == "runtime_error_exact") ok = loaded && !ran && lines.size() == 2 && error_code == lines[0] && bare_error == lines[1];
+    else if (kind == "runtime_error_file") {
+      // File paths are deliberately dynamic and OS reason text is localized.
+      // The vector pins the code, function, and relative path while requiring
+      // the implementation to retain a nonempty OS reason suffix.
+      const std::string expected_path = lines.size() >= 3 && !lines[2].empty() ? stub.temp_dir + "/" + lines[2] : stub.temp_dir;
+      const std::string expected_prefix = lines.size() >= 3 ? lines[1] + ": " + expected_path + ": " : "";
+      ok = loaded && !ran && lines.size() == 3 && error_code == lines[0] && bare_error.compare(0, expected_prefix.size(), expected_prefix) == 0 && bare_error.size() > expected_prefix.size();
+    }
     else if (kind == "runtime_error") ok = loaded && !ran && error.find(lines.at(0)) != std::string::npos;
     else if (kind == "runtime_error_at") {
       uint32_t line = lines.size() > 1 ? uint32_t(std::stoul(lines[1])) : 0; uint16_t column = lines.size() > 2 ? uint16_t(std::stoul(lines[2])) : 0;
@@ -144,6 +170,7 @@ int main(int argc, char** argv) {
     else { std::cerr << name << ": unknown expectation kind '" << kind << "'\n"; return 2; }
     if (ok) std::cout << "ok - " << name << " (" << kind << ")\n";
     else { failed++; std::cout << "FAIL - " << name << " (" << kind << ")\n"; if (!error.empty()) std::cout << "    error: " << error << "\n"; for (auto& t : stub.trace) std::cout << "    got:  " << t << "\n"; for (auto& l : lines) std::cout << "    want: " << l << "\n"; }
+    if (!stub.temp_dir.empty()) { std::error_code cleanup_error; std::filesystem::remove_all(std::filesystem::u8path(stub.temp_dir), cleanup_error); }
   }
   std::cout << (failed ? "FAIL " : "PASS ") << (names.size() - failed) << "/" << names.size() << " vectors\n";
   return failed ? 1 : 0;
