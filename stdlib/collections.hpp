@@ -11,13 +11,14 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace dslvm::stdlib {
 template<class T> struct CollectionList { std::vector<T> items; };
 using StrList = CollectionList<std::string>;
 using IntList = CollectionList<int64_t>;
 using FloatList = CollectionList<double>;
-struct StrMap { std::vector<std::pair<std::string, std::string>> items; std::unordered_map<std::string, size_t> index; void rebuild_index() { index.clear(); for (size_t i = 0; i < items.size(); ++i) index.emplace(items[i].first, i); } };
+struct StrMap { std::vector<std::pair<std::string, std::string>> items; std::unordered_map<std::string, size_t> index; std::unordered_set<std::string> removed; size_t active = 0; };
 
 // Stable addresses for the whole run. Keep this arena and its registry alive
 // while any handle is in use. Reset only between runs, after all handles expire.
@@ -102,7 +103,7 @@ inline Registry& register_collections(Registry& r, Collections& arena) {
     while ((found = a[0].s.find(a[1].s, at)) != std::string::npos) { items.push_back(a[0].s.substr(at, found - at)); at = found + a[1].s.size(); }
     items.push_back(a[0].s.substr(at)); return Value::object("StrList", arena.make_str_list(std::move(items)));
   });
-  r.method("StrMap", "len", {}, "int", [](void* p, Args&) { return Value::integer(int64_t(static_cast<StrMap*>(p)->items.size())); });
+  r.method("StrMap", "len", {}, "int", [](void* p, Args&) { return Value::integer(int64_t(static_cast<StrMap*>(p)->active)); });
   r.method("StrMap", "has", {"string"}, "bool", [](void* p, Args& a) {
     const auto& items = static_cast<StrMap*>(p)->items;
     const auto& map = *static_cast<StrMap*>(p);
@@ -121,18 +122,19 @@ inline Registry& register_collections(Registry& r, Collections& arena) {
   r.method("StrMap", "set", {"string", "string"}, "StrMap", [](void* p, Args& a) {
     auto& map = *static_cast<StrMap*>(p); auto found = map.index.find(a[0].s);
     if (found != map.index.end()) { map.items[found->second].second = a[1].s; return Value::object("StrMap", p); }
-    map.index.emplace(a[0].s, map.items.size()); map.items.emplace_back(a[0].s, a[1].s); return Value::object("StrMap", p);
+    map.index.emplace(a[0].s, map.items.size()); map.removed.erase(a[0].s); map.items.emplace_back(a[0].s, a[1].s); ++map.active; return Value::object("StrMap", p);
   });
   r.method("StrMap", "key_at", {"int"}, "string", [](void* p, Args& a) {
-    const auto& items = static_cast<StrMap*>(p)->items;
-    return Value::string(items[detail::collection_index(a[0].i, items.size(), "StrMap.key_at")].first);
+    const auto& map = *static_cast<StrMap*>(p); if (a[0].i < 0 || uint64_t(a[0].i) >= map.active) throw Error("StrMap.key_at: index out of range: " + std::to_string(a[0].i));
+    size_t seen = 0; for (size_t pos = 0; pos < map.items.size(); ++pos) { const auto& key = map.items[pos].first; if (map.removed.count(key) || map.index.at(key) != pos) continue; if (seen++ == size_t(a[0].i)) return Value::string(key); }
+    throw Error("StrMap.key_at: index out of range: " + std::to_string(a[0].i));
   });
   r.method("StrMap", "remove", {"string"}, "bool", [](void* p, Args& a) {
     auto& map = *static_cast<StrMap*>(p); auto found = map.index.find(a[0].s);
     if (found == map.index.end()) return Value::boolean(false);
-    map.items.erase(map.items.begin() + static_cast<std::ptrdiff_t>(found->second)); map.rebuild_index(); return Value::boolean(true);
+    map.index.erase(found); map.removed.insert(a[0].s); --map.active; return Value::boolean(true);
   });
-  r.method("StrMap", "clear", {}, "StrMap", [](void* p, Args&) { static_cast<StrMap*>(p)->items.clear(); return Value::object("StrMap", p); });
+  r.method("StrMap", "clear", {}, "StrMap", [](void* p, Args&) { auto& map = *static_cast<StrMap*>(p); map.items.clear(); map.index.clear(); map.removed.clear(); map.active = 0; return Value::object("StrMap", p); });
   return r;
 }
 } // namespace dslvm::stdlib
