@@ -177,9 +177,11 @@ Go exports collection types with snapshot `Values()`/`Entries()` accessors;
 C# exposes read-only `Values`/`Entries` views. Rust and C++ collection structs
 expose their item storage to host callbacks. Strings remain bytes at these boundaries.
 
-The shared suite contains 77 vectors: 18 string, 11 math, 32
-collection/optional-testing cases, and 16 file cases. `runtime_error_exact` pins error codes and complete
+The shared suite contains 117 vectors: 18 string, 11 math, 32
+collection/optional-testing cases, 16 file cases, and 40 seeded property cases. `runtime_error_exact` pins error codes and complete
 base messages after removal of an SDK source-location prefix. Captured print
 output is compared as hexadecimal bytes. The assertion comparison is exactly
 `abs(a-b) <= tolerance`: equal infinities fail because their difference is NaN;
 an infinite tolerance can accept an infinite difference.
+
+Measured collection, string and native file workloads are described in [Standard catalog performance](07-stdlib-performance.md).

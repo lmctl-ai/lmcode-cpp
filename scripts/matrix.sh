@@ -11,6 +11,8 @@ SIBLING_ROOT contains lmcode-cpp, lmcode-rust, lmcode-go, lmcode-csharp.
 Defaults to this checkout's parent. Override individual paths with LMCODE_CPP,
 LMCODE_RUST, LMCODE_GO, LMCODE_CSHARP. Tests/builds run in those checkouts.
 MATRIX_LOG_DIR selects the log directory; otherwise one is created under TMPDIR.
+MATRIX_CORPUS=large adds a 16-seed x 64-round exact differential run;
+MATRIX_CORPUS=small compares the committed reduced corpus traces.
 Requires the SDK toolchains and a matching lmscript for compiler parity checks.
 Exit 0 means every stage passed; exit 1 means at least one failed.
 USAGE
@@ -84,6 +86,16 @@ for sdk in cpp rust go csharp; do
   esac
   rows+=("$sdk $tests_result $core_result $stdlib_result")
 done
+case ${MATRIX_CORPUS:-skip} in
+  skip) ;;
+  small|large)
+    corpus_args=()
+    if [[ $MATRIX_CORPUS == large ]]; then corpus_args+=(--large); fi
+    run_stage corpus differential "$cpp_dir" python3 scripts/diff-stdlib.py --siblings "$sibling_root" --output "$log_dir/corpus" "${corpus_args[@]}"
+    printf 'Corpus exact differential: %s\n' "$differential_result"
+    ;;
+  *) printf 'invalid MATRIX_CORPUS: %s\n' "$MATRIX_CORPUS" >&2; exit 2 ;;
+esac
 printf '\n%-10s | %-6s | %-6s | %-6s\n' SDK Tests Core Stdlib
 printf '%s\n' '-----------+--------+--------+-------'
 for row in "${rows[@]}"; do

@@ -183,6 +183,10 @@ int main(int argc, char** argv) {
         if (bare_error.compare(0, prefix.size(), prefix) == 0) bare_error.erase(0, prefix.size());
       }
       error_code = e.code; error_has_location = e.has_location; error_has_column = e.has_column; error_line = e.line; error_column = e.column; }
+    if (std::getenv("LMCODE_TRACE")) {
+      for (const auto& line : stub.trace) std::cout << "TRACE\t" << name << "\t" << line << "\n";
+      if (!error_code.empty()) std::cout << "ERROR\t" << name << "\t" << error_code << "\t" << bare_error << "\n";
+    }
     bool ok;
     if (kind == "trace") {
       ok = ran && stub.trace.size() == lines.size();

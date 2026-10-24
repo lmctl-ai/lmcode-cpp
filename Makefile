@@ -31,6 +31,8 @@ test-string-stdlib: $(BUILD)/stdlib_string_test $(BUILD)/stdlib_string_header.o
 	bash tests/string-signature-parity-test.sh
 
 conformance: $(BUILD)/conformance
+	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_std_corpus.py
+	PYTHONDONTWRITEBYTECODE=1 python3 scripts/gen-std-corpus.py --check
 	$(BUILD)/conformance conformance/vectors
 	$(BUILD)/conformance conformance/stdlib-vectors
 
