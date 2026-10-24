@@ -4,6 +4,45 @@ The catalog is a set of ordinary host functions declared in a schema fragment an
 no opcodes and no VM behavior; a host may ship all of it, part of it, or its own functions. The reference implementation is
 `stdlib/string.hpp` with `stdlib/string.schema-fragment.json`.
 
+## Built-in lmcode std v1
+
+The canonical public surface is `std/lmcode-std.schema.json`, a schema-2 fragment with `"lmcode.std": 1`, `types` and `functions`. Version 1 contains the existing 16 string signatures, 16 numeric signatures, 35 collection signatures (four types), and `print`/`assert_close`: 69 canonical signatures total. It adds no VM opcodes or dependencies. The implementation-group fragments below remain compatibility fixtures, not independent standard definitions; a generated-surface parity check prevents drift from the canonical file.
+
+All four SDKs copy the canonical file byte-for-byte from lmcode-cpp and pin its source commit, std version and SHA-256 in `std.lock`. Sync verification and CI check the actual bytes. The schema is exactly the surface a future compiler can inject. Compiler injection is not implemented here, and schema-hash binding continues to use the exact schema bytes supplied to compilation/loading.
+
+### Default registration and opt-out
+
+| SDK | Default registry | Explicit opt-out | Idempotent complete registration |
+| --- | --- | --- | --- |
+| C++ | `Registry()` | `Registry(StdMode::Disabled)` | `dslvm::register_std(registry)` |
+| Rust | `Registry::new()` | `Registry::new_without_std()` | `register_std(&mut registry)` |
+| Go | `NewRegistry()` | `NewRegistryWithoutStd()` | `RegisterStd(registry)` |
+| C# | `new Registry()` | `new Registry(includeStd: false)` | `Std.RegisterStd(registry)` |
+
+Default construction installs std without requiring an import, host schema declaration, host-owned arena or host registration call. C++ keeps the VM definitions in `include/dslvm.hpp` and loads `stdlib/std.hpp` at the end; the aggregator includes the implementation-group headers. Hosts vendor the VM and every `stdlib/*.hpp` together through their pinned sync script. Standalone inclusion of an individual catalog header remains supported. Go must keep default registration in the core package (compatibility catalog packages can re-export it) to avoid a core-to-catalog import cycle.
+
+Existing C++ group binders remain available: manual registration into an opted-out registry preserves their existing behavior. Calling a group binder after default std registration is idempotent; an explicit testing sink configures the built-in output. New hosts use default std and remove group-registration code. A host may not replace an existing built-in parameter tuple with another implementation or return type; ordinary duplicate registration is still an error.
+
+### Signatures and schema self-check
+
+`signatures()` and the default schema-summary text expose the complete runtime surface, std included. `host_signatures()` exposes only host registrations; `std_signatures()` exposes the installed built-ins. Their language-equivalent accessors follow the same rule. Opted-out registries have no installed std signatures until explicitly enabled.
+
+`matches_schema_signatures(schema_signatures)` compares the complete registry with the sorted set union of the compiler's schema signatures and installed std signatures. Missing host declarations, extra declarations and incompatible return types still fail. Missing built-in declarations alone do not fail. The canonical std names/parameter tuples determine built-in membership, rather than a name prefix; host functions such as `str_text_prefix` remain host declarations.
+
+`scripts/merge-std-schema.py HOST_SCHEMA OUTPUT` is the temporary compiler bridge: it merges the canonical fragment into a full host schema, preserves context/domain metadata and overloads, and refuses conflicting parameter tuples/return types. It also supplies signature normalization and host-only schema extraction modes. Already-merged schemas are accepted idempotently. The helper reads a vendored `cpp/std/lmcode-std.schema.json` in host checkouts, or the canonical `std/` file in the SDK. It does not modify the input file or infer adapters.
+
+Until compiler injection is released, migrated hosts keep only host declarations in a checked-in source schema and generate the effective merged schema during their build. The existing compiler-facing schema path can remain a generated, ignored file so examples continue to compile after building. `--dsl-schema --json` prints the exact effective embedded schema bytes today; the loader hashes those same bytes. Future injection can use the host-only schema bytes instead; default std import resolution already works with either form. Signature self-checks normalize std membership, so they accept both forms without hiding host/schema drift.
+
+### Collection lifetime and native adapters
+
+A default registry owns its std collection arena. A run starts with an empty arena and clears it on success or exception; list/map handles are valid only during that run. All four collection types share the existing 65,536-allocation budget. Clearing an object does not reclaim an allocation slot. Registry copies sharing runtime state cannot execute overlapping/nested runs; SDKs must reject such reuse rather than invalidate live handles. Separate registries can execute independent runs.
+
+C++ native callbacks create lists/maps through `registry.std_collections().make_*` while a run is active. Host-owned context values can be exposed through a small value-copy adapter; a copied list is an independent snapshot and mutations do not modify its source. The existing explicit `Collections` binder remains a manual/opt-out compatibility API, but default std no longer needs a host arena member. `foreach` continues to use the built-in `len` and `at` methods.
+
+Adapters must remain small and preserve ownership and meaning. A type needing state sharing, a different lifetime or different mutation semantics remains a host type under its own name (or the host opts out); std is not expanded to emulate it. HTML/header-name snapshots fit the common lists. DOM node/document lists, physics matrices and SSH ResultList remain domain objects.
+
+`assert_close` remains the universally identical absolute-tolerance comparator described below, not a promise of finite physical inputs or relative error. Finite-only domain variants and their diagnostics remain separate host methods/functions; they are not added to std or silently coerced. The standard print writes bytes and a newline to the selected sink; host output methods that require flushing or routing can keep a thin adapter.
+
 ## Byte-string rule
 
 VM strings are byte sequences in every SDK: lengths and offsets are bytes, no decoding or validation happens, NUL bytes are legal,
