@@ -1,10 +1,11 @@
 # lmcode std v1
 
-`lmcode-std.schema.json` is the canonical, byte-pinned standard surface. Its schema
-name `lmcode_std_v1` carries standard-library version 1; `dsl.schema: 2` is the
-schema-language version, and bytecode version 5 is a separate contract. Keeping
-version information in the schema name makes the file directly consumable by the
-current `lmscript --dsl-signatures` command without unsupported metadata keys.
+`lmcode-std.schema.json` is the canonical, byte-pinned standard surface.
+`lmcode.std: 1` is the standard-library version; `dsl.schema: 2` is the schema
+language version, and bytecode version 5 is a separate contract. The canonical
+file is a fragment, not a standalone application schema. Use the merge helper
+before invoking the current compiler; future implicit injection will read the
+same declarations.
 
 The file combines string, math, collection and testing declarations: 69 canonical
 signatures. The old `stdlib/*.schema-fragment.json` files are compatibility
@@ -14,7 +15,7 @@ in `std.lock`; they must not regenerate it locally.
 Until implicit compiler injection is available, merge it at build time:
 
 ```sh
-python3 scripts/merge-std.py host.schema.json merged.schema.json
+python3 scripts/merge-std-schema.py host.schema.json merged.schema.json
 lmscript --dsl-signatures merged.schema.json
 ```
 

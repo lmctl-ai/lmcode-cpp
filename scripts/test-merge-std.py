@@ -24,7 +24,7 @@ class MergeTests(unittest.TestCase):
             functions.update(fragment.get('functions', {}))
         self.assertEqual(standard['types'], types)
         self.assertEqual(standard['functions'], functions)
-        self.assertEqual(standard['name'], 'lmcode_std_v1')
+        self.assertEqual(standard['lmcode.std'], 1)
         count = sum(len(overloads) for overloads in functions.values())
         count += sum(len(overloads) for item in types.values() for overloads in item['methods'].values())
         self.assertEqual(count, 69)
