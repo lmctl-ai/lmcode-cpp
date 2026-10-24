@@ -33,7 +33,7 @@ SHA-256 binding).
 | **Standard Library Conformance** | **Same Bytecode, Four Runtimes** |
 | --- | --- |
 | <img src="docs/images/stdlib-conformance.png" width="440"> | <img src="docs/images/same-bytecode-four-runtimes.png" width="440"> |
-| 68 stdlib vectors covering collections, math, string, and testing catalogs.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
+| 77 stdlib vectors covering collections, math, string, and testing catalogs.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
 
 ## Embedding it in twenty lines
 
@@ -97,7 +97,7 @@ Integer arithmetic is 64-bit two's complement and wraps; division and remainder 
 ## Test
 
     make test           # native runtime and optional string catalog tests
-    make conformance    # 51 core runtime vectors and 68 standard catalog vectors
+    make conformance    # 51 core runtime vectors and 77 standard catalog vectors
     make test-string-stdlib # stdlib/string.hpp unit cases and schema/registry/compiler signature parity
 
 ## Standard library catalog

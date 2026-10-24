@@ -57,7 +57,7 @@ Adapters must remain small and preserve ownership and meaning. A type needing st
 
 Read/write/append/lines reject directories and other nonregular objects. Every failure traps with `RUN_HOST` and base message `FUNCTION: PATH: REASON`, e.g. `file_read: missing.bin: No such file or directory`. PATH is the original path bytes (including embedded bytes in the diagnostic); REASON is the OS reason and is platform-dependent. Tests compare the function/path prefix and a nonempty reason, not localized OS wording. Short writes, read errors and flush/close errors trap; writes are not transactional and a failed write can leave a partial/truncated file. No arbitrary content-size cap is imposed.
 
-Paths are native OS paths used as given. Unix passes path bytes unchanged. Windows interprets VM path bytes as strict UTF-8, converts to UTF-16 and uses wide OS APIs; absolute drive/UNC paths use the extended-length prefix when required, and long relative paths are resolved against cwd first. Invalid UTF-8 on Windows and embedded NUL on every OS trap with the corresponding invalid-argument/OS conversion reason instead of silently truncating. The content byte-string contract is independent of path encoding.
+Paths are native OS paths used as given. Unix passes path bytes unchanged; the native filesystem can reject a name (for example APFS rejects invalid UTF-8 with EILSEQ), which traps with the OS reason. Windows interprets VM path bytes as strict UTF-8, converts to UTF-16 and uses wide OS APIs; absolute drive/UNC paths use the extended-length prefix when required, and long relative paths are resolved against cwd first. Invalid UTF-8 on Windows and embedded NUL on every OS trap with the corresponding invalid-argument/OS conversion reason instead of silently truncating. The content byte-string contract is independent of path encoding.
 
 Shared file vectors use a test-only `test_temp_dir() -> string` callback, declared in their manifest schema rather than std. Each vector runner creates a fresh temporary directory and cleans it after the case. Vectors cover empty/NUL/non-UTF-8 content, >1 MiB data, append, truncation, LF splitting, missing paths, directories and an unwritable path. An existing regular file used as an intermediate directory component provides a deterministic unwritable-path failure even when the test process is privileged. Optional testing callbacks remain explicitly registered by the vector runner.
 
@@ -177,8 +177,8 @@ Go exports collection types with snapshot `Values()`/`Entries()` accessors;
 C# exposes read-only `Values`/`Entries` views. Rust and C++ collection structs
 expose their item storage to host callbacks. Strings remain bytes at these boundaries.
 
-The shared suite contains 68 vectors: 18 string, 11 math, 32
-collection/optional-testing cases, and 7 file cases. `runtime_error_exact` pins error codes and complete
+The shared suite contains 77 vectors: 18 string, 11 math, 32
+collection/optional-testing cases, and 16 file cases. `runtime_error_exact` pins error codes and complete
 base messages after removal of an SDK source-location prefix. Captured print
 output is compared as hexadecimal bytes. The assertion comparison is exactly
 `abs(a-b) <= tolerance`: equal infinities fail because their difference is NaN;

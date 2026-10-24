@@ -138,6 +138,7 @@ inline Registry& register_file(Registry& r, Collections& arena) {
   });
   r.function("file_exists", {"string"}, "bool", [](Args& a) {
     const auto& path = a[0].s;
+    if (path.empty()) return Value::boolean(false);
     auto native = file_detail::native_path("file_exists", path);
     std::error_code ec;
     auto result = std::filesystem::status(native, ec);

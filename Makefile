@@ -94,5 +94,5 @@ $(BUILD)/stdlib_file_header.o: tests/stdlib_file_header.cpp include/dslvm.hpp $(
 	$(CXX) $(CXXFLAGS) -std=c++17 -Wall -Wextra -Werror -I include -c -o $@ tests/stdlib_file_header.cpp
 
 test-file-stdlib: $(BUILD)/stdlib_file_test $(BUILD)/stdlib_file_header.o
-	$(BUILD)/stdlib_file_test
+	python3 -c 'import subprocess,sys; subprocess.run([sys.argv[1]], check=True, timeout=60)' "$(abspath $(BUILD)/stdlib_file_test)"
 	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_file_test)" file

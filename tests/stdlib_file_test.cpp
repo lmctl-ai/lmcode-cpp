@@ -22,7 +22,15 @@ int main(int argc, char** argv) {
   std::error_code ec;
   check(std::filesystem::create_directory(root));
   const auto path = root / "bytes.bin";
-  auto call = [&](const std::string& signature, Args args) { return registry.function_by_signature(signature)->fn(args); };
+  unsigned operations = 0;
+  auto call = [&](const std::string& signature, Args args) {
+#ifdef _WIN32
+    std::cerr << "file operation " << ++operations << ": " << signature << std::endl;
+#else
+    (void)operations;
+#endif
+    return registry.function_by_signature(signature)->fn(args);
+  };
   const std::string binary("a\0\xff\nb\r\n", 7);
   call("fn file_write(string, string) -> void", {Value::string(path.string()), Value::string(binary)});
   check(call("fn file_exists(string) -> bool", {Value::string(path.string())}).b);
@@ -46,8 +54,16 @@ int main(int argc, char** argv) {
   check(relative_content == "created");
 #ifndef _WIN32
   const auto byte_path = root / std::string("name-\xff", 6);
-  call("fn file_write(string, string) -> void", {Value::string(byte_path.native()), Value::string(binary)});
-  check(call("fn file_read(string) -> string", {Value::string(byte_path.native())}).s == binary);
+  bool byte_path_created = false;
+  try {
+    call("fn file_write(string, string) -> void", {Value::string(byte_path.native()), Value::string(binary)});
+    byte_path_created = true;
+  } catch (const Error& e) {
+    // Native filesystems may reject byte paths (APFS reports EILSEQ).
+    const auto prefix = "file_write: " + byte_path.native() + ": ";
+    check(e.code == "RUN_HOST" && e.message.rfind(prefix, 0) == 0 && e.message.size() > prefix.size());
+  }
+  if (byte_path_created) check(call("fn file_read(string) -> string", {Value::string(byte_path.native())}).s == binary);
 #endif
   const auto empty = root / "empty";
   call("fn file_write(string, string) -> void", {Value::string(empty.string()), Value::string("")});
@@ -89,7 +105,9 @@ int main(int argc, char** argv) {
   check(call("fn file_read(string) -> string", {Value::string(unicode.u8string())}).s == "unicode");
   std::filesystem::path long_path = root;
   for (int i = 0; i < 20; ++i) long_path /= "long-directory-name";
+  std::cerr << "file long-directory setup" << std::endl;
   std::filesystem::create_directories(file_detail::native_path("test_setup", long_path.u8string()));
+  std::cerr << "file long-directory ready" << std::endl;
   long_path /= "long-file-name";
   const auto long_utf8 = long_path.u8string();
   call("fn file_write(string, string) -> void", {Value::string(long_utf8), Value::string("long")});
@@ -98,6 +116,9 @@ int main(int argc, char** argv) {
   try { call("fn file_exists(string) -> bool", {Value::string(std::string("\xff", 1))}); }
   catch (const Error& e) { failed = e.code == "RUN_HOST" && e.message.rfind("file_exists: ", 0) == 0; }
   check(failed);
+#endif
+#ifdef _WIN32
+  std::cerr << "file cleanup" << std::endl;
 #endif
   auto cleanup_root = root;
 #ifdef _WIN32
