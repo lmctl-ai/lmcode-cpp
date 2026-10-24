@@ -64,6 +64,10 @@ jobs:
           chmod +x .ci-bin/python3
           echo "$PWD/.ci-bin" >> "$GITHUB_PATH"
 
+      - name: matrix orchestration tests
+        if: runner.os == 'Linux'
+        run: bash scripts/test-matrix.sh
+
       - name: unit tests and string stdlib
         run: make test
 

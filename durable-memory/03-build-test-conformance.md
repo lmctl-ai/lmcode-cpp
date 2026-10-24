@@ -24,3 +24,26 @@ budget or limit.
 catalog unit tests and `tests/string-signature-parity.sh`, which compares the test host's canonical registry signatures with the
 published compiler's output for the fixture schema. Install `@lmctl-ai/lmctl` so `lmscript` is on `PATH`, or set `LMSCRIPT_BIN`
 to an explicit compiler executable.
+
+## Four-SDK verification matrix
+
+Run `scripts/matrix.sh` with sibling checkouts named `lmcode-cpp`, `lmcode-rust`,
+`lmcode-go`, and `lmcode-csharp`. An optional positional argument selects their
+parent directory; `LMCODE_CPP`, `LMCODE_RUST`, `LMCODE_GO`, and `LMCODE_CSHARP`
+override individual checkout paths. Paths containing spaces are supported.
+
+The script runs each SDK's full native tests, then its standalone runner against
+both the C++ checkout's core and string-catalog vectors. C# additionally builds
+Release with warnings as errors. It continues after a failed stage, prints one
+PASS/FAIL table, and exits nonzero if any stage failed. Builds run in the supplied
+checkouts; it does not pull, modify sources, or sync fixture copies.
+
+Install C++/make, Rust/Cargo, Go, .NET 8 and a matching `lmscript` compiler first.
+Compiler-parity skipping/fallback behavior remains controlled by each native test
+suite. Each SDK/stage has a separate log. Set `MATRIX_LOG_DIR` for a specific log
+directory, or `TMPDIR` for the parent of an automatically created log directory.
+`make conformance` also runs both the core and optional catalog suites locally.
+
+`scripts/test-matrix.sh` checks orchestration with isolated fake toolchains: success,
+nonzero test commands, missing checkouts, continuation after failure, and paths
+containing spaces. Linux CI runs these checks without requiring sibling clones.
