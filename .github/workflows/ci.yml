@@ -71,6 +71,9 @@ jobs:
       - name: canonical std schema and merge helper
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-merge-std.py
 
+      - name: generated std documentation
+        run: PYTHONDONTWRITEBYTECODE=1 python3 tests/test_std_docs.py
+
       - name: unit tests and string stdlib
         run: make test
 
