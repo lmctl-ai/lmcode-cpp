@@ -33,7 +33,7 @@ SHA-256 binding).
 | **Standard Library Conformance** | **Same Bytecode, Four Runtimes** |
 | --- | --- |
 | <img src="docs/images/stdlib-conformance.png" width="440"> | <img src="docs/images/same-bytecode-four-runtimes.png" width="440"> |
-| 77 stdlib vectors covering collections, math, string, and testing catalogs.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
+| 77 catalog vectors covering collections, math, string, file, and optional testing.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
 
 ## Embedding it in twenty lines
 
