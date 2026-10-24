@@ -5,7 +5,13 @@
 // The sink pointer is captured by the registered callbacks; when supplied it
 // must remain alive and writable for every call made through the registry. A
 // null sink selects std::cout at registration time.
+#ifndef DSLVM_STD_BUILDING
+#define DSLVM_STD_DEFER
+#endif
 #include "dslvm.hpp"
+#ifndef DSLVM_STD_BUILDING
+#undef DSLVM_STD_DEFER
+#endif
 #include <cmath>
 #include <iomanip>
 #include <locale>
@@ -33,6 +39,7 @@ inline void testing_assert_close(double a, double b, double tolerance) {
 }
 
 inline Registry& register_testing(Registry& r, std::ostream* sink = nullptr) {
+  if (r.has_std()) { r.set_std_output(sink); return r; }
   std::ostream* output = sink ? sink : &std::cout;
   r.function("print", {"string"}, "void", [output](Args& a) {
     testing_print(*output, a[0].s);
@@ -46,3 +53,7 @@ inline Registry& register_testing(Registry& r, std::ostream* sink = nullptr) {
 }
 
 } // namespace dslvm::stdlib
+
+#ifndef DSLVM_STD_BUILDING
+#include "std.hpp"
+#endif

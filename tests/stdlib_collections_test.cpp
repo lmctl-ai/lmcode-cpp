@@ -4,7 +4,7 @@
 using namespace dslvm;
 using namespace dslvm::stdlib;
 int main(int argc, char** argv) {
-  Collections arena; Registry r; register_collections(r, arena);
+  Collections arena; Registry r(StdMode::Disabled); register_collections(r, arena);
   if (argc == 2 && std::string(argv[1]) == "--signatures") { for (const auto& s : r.signatures()) std::cout << s << '\n'; return 0; }
   int checks = 0;
   auto check = [&](bool ok) { if (!ok) { std::cerr << "collection check " << checks + 1 << " failed\n"; std::abort(); } ++checks; };

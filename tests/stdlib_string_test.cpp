@@ -24,7 +24,7 @@ static std::string upper_chunk(const std::string& schema, const std::string& inp
 }
 
 int main(int argc, char** argv) {
-  dslvm::Registry reg; register_string(reg);
+  dslvm::Registry reg(dslvm::StdMode::Disabled); register_string(reg);
   if (argc == 2 && std::string(argv[1]) == "--signatures") {
     for (const auto& s : reg.signatures()) std::cout << s << '\n';
     return 0;

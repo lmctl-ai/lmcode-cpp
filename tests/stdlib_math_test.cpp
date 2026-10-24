@@ -4,7 +4,7 @@
 
 using namespace dslvm::stdlib;
 int main(int argc, char** argv) {
-  dslvm::Registry registry; register_math(registry);
+  dslvm::Registry registry(dslvm::StdMode::Disabled); register_math(registry);
   if (argc == 2 && std::string(argv[1]) == "--signatures") {
     for (const auto& signature : registry.signatures()) std::cout << signature << '\n';
     return 0;

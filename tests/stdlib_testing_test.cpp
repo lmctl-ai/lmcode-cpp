@@ -11,7 +11,7 @@ using namespace dslvm::stdlib;
 
 int main(int argc, char** argv) {
   std::ostringstream output;
-  dslvm::Registry registry;
+  dslvm::Registry registry(dslvm::StdMode::Disabled);
   register_testing(registry, &output);
   if (argc == 2 && std::string(argv[1]) == "--signatures") {
     for (const auto& signature : registry.signatures()) std::cout << signature << '\n';
