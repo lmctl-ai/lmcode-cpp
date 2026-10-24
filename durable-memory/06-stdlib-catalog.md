@@ -72,7 +72,7 @@ Common rules (every list and map type):
 - Elements are values by kind: `StrList` holds byte strings, `IntList` int64, `FloatList` binary64. Insertion order is preserved.
 - Index arguments are 0-based; an out-of-range `at`/`set` is a host error `"<Type>.<method>: index out of range: <i>"` (code `RUN_HOST`).
 - Objects are owned by a per-registration arena (C++: a `Collections` object the host keeps alive; Rust/Go/C#: the context object arena). A handle is valid for
-  the whole run and must not be shared between runs. Arena limit: 65536 objects, then host error `"<Type> object limit exceeded (65536)"`.
+  the whole run and must not be shared between runs. Arena limit: 65536 objects total across all four types, then host error `"<Type> object limit exceeded (65536)"`.
 - Mutators return the receiver (`returns: "<Type>"`) so calls chain. `clear()` keeps the object valid.
 
 | Type | Methods |
@@ -95,3 +95,5 @@ Constructors: `str_list()`, `int_list()`, `float_list()`, `str_map()` return a n
 
 C++ hosts vendor `include/dslvm.hpp` plus the stdlib headers they use (`stdlib/string.hpp`, `collections.hpp`, `math.hpp`, `testing.hpp`) through `scripts/sync-sdk.sh`,
 with every vendored file pinned (path, sha256) in `sdk.lock`. The host schema embeds the fragment entries unchanged; a host with a narrower type keeps it under its own name.
+
+C++ uses `dslvm::stdlib::Collections` with stable-address `std::deque` storage per type. Native hosts create objects through `make_str_list(values)`, `make_int_list(values)`, `make_float_list(values)` and `make_str_map()` so host-returned collections obey the same shared arena limit. List elements are in `.items`; maps store insertion-ordered key/value pairs in `.items`. `reset()` invalidates every handle and is permitted only between runs after all prior handles have expired. Collection `clear()` methods remove elements without freeing an arena slot or invalidating their receiver.

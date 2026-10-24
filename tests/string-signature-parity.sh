@@ -21,6 +21,7 @@ const root = process.argv[2], catalog = process.argv[3];
 const fixture = JSON.parse(fs.readFileSync(root + '/tests/' + catalog + '.schema.json'));
 const fragment = JSON.parse(fs.readFileSync(root + '/stdlib/' + catalog + '.schema-fragment.json'));
 assert.deepStrictEqual(fixture.functions, fragment.functions, 'test schema differs from shipped catalog fragment');
+assert.deepStrictEqual(fixture.types || {}, fragment.types || {}, 'test types differ from shipped catalog fragment');
 JS_CHECK
 "${COMPILER[@]}" --dsl-signatures "$ROOT/tests/$CATALOG.schema.json" > "$WORK/compiler-signatures"
 "$HOST" --signatures > "$WORK/host-signatures"

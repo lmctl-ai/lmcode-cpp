@@ -179,3 +179,5 @@ The same bytecode v5 and the same conformance vectors are implemented by [lmcode
 
 Optional catalog conformance fixtures and their portable byte-tracing host contract are in
 [`conformance/stdlib-vectors`](conformance/stdlib-vectors/README.md).
+
+The optional `stdlib/collections.hpp` catalog registers byte-string, int64 and binary64 lists plus insertion-ordered string maps through `register_collections(registry, arena)`. Keep a `dslvm::stdlib::Collections` arena alive for the run; its native `make_*` helpers let host callbacks return the same collection types. `stdlib/testing.hpp` provides `print` and `assert_close` through `register_testing(registry, optional_output_sink)`. Copy the matching schema fragments into the host schema. `make test` checks collection/testing behavior and compiler signature parity.
