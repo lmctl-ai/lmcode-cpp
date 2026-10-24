@@ -7,7 +7,9 @@
 // null sink selects std::cout at registration time.
 #include "dslvm.hpp"
 #include <cmath>
-#include <cstdio>
+#include <iomanip>
+#include <locale>
+#include <sstream>
 #include <iostream>
 #include <ostream>
 #include <string>
@@ -23,9 +25,11 @@ inline void testing_assert_close(double a, double b, double tolerance) {
   // Keep this deliberately as an explicit comparison: equal infinities
   // subtract to NaN and therefore fail, as do NaN operands and tolerances.
   if (std::fabs(a - b) <= tolerance) return;
-  char message[160];
-  std::snprintf(message, sizeof(message), "assert_close failed: %.15g vs %.15g (tol %.15g)", a, b, tolerance);
-  throw Error(message);
+  // Match %.15g in the C locale without reading or changing the host's locale.
+  std::ostringstream message;
+  message.imbue(std::locale::classic());
+  message << std::setprecision(15) << "assert_close failed: " << a << " vs " << b << " (tol " << tolerance << ")";
+  throw Error(message.str());
 }
 
 inline Registry& register_testing(Registry& r, std::ostream* sink = nullptr) {

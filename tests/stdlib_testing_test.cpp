@@ -1,6 +1,7 @@
 #include "../stdlib/testing.hpp"
 #include <cassert>
 #include <cmath>
+#include <clocale>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -46,5 +47,21 @@ int main(int argc, char** argv) {
     try { close->fn(const_cast<dslvm::Args&>(args)); check(false); }
     catch (const dslvm::Error&) { ++passed; }
   }
+  // Native host locales must not alter the shared diagnostic contract.
+  const std::string original_numeric = std::setlocale(LC_NUMERIC, nullptr);
+  int locales_checked = 0;
+  for (const char* locale : {"C", "C.utf8", "de_DE.UTF-8", "fr_FR.UTF-8", "German_Germany.1252"}) {
+    if (!std::setlocale(LC_NUMERIC, locale)) continue;
+    const std::string active = std::setlocale(LC_NUMERIC, nullptr);
+    try { testing_assert_close(1.5, 2.5, 0.25); check(false); }
+    catch (const dslvm::Error& e) {
+      check(e.code == "RUN_HOST" && e.message == "assert_close failed: 1.5 vs 2.5 (tol 0.25)");
+    }
+    check(active == std::setlocale(LC_NUMERIC, nullptr));
+    ++locales_checked;
+  }
+  std::setlocale(LC_NUMERIC, original_numeric.c_str());
+  std::cout << "assertion formatting checked in " << locales_checked << " locales\n";
+  testing_assert_close(inf, -inf, inf); check(true);
   std::cout << "stdlib testing: " << passed << " checks passed\n";
 }
