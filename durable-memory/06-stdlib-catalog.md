@@ -62,3 +62,36 @@ Integer domain errors have code `RUN_HOST`, with exact messages `math_pow: integ
 For float powers, any base to either signed zero exponent and base `+1` to any exponent return `1`, including NaN operands. Base `-1` to an infinite exponent also returns `1`. Other NaN inputs produce NaN. Finite negative bases with non-integral finite exponents produce NaN; signed-zero powers retain the IEEE odd-integer sign rules. Overflow produces signed infinity and underflow produces signed zero or a representable subnormal. Float operations retain infinity and NaN classification; NaN payload and sign are not part of the catalog contract. Finite non-exact libm results use the shared 1e-12 relative trace tolerance, rather than requiring cross-platform bit identity.
 
 The 11 `math-*.dsl` vectors in `conformance/stdlib-vectors/` use `math.schema.json` and compiler-emitted bytecode. They cover every overload, wrapping arithmetic, exact large integer roots, ties-away rounding, NaN rules, signed zero and located domain errors. Together with the 18 string vectors, the optional catalog suite contains 29 vectors.
+
+## Collections catalog (schema proposal)
+
+Collections are ordinary schema object types with methods; `len()` and `at(i)` make them `foreach`-able. No compiler or VM change.
+A fragment (`stdlib/collections.schema-fragment.json`) declares `types` and `functions`; each SDK ships `register_collections`.
+
+Common rules (every list and map type):
+- Elements are values by kind: `StrList` holds byte strings, `IntList` int64, `FloatList` binary64. Insertion order is preserved.
+- Index arguments are 0-based; an out-of-range `at`/`set` is a host error `"<Type>.<method>: index out of range: <i>"` (code `RUN_HOST`).
+- Objects are owned by a per-registration arena (C++: a `Collections` object the host keeps alive; Rust/Go/C#: the context object arena). A handle is valid for
+  the whole run and must not be shared between runs. Arena limit: 65536 objects, then host error `"<Type> object limit exceeded (65536)"`.
+- Mutators return the receiver (`returns: "<Type>"`) so calls chain. `clear()` keeps the object valid.
+
+| Type | Methods |
+| --- | --- |
+| `StrList` | `len() -> int`, `at(int) -> string`, `add(string) -> StrList`, `set(int, string) -> StrList`, `contains(string) -> bool`, `index_of(string) -> int` (-1 if absent), `join(string) -> string`, `clear() -> StrList` |
+| `IntList` | `len`, `at(int) -> int`, `add(int)`, `set(int, int)`, `contains(int)`, `index_of(int)`, `clear()` |
+| `FloatList` | same as `IntList` with `float`; `contains`/`index_of` use `==` (NaN never matches) |
+| `StrMap` | `len() -> int`, `has(string) -> bool`, `get(string) -> string` (missing key: host error `"StrMap.get: missing key"`), `get_or(string, string) -> string`, `set(string, string) -> StrMap` (existing key keeps its position), `key_at(int) -> string` (insertion order), `remove(string) -> bool` (later keys shift up), `clear() -> StrMap` |
+
+Constructors: `str_list()`, `int_list()`, `float_list()`, `str_map()` return a new empty object.
+`str_split(string, string) -> StrList`: splits on every non-overlapping occurrence of a non-empty separator, left to right, byte-wise; `"a,,b"` gives `["a","","b"]`,
+`""` gives `[""]`, an empty separator is a host error `"str_split: separator must not be empty"`. No numeric `join` (float formatting is not part of the collection contract).
+
+## Testing catalog
+
+`print(string) -> void` writes the bytes plus `\n` to the host's output sink (stdout by default; the sink is replaceable so vectors can capture it).
+`assert_close(float, float, float) -> void` is a host error `"assert_close failed: <a> vs <b> (tol <t>)"` (floats formatted `%.15g`) unless `|a-b| <= tol`; NaN on either side fails.
+
+## Host adoption
+
+C++ hosts vendor `include/dslvm.hpp` plus the stdlib headers they use (`stdlib/string.hpp`, `collections.hpp`, `math.hpp`, `testing.hpp`) through `scripts/sync-sdk.sh`,
+with every vendored file pinned (path, sha256) in `sdk.lock`. The host schema embeds the fragment entries unchanged; a host with a narrower type keeps it under its own name.
