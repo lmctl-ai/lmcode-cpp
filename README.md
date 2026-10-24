@@ -61,8 +61,8 @@ int main(int argc, char** argv) {
 ```
 
 `Registry` is declared with the schema's types (parameter types and return type, as strings); a name may have several overloads with distinct parameter tuples, while registering the same parameter tuple twice is refused. `load()` resolves canonical import signatures (including parameter and return types), and refuses a file whose imports the registry does not provide, before anything runs. `reg.signatures()` lists the
-sorted canonical strings (`context g: Greeter`, `fn now() -> string`, `method Greeter.say(string) -> void`), exactly what
-`lmscript --dsl-signatures SCHEMA` prints, so a host's test diffs the two sources of truth. That is a consistency
+sorted canonical strings, including the built-in standard. Compare them with `lmscript --dsl-signatures`
+for the merged schema, or use `matches_schema_signatures(...)` with a host-only schema. That is a consistency
 check, not a defense: by design the VM performs no comprehensive call-time argument or return checks; it still checks method receiver kinds and other defensive VM invariants. Bytecode is trusted like the host's
 own code. `Value` carries `INT` (int64), `FLOAT` (binary64), `STR`, `BOOL` and `OBJ` (a host pointer plus the schema type name); a
 void method returns `Value::none()`. Host code throws `dslvm::Error` to report a run-time failure.
@@ -97,18 +97,18 @@ Integer arithmetic is 64-bit two's complement and wraps; division and remainder 
 ## Test
 
     make test           # native runtime and optional string catalog tests
-    make conformance    # core runtime vectors and all 18 string catalog vectors
+    make conformance    # 51 core runtime vectors and 61 standard catalog vectors
     make test-string-stdlib # stdlib/string.hpp unit cases and schema/registry/compiler signature parity
 
 ## Standard library catalog
 
-`stdlib/` contains optional declarations and binders that host authors can copy into their schema and registry. They are ordinary
-host functions; the compiler and VM do not provide or special-case them. The first catalog is `stdlib/string.hpp` with its exact
-`functions` fragment in `stdlib/string.schema-fragment.json`:
+`stdlib/` implements the built-in standard installed by every default registry. The canonical
+`std/lmcode-std.schema.json` supplies declarations to the current compiler through the merge helper.
+The individual fragments and group binders remain available for manual opted-out registries:
 
 ```cpp
 #include "stdlib/string.hpp"
-dslvm::Registry registry;
+dslvm::Registry registry(dslvm::StdMode::Disabled);
 dslvm::stdlib::register_string(registry);
 ```
 
@@ -189,10 +189,10 @@ The same bytecode v5 and the same conformance vectors are implemented by [lmcode
 [lmcode-rust](https://github.com/lmctl-ai/lmcode-rust), [lmcode-go](https://github.com/lmctl-ai/lmcode-go) and
 [lmcode-csharp](https://github.com/lmctl-ai/lmcode-csharp). Each is a library that turns an AOT executable into an lmscript host.
 
-Optional catalog conformance fixtures and their portable byte-tracing host contract are in
+Standard catalog conformance fixtures and their portable byte-tracing host contract are in
 [`conformance/stdlib-vectors`](conformance/stdlib-vectors/README.md).
 
-The optional `stdlib/collections.hpp` catalog registers byte-string, int64 and binary64 lists plus insertion-ordered string maps through `register_collections(registry, arena)`. Keep a `dslvm::stdlib::Collections` arena alive for the run; its native `make_*` helpers let host callbacks return the same collection types. `stdlib/testing.hpp` provides `print` and `assert_close` through `register_testing(registry, optional_output_sink)`. Copy the matching schema fragments into the host schema. `make test` checks collection/testing behavior and compiler signature parity.
+`stdlib/collections.hpp` provides byte-string, int64 and binary64 lists plus insertion-ordered string maps. Default registries own their arena; native callbacks use `registry.std_collections().make_*` to return standard values valid for the run. `stdlib/testing.hpp` provides built-in `print` and `assert_close`. `make test` checks all catalog behavior and compiler signature parity.
 
 ## Built-in lmcode std
 

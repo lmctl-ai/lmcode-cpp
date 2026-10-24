@@ -124,6 +124,7 @@ int main(int argc, char** argv) {
   // a host exception, and prevents re-entering a live registry run.
   const std::string schema = "{\"dsl.schema\":1,\"name\":\"std-default-test\"}";
   Registry runtime;
+  Registry alternate(StdMode::Disabled);
   Program* active = nullptr;
   int callbacks = 0;
   bool nested_refused = false;
@@ -133,7 +134,7 @@ int main(int argc, char** argv) {
     check(args.size() == 1 && args[0].kind == Value::OBJ);
     check(runtime.std_collections().size() == 1);
     if (active && callbacks == 1) {
-      try { Context nested; active->run(nested, runtime); }
+      try { Context nested; active->run(nested, alternate); }
       catch (const Error& e) { nested_refused = e.code == "RUN_HOST"; }
     }
     if (throw_on_callback) throw Error("callback failure");
@@ -150,6 +151,18 @@ int main(int argc, char** argv) {
   bool callback_failed = false;
   try { fixture.run(empty, runtime); } catch (const Error& e) { callback_failed = e.message == "callback failure"; }
   check(callback_failed && runtime.std_collections().size() == 0);
+
+  throw_on_callback = false;
+  fixture.run(empty, alternate);
+  check(runtime.std_collections().size() == 0);
+  Registry copied = runtime;
+  {
+    auto active_scope = runtime.std_run_scope();
+    bool copy_refused = false;
+    try { auto overlap = copied.std_run_scope(); (void)overlap; }
+    catch (const Error& e) { copy_refused = e.code == "RUN_HOST"; }
+    check(copy_refused);
+  }
 
   // Existing duplicate declarations still fail rather than silently replacing
   // a standard implementation.

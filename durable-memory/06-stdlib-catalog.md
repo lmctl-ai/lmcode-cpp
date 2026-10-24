@@ -35,7 +35,7 @@ Until compiler injection is released, migrated hosts keep only host declarations
 
 ### Collection lifetime and native adapters
 
-A default registry owns its std collection arena. A run starts with an empty arena and clears it on success or exception; list/map handles are valid only during that run. All four collection types share the existing 65,536-allocation budget. Clearing an object does not reclaim an allocation slot. Registry copies sharing runtime state cannot execute overlapping/nested runs; SDKs must reject such reuse rather than invalidate live handles. Separate registries can execute independent runs.
+A default registry owns its std collection arena. A run starts with an empty arena and clears it on success or exception; list/map handles are valid only during that run. All four collection types share the existing 65,536-allocation budget. Clearing an object does not reclaim an allocation slot. Registry copies sharing runtime state cannot execute overlapping/nested runs; SDKs must reject such reuse rather than invalidate live handles. The guard is shared and atomic; a loaded program guards its bound standard state even when the run call supplies another registry. Separate registries can execute independent runs.
 
 C++ native callbacks create lists/maps through `registry.std_collections().make_*` while a run is active. Host-owned context values can be exposed through a small value-copy adapter; a copied list is an independent snapshot and mutations do not modify its source. The existing explicit `Collections` binder remains a manual/opt-out compatibility API, but default std no longer needs a host arena member. `foreach` continues to use the built-in `len` and `at` methods.
 
