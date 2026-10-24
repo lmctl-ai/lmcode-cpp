@@ -2,11 +2,12 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOST="${1:-$ROOT/build/stdlib_string_test}"
+CATALOG="${2:-string}"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/dsl-string-signatures-XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 if [[ -n "${LMSCRIPT_BIN:-}" ]]; then
   COMPILER=("$LMSCRIPT_BIN")
-elif command -v lmscript >/dev/null 2>&1 && lmscript --dsl-signatures "$ROOT/tests/string.schema.json" > /dev/null 2>&1; then
+elif command -v lmscript >/dev/null 2>&1 && lmscript --dsl-signatures "$ROOT/tests/$CATALOG.schema.json" > /dev/null 2>&1; then
   COMPILER=(lmscript)
 elif command -v npx >/dev/null 2>&1; then
   COMPILER=(npx --yes --package=@lmctl-ai/lmctl -- lmscript)
@@ -14,14 +15,14 @@ else
   echo "fail: signature parity needs a compiler with --dsl-signatures; install @lmctl-ai/lmctl, provide npx, or set LMSCRIPT_BIN" >&2
   exit 2
 fi
-node - "$ROOT" <<'JS_CHECK'
+node - "$ROOT" "$CATALOG" <<'JS_CHECK'
 const fs = require('fs'), assert = require('assert');
-const root = process.argv[2];
-const fixture = JSON.parse(fs.readFileSync(root + '/tests/string.schema.json'));
-const fragment = JSON.parse(fs.readFileSync(root + '/stdlib/string.schema-fragment.json'));
+const root = process.argv[2], catalog = process.argv[3];
+const fixture = JSON.parse(fs.readFileSync(root + '/tests/' + catalog + '.schema.json'));
+const fragment = JSON.parse(fs.readFileSync(root + '/stdlib/' + catalog + '.schema-fragment.json'));
 assert.deepStrictEqual(fixture.functions, fragment.functions, 'test schema differs from shipped catalog fragment');
 JS_CHECK
-"${COMPILER[@]}" --dsl-signatures "$ROOT/tests/string.schema.json" > "$WORK/compiler-signatures"
+"${COMPILER[@]}" --dsl-signatures "$ROOT/tests/$CATALOG.schema.json" > "$WORK/compiler-signatures"
 "$HOST" --signatures > "$WORK/host-signatures"
 # Native Windows C++ stdout uses CRLF; Node emits LF. Compare logical lines,
 # preserving every signature byte (including lone CRs) and the final newline.
@@ -33,4 +34,4 @@ for (const path of process.argv.slice(2)) {
 }
 JS_EOL
 diff -u "$WORK/compiler-signatures.lf" "$WORK/host-signatures.lf"
-echo "string catalog compiler/registry parity passed"
+echo "$CATALOG catalog compiler/registry parity passed"

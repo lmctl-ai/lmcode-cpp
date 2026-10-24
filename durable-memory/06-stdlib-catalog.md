@@ -43,3 +43,22 @@ convert explicitly (validated or lossy). Rust follows the same rule with a byte-
 `conformance/stdlib-vectors/` holds language-neutral cases: `NAME.dsl` (source), `NAME.dslb` (bytecode compiled by `lmscript` against the
 catalog schema), `NAME.expect` (expected output or error) and a manifest entry. The runner registers the full string catalog and compares
 results, so every SDK that ships a catalog function must pass the vectors that use it. Failure errors use the same codes as the main vectors.
+
+## Math functions (`math_*`)
+
+`stdlib/math.hpp` and `stdlib/math.schema-fragment.json` define eight ordinary host function names, each overloaded for `int` and `float` (16 canonical signatures). Unary functions return their argument type; binary functions take two arguments of the same type and return that type. Call `dslvm::stdlib::register_math(registry)` once. The prefix avoids compiler built-in names; these functions add no opcodes or implicit numeric conversions.
+
+| Name | int overload | float overload |
+| --- | --- | --- |
+| `math_abs` | two's-complement wrapping absolute value; `INT64_MIN` remains `INT64_MIN` | absolute value, clearing the sign of zero |
+| `math_min`, `math_max` | signed comparison | either NaN propagates; equal operands, including signed zeros, return the first argument |
+| `math_floor`, `math_ceil` | identity | round toward negative/positive infinity; preserve signed zero |
+| `math_round` | identity | nearest integer-valued binary64, halfway away from zero; preserve signed zero |
+| `math_pow` | exponentiation by squaring modulo 2^64; exponent must be nonnegative; `0^0 = 1` | IEEE/libm power, with the NaN exceptions below |
+| `math_sqrt` | exact floor square root; argument must be nonnegative | IEEE square root; negative values produce NaN, `-0` remains `-0` |
+
+Integer domain errors have code `RUN_HOST`, with exact messages `math_pow: integer exponent must be nonnegative` and `math_sqrt: integer argument must be nonnegative`. Integer floor/ceil/round never convert through floating point. Integer square root uses integer comparisons without squaring overflow; values adjacent to large perfect squares remain exact.
+
+For float powers, any base to either signed zero exponent and base `+1` to any exponent return `1`, including NaN operands. Base `-1` to an infinite exponent also returns `1`. Other NaN inputs produce NaN. Finite negative bases with non-integral finite exponents produce NaN; signed-zero powers retain the IEEE odd-integer sign rules. Overflow produces signed infinity and underflow produces signed zero or a representable subnormal. Float operations retain infinity and NaN classification; NaN payload and sign are not part of the catalog contract. Finite non-exact libm results use the shared 1e-12 relative trace tolerance, rather than requiring cross-platform bit identity.
+
+The 11 `math-*.dsl` vectors in `conformance/stdlib-vectors/` use `math.schema.json` and compiler-emitted bytecode. They cover every overload, wrapping arithmetic, exact large integer roots, ties-away rounding, NaN rules, signed zero and located domain errors. Together with the 18 string vectors, the optional catalog suite contains 29 vectors.

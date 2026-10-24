@@ -3,6 +3,7 @@
 // Usage: build/conformance conformance/vectors
 #include "dslvm.hpp"
 #include "../stdlib/string.hpp"
+#include "../stdlib/math.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -24,6 +25,7 @@ struct Stub {
   Stub() {
     using namespace dslvm;
     stdlib::register_string(reg);
+    stdlib::register_math(reg);
     // Portable fixture adapter: raw bytes are supplied independently of UTF-8
     // source literals, and binary results are traced as unambiguous hex.
     reg.function("bytes", {"string"}, "string", [](Args& a) {

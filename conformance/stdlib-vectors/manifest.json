@@ -291,6 +291,199 @@
           "message": "str_repeat: count must be nonnegative and result at most 67108864 bytes"
         }
       }
+    },
+    {
+      "name": "math-abs",
+      "schema": "math.schema.json",
+      "source": "math-abs.dsl",
+      "bytecode": "math-abs.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "int 7",
+          "int -9223372036854775808",
+          "float 2.5",
+          "float 0"
+        ]
+      }
+    },
+    {
+      "name": "math-min",
+      "schema": "math.schema.json",
+      "source": "math-min.dsl",
+      "bytecode": "math-min.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "int -7",
+          "float -3.5",
+          "float -0",
+          "float 0"
+        ]
+      }
+    },
+    {
+      "name": "math-max",
+      "schema": "math.schema.json",
+      "source": "math-max.dsl",
+      "bytecode": "math-max.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "int 3",
+          "float 2.5",
+          "float -0",
+          "float 0"
+        ]
+      }
+    },
+    {
+      "name": "math-floor",
+      "schema": "math.schema.json",
+      "source": "math-floor.dsl",
+      "bytecode": "math-floor.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "int -9223372036854775808",
+          "float -2",
+          "float 1",
+          "float -0"
+        ]
+      }
+    },
+    {
+      "name": "math-ceil",
+      "schema": "math.schema.json",
+      "source": "math-ceil.dsl",
+      "bytecode": "math-ceil.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "int 9223372036854775807",
+          "float -1",
+          "float 2",
+          "float -0"
+        ]
+      }
+    },
+    {
+      "name": "math-round",
+      "schema": "math.schema.json",
+      "source": "math-round.dsl",
+      "bytecode": "math-round.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "int 9223372036854775807",
+          "float -1",
+          "float 1",
+          "float -0",
+          "float 4.5035996273705e+15"
+        ]
+      }
+    },
+    {
+      "name": "math-pow",
+      "schema": "math.schema.json",
+      "source": "math-pow.dsl",
+      "bytecode": "math-pow.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "int 1",
+          "int -9223372036854775808",
+          "int 0",
+          "int -8",
+          "float 8",
+          "float -0",
+          "float -inf"
+        ]
+      }
+    },
+    {
+      "name": "math-sqrt",
+      "schema": "math.schema.json",
+      "source": "math-sqrt.dsl",
+      "bytecode": "math-sqrt.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "int 0",
+          "int 4",
+          "int 3037000499",
+          "int 3037000498",
+          "float 2",
+          "~ float 1.4142135623730951",
+          "float -0"
+        ]
+      }
+    },
+    {
+      "name": "math-nan",
+      "schema": "math.schema.json",
+      "source": "math-nan.dsl",
+      "bytecode": "math-nan.dslb",
+      "mutated": false,
+      "covers": "math catalog integer/float overloads and edge semantics",
+      "expect": {
+        "trace": [
+          "bool true",
+          "bool true",
+          "bool true",
+          "bool true",
+          "bool true",
+          "bool true",
+          "bool true",
+          "bool true",
+          "bool true",
+          "bool true",
+          "float 1",
+          "float 1",
+          "float 1",
+          "float inf"
+        ]
+      }
+    },
+    {
+      "name": "math-pow-negative",
+      "schema": "math.schema.json",
+      "source": "math-pow-negative.dsl",
+      "bytecode": "math-pow-negative.dslb",
+      "mutated": false,
+      "covers": "invalid integer math domain reports located host error",
+      "expect": {
+        "runtime_error_at": {
+          "code": "RUN_HOST",
+          "line": 2,
+          "column": 7,
+          "message": "math_pow: integer exponent must be nonnegative"
+        }
+      }
+    },
+    {
+      "name": "math-sqrt-negative",
+      "schema": "math.schema.json",
+      "source": "math-sqrt-negative.dsl",
+      "bytecode": "math-sqrt-negative.dslb",
+      "mutated": false,
+      "covers": "invalid integer math domain reports located host error",
+      "expect": {
+        "runtime_error_at": {
+          "code": "RUN_HOST",
+          "line": 2,
+          "column": 7,
+          "message": "math_sqrt: integer argument must be nonnegative"
+        }
+      }
     }
   ]
 }
