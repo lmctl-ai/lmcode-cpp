@@ -1,15 +1,41 @@
-# lmcode-cpp notes
+# lmcode-cpp durable memory
 
-This repository contains a header-only C++ runtime, native tests, and language-neutral conformance fixtures for lmscript bytecode.
-It is experimental. The current SDK and bytecode format version is 5; other versions are refused.
+This repository contains the canonical, header-only C++ runtime (`cpp/dslvm.hpp`), native tests, standard library catalog modules, and language-neutral conformance fixtures for lmscript bytecode (format version 5).
+Repository: https://github.com/lmctl-ai/lmcode-cpp.
+
+## 60-second takeover
+
+```sh
+make test                             # Unit tests, assembler checks, string catalog tests
+make conformance                      # Run language-neutral conformance vectors (51/51)
+scripts/matrix.sh                     # Cross-SDK verification across cpp, rust, go, csharp
+```
+
+## Document map
 
 | File | Contents |
 | --- | --- |
-| [01-purpose-and-place.md](01-purpose-and-place.md) | Host integration and the role of the conformance fixtures |
-| [02-architecture-and-decisions.md](02-architecture-and-decisions.md) | Public API, format overview, verifier and runtime decisions |
-| [03-build-test-conformance.md](03-build-test-conformance.md) | Build commands, tests, fixtures, and optional string catalog |
-| [04-gotchas-and-limits.md](04-gotchas-and-limits.md) | Versioning, trust model, vendoring, and host responsibilities |
-| [05-open-items.md](05-open-items.md) | Possible future improvements |
-| [06-stdlib-catalog.md](06-stdlib-catalog.md) | Catalog contract, byte-string rule, adding functions, stdlib vectors |
+| [01-purpose-and-place.md](01-purpose-and-place.md) | Host integration, architecture role, and conformance vector suite |
+| [02-architecture-and-decisions.md](02-architecture-and-decisions.md) | Public C++ API, bytecode verifier, VM dispatch loop, memory semantics |
+| [03-build-test-conformance.md](03-build-test-conformance.md) | Build targets, test runner, vector manifests, and 4-SDK verification matrix |
+| [04-gotchas-and-limits.md](04-gotchas-and-limits.md) | Bytecode format versioning, trust boundaries, vendoring contracts |
+| [05-open-items.md](05-open-items.md) | Backlog, potential optimizations, and future format versions |
+| [06-stdlib-catalog.md](06-stdlib-catalog.md) | Catalog contract, standard library modules, byte-string rules, vector authoring |
 
-The root README has the embedding example, command summary, catalog reference, and license.
+## Adding a conformance vector or function
+
+### Adding a conformance vector
+1. Create a vector folder under `conformance/vectors/<suite>/<name>/`.
+2. Provide source file, compiled bytecode v5, expected stdout/trace, and `manifest.json`.
+3. Run `make conformance` to ensure the vector passes in the C++ test runner.
+4. Run `scripts/matrix.sh` to verify cross-SDK conformance across Go, Rust, and C#.
+
+### Adding a stdlib catalog function
+1. Define function signature in `stdlib/<domain>/schema.json`.
+2. Implement typed C++ binder in `stdlib/<domain>/<domain>.hpp`.
+3. Add unit test under `tests/` and run `make test`.
+
+## Releases and host vendoring
+
+`lmcode-cpp` is a header-only SDK. Releases and tags correspond to bytecode format and SDK versions. Downstream lmscript hosts vendor `cpp/dslvm.hpp` directly into their trees (usually at `cpp/dslvm.hpp` or `sdk/dslvm.hpp`) and pin the exact commit and sha256 in `sdk.lock`.
+Continuous Integration tests all pushes across 5 platforms: Linux x64/arm64, macOS arm64/x64, and Windows x64.
