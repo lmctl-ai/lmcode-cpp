@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include "fixture_fs.hpp"
 
 using namespace dslvm;
 using namespace dslvm::stdlib;
@@ -120,16 +121,7 @@ int main(int argc, char** argv) {
 #ifdef _WIN32
   std::cerr << "file cleanup" << std::endl;
 #endif
-  auto cleanup_root = root;
-#ifdef _WIN32
-  auto cleanup_wide = std::filesystem::absolute(root).make_preferred().native();
-  if (cleanup_wide.rfind(L"\\\\?\\", 0) != 0) {
-    if (cleanup_wide.rfind(L"\\\\", 0) == 0) cleanup_wide = L"\\\\?\\UNC" + cleanup_wide.substr(1);
-    else cleanup_wide = L"\\\\?\\" + cleanup_wide;
-  }
-  cleanup_root = std::filesystem::path(cleanup_wide);
-#endif
-  std::filesystem::remove_all(cleanup_root, ec);
+  fixture_fs::remove_tree(root, ec);
   check(!ec);
   std::cout << "stdlib file: " << checks << " checks passed\n";
 }

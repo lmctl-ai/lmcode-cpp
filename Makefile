@@ -9,7 +9,7 @@ $(BUILD)/dslvm_test: tests/dslvm_test.cpp include/dslvm.hpp
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -I include -o $@ tests/dslvm_test.cpp
 
-$(BUILD)/conformance: conformance/run.cpp include/dslvm.hpp stdlib/string.hpp stdlib/math.hpp stdlib/collections.hpp stdlib/testing.hpp
+$(BUILD)/conformance: conformance/run.cpp tests/fixture_fs.hpp include/dslvm.hpp stdlib/string.hpp stdlib/math.hpp stdlib/collections.hpp stdlib/testing.hpp
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -I include -o $@ conformance/run.cpp
 
@@ -85,7 +85,7 @@ test-std: $(BUILD)/stdlib_default_test
 	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_default_test)" std
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_std_schema.py
 
-$(BUILD)/stdlib_file_test: tests/stdlib_file_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+$(BUILD)/stdlib_file_test: tests/stdlib_file_test.cpp tests/fixture_fs.hpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -I include -o $@ tests/stdlib_file_test.cpp
 

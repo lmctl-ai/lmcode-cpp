@@ -18,6 +18,7 @@
 #include <chrono>
 #include <sstream>
 #include <vector>
+#include "../tests/fixture_fs.hpp"
 
 // Fixture setup uses native long paths on Windows independently of the catalog
 // under test; the DSL still receives ordinary absolute paths.
@@ -38,7 +39,7 @@ struct TempCleanup {
   bool clean() {
     if (done || directory.empty()) return true;
     std::error_code error;
-    std::filesystem::remove_all(fixture_native_path(std::filesystem::u8path(directory)), error);
+    fixture_fs::remove_tree(std::filesystem::u8path(directory), error);
     done = !error;
     return done;
   }
