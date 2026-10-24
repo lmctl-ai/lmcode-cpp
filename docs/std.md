@@ -6,11 +6,11 @@ Canonical signatures: 72.
 | --- | --- | --- | --- |
 | `fn file_append(string, string) -> void` | file | Create or append all raw bytes to a regular file. | FUNCTION: PATH: OS reason |
 | `fn file_exists(string) -> bool` | file | Return true only when metadata identifies a regular file; missing and nonregular paths return false. | FUNCTION: PATH: OS reason |
-| `fn file_lines(string) -> StrList` | file | Read raw bytes and split on LF, preserving CR, empty fields, and the final field. | FUNCTION: PATH: OS reason |
+| `fn file_lines(string) -> StrList` | file | Read raw bytes and split on LF, preserving CR, empty fields, and the final field. | FUNCTION: PATH: OS reason; StrList object limit exceeded (65536) |
 | `fn file_read(string) -> string` | file | Read a complete regular file as raw bytes. | FUNCTION: PATH: OS reason |
 | `fn file_write(string, string) -> void` | file | Create or truncate a regular file and write all raw bytes. | FUNCTION: PATH: OS reason |
-| `fn float_list() -> FloatList` | collections | Construct an empty FloatList in the active collection arena. | — |
-| `fn int_list() -> IntList` | collections | Construct an empty IntList in the active collection arena. | — |
+| `fn float_list() -> FloatList` | collections | Construct an empty FloatList in the active collection arena. | FloatList object limit exceeded (65536) |
+| `fn int_list() -> IntList` | collections | Construct an empty IntList in the active collection arena. | IntList object limit exceeded (65536) |
 | `fn math_abs(float) -> float` | math | Absolute value; integer arithmetic wraps, and float signed zero is cleared. | — |
 | `fn math_abs(int) -> int` | math | Absolute value; integer arithmetic wraps, and float signed zero is cleared. | — |
 | `fn math_ceil(float) -> float` | math | Identity for int; ceiling for binary64 while preserving signed zero. | — |
@@ -21,25 +21,25 @@ Canonical signatures: 72.
 | `fn math_max(int, int) -> int` | math | Maximum; integer comparison, or NaN propagation with first-operand ties for floats. | — |
 | `fn math_min(float, float) -> float` | math | Minimum; integer comparison, or NaN propagation with first-operand ties for floats. | — |
 | `fn math_min(int, int) -> int` | math | Minimum; integer comparison, or NaN propagation with first-operand ties for floats. | — |
-| `fn math_pow(float, float) -> float` | math | Integer exponentiation wraps modulo 2^64; float power follows IEEE/libm special cases. | math_pow: integer exponent must be nonnegative |
-| `fn math_pow(int, int) -> int` | math | Integer exponentiation wraps modulo 2^64; float power follows IEEE/libm special cases. | math_pow: integer exponent must be nonnegative |
+| `fn math_pow(float, float) -> float` | math | Float power follows IEEE/libm special cases. | — |
+| `fn math_pow(int, int) -> int` | math | Integer exponentiation wraps modulo 2^64; the exponent must be nonnegative. | math_pow: integer exponent must be nonnegative |
 | `fn math_round(float) -> float` | math | Identity for int; binary64 nearest integer with halfway cases away from zero. | — |
 | `fn math_round(int) -> int` | math | Identity for int; binary64 nearest integer with halfway cases away from zero. | — |
-| `fn math_sqrt(float) -> float` | math | Exact floor integer square root; binary64 square root for float. | math_sqrt: integer argument must be nonnegative |
-| `fn math_sqrt(int) -> int` | math | Exact floor integer square root; binary64 square root for float. | math_sqrt: integer argument must be nonnegative |
+| `fn math_sqrt(float) -> float` | math | Binary64 square root for float. | — |
+| `fn math_sqrt(int) -> int` | math | Exact floor integer square root; the argument must be nonnegative. | math_sqrt: integer argument must be nonnegative |
 | `fn str_contains(string, string) -> bool` | string | Byte substring search; an empty needle matches. | — |
 | `fn str_ends_with(string, string) -> bool` | string | Byte suffix comparison; an empty suffix matches. | — |
 | `fn str_find(string, string) -> int` | string | Return the first byte offset or -1; an empty needle returns 0. | — |
 | `fn str_is_float(string) -> bool` | string | Report whether the complete decimal token is a finite binary64, including representable subnormals. | — |
 | `fn str_is_int(string) -> bool` | string | Report whether the complete signed decimal token fits int64. | — |
 | `fn str_len(string) -> int` | string | Return the raw byte length, including NUL and invalid UTF-8 bytes. | — |
-| `fn str_list() -> StrList` | collections | Construct an empty StrList in the active collection arena. | — |
+| `fn str_list() -> StrList` | collections | Construct an empty StrList in the active collection arena. | StrList object limit exceeded (65536) |
 | `fn str_lower(string) -> string` | string | Lowercase ASCII A-Z bytes; preserve every other byte. | — |
-| `fn str_map() -> StrMap` | collections | Construct an empty insertion-ordered StrMap in the active collection arena. | — |
+| `fn str_map() -> StrMap` | collections | Construct an empty insertion-ordered StrMap in the active collection arena. | StrMap object limit exceeded (65536) |
 | `fn str_match(string, string) -> bool` | string | Match a whole byte string with *, ?, classes, ranges, negation, and backslash escapes. | str_match: pattern exceeds the 2^27 work limit |
 | `fn str_repeat(string, int) -> string` | string | Repeat raw bytes; reject negative counts and results above 64 MiB. | str_repeat: count must be nonnegative and result at most 67108864 bytes |
 | `fn str_replace(string, string, string) -> string` | string | Replace nonoverlapping byte matches left to right; an empty search is a no-op. | str_replace: result must be at most 67108864 bytes |
-| `fn str_split(string, string) -> StrList` | collections | Split raw bytes on every nonoverlapping nonempty separator into a StrList. | str_split: separator must not be empty |
+| `fn str_split(string, string) -> StrList` | collections | Split raw bytes on every nonoverlapping nonempty separator into a StrList. | str_split: separator must not be empty; StrList object limit exceeded (65536) |
 | `fn str_starts_with(string, string) -> bool` | string | Byte prefix comparison; an empty prefix matches. | — |
 | `fn str_substr(string, int, int) -> string` | string | Return a byte slice; clamp negative starts and overlong counts, with nonpositive counts empty. | — |
 | `fn str_to_float(string) -> float` | string | Parse a finite locale-independent decimal binary64 token; return zero on failure. | — |
@@ -75,4 +75,4 @@ Canonical signatures: 72.
 | `method StrMap.key_at(int) -> string` | collections | Return the insertion-order key at a zero-based index. | StrMap.key_at: index out of range: i |
 | `method StrMap.len() -> int` | collections | Return insertion-order entry count. | — |
 | `method StrMap.remove(string) -> bool` | collections | Remove a key and report whether it existed. | — |
-| `method StrMap.set(string, string) -> StrMap` | collections | Insert or replace a value while preserving an existing key position. | StrMap.set: index out of range: i |
+| `method StrMap.set(string, string) -> StrMap` | collections | Insert or replace a value while preserving an existing key position; removal tombstones compact on key_at. | StrMap.set: index out of range: i |

@@ -1,4 +1,11 @@
 {
+  "notes": {
+    "bytes": "All strings are raw bytes; lengths and offsets are byte-based, NUL and invalid UTF-8 are preserved.",
+    "errors": "Catalog failures use RUN_HOST; file failures use FUNCTION: PATH: OS reason.",
+    "lifetime": "Collections are context-owned, share a 65536 allocation budget, and handles expire at run boundaries.",
+    "paths": "File paths are native OS paths; Unix preserves path bytes, Windows requires strict UTF-8 and rejects embedded NUL.",
+    "registration": "Registry defaults install 72 built-ins; testing print/assertions remain explicit host registrations."
+  },
   "schema": "std/lmcode-std.schema.json",
   "signatures": {
     "fn file_append(string, string) -> void": {
@@ -25,7 +32,8 @@
     "fn file_lines(string) -> StrList": {
       "area": "file",
       "errors": [
-        "FUNCTION: PATH: OS reason"
+        "FUNCTION: PATH: OS reason",
+        "StrList object limit exceeded (65536)"
       ],
       "params": [
         "string"
@@ -55,13 +63,17 @@
     },
     "fn float_list() -> FloatList": {
       "area": "collections",
-      "errors": [],
+      "errors": [
+        "FloatList object limit exceeded (65536)"
+      ],
       "params": [],
       "summary": "Construct an empty FloatList in the active collection arena."
     },
     "fn int_list() -> IntList": {
       "area": "collections",
-      "errors": [],
+      "errors": [
+        "IntList object limit exceeded (65536)"
+      ],
       "params": [],
       "summary": "Construct an empty IntList in the active collection arena."
     },
@@ -151,14 +163,12 @@
     },
     "fn math_pow(float, float) -> float": {
       "area": "math",
-      "errors": [
-        "math_pow: integer exponent must be nonnegative"
-      ],
+      "errors": [],
       "params": [
         "float",
         "float"
       ],
-      "summary": "Integer exponentiation wraps modulo 2^64; float power follows IEEE/libm special cases."
+      "summary": "Float power follows IEEE/libm special cases."
     },
     "fn math_pow(int, int) -> int": {
       "area": "math",
@@ -169,7 +179,7 @@
         "int",
         "int"
       ],
-      "summary": "Integer exponentiation wraps modulo 2^64; float power follows IEEE/libm special cases."
+      "summary": "Integer exponentiation wraps modulo 2^64; the exponent must be nonnegative."
     },
     "fn math_round(float) -> float": {
       "area": "math",
@@ -189,13 +199,11 @@
     },
     "fn math_sqrt(float) -> float": {
       "area": "math",
-      "errors": [
-        "math_sqrt: integer argument must be nonnegative"
-      ],
+      "errors": [],
       "params": [
         "float"
       ],
-      "summary": "Exact floor integer square root; binary64 square root for float."
+      "summary": "Binary64 square root for float."
     },
     "fn math_sqrt(int) -> int": {
       "area": "math",
@@ -205,7 +213,7 @@
       "params": [
         "int"
       ],
-      "summary": "Exact floor integer square root; binary64 square root for float."
+      "summary": "Exact floor integer square root; the argument must be nonnegative."
     },
     "fn str_contains(string, string) -> bool": {
       "area": "string",
@@ -260,7 +268,9 @@
     },
     "fn str_list() -> StrList": {
       "area": "collections",
-      "errors": [],
+      "errors": [
+        "StrList object limit exceeded (65536)"
+      ],
       "params": [],
       "summary": "Construct an empty StrList in the active collection arena."
     },
@@ -274,7 +284,9 @@
     },
     "fn str_map() -> StrMap": {
       "area": "collections",
-      "errors": [],
+      "errors": [
+        "StrMap object limit exceeded (65536)"
+      ],
       "params": [],
       "summary": "Construct an empty insertion-ordered StrMap in the active collection arena."
     },
@@ -315,7 +327,8 @@
     "fn str_split(string, string) -> StrList": {
       "area": "collections",
       "errors": [
-        "str_split: separator must not be empty"
+        "str_split: separator must not be empty",
+        "StrList object limit exceeded (65536)"
       ],
       "params": [
         "string",
@@ -619,7 +632,7 @@
         "string",
         "string"
       ],
-      "summary": "Insert or replace a value while preserving an existing key position."
+      "summary": "Insert or replace a value while preserving an existing key position; removal tombstones compact on key_at."
     }
   },
   "version": 1
