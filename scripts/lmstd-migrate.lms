@@ -1,0 +1,391 @@
+#!/usr/bin/env -S lmscript --no-preflight
+# Transactional host migration. All transformation logic is lmscript.
+import "native:git";
+
+fn refuse(reason) {
+  println(json_stringify({status:"refused", reason:reason}));
+  exit(2);
+}
+fn run(argv, cwd) {
+  r = system(argv, {cwd:cwd, timeoutMs:600000});
+  if (r.code != 0) { refuse(json_stringify({command:argv, code:r.code, stderr:r.stderr, stdout:r.stdout})); }
+  return r.stdout;
+}
+fn gitcmd(repo, args) {
+  return run(concat(["git", "-C", repo], args), repo);
+}
+fn put(root, file, content, candidates) {
+  mkdir(dirname(path_join(root,file)));
+  write_file(path_join(root,file), content);
+  if (!contains(candidates,file)) { push(candidates,file); }
+}
+fn signatures(schema) {
+  result = [];
+  for (name in schema.get("context",{}).keys()) { push(result,"context " + name + ": " + schema.context[name]); }
+  for (name in schema.get("functions",{}).keys()) {
+    for (sig in schema.functions[name]) { push(result,"fn " + name + "(" + join(sig.params,", ") + ") -> " + sig.get("returns","void")); }
+  }
+  for (owner in schema.get("types",{}).keys()) {
+    for (name in schema.types[owner].get("methods",{}).keys()) {
+      for (sig in schema.types[owner].methods[name]) {
+        ret = sig.get("returns","void");
+        if (ret == "self") { ret = owner; }
+        push(result,"method " + owner + "." + name + "(" + join(sig.params,", ") + ") -> " + ret);
+      }
+    }
+  }
+  return join(sort(result),"\n") + (result.len() > 0 ? "\n" : "");
+}
+fn same_json(a,b) { return signatures(a) == signatures(b) && json_stringify(a.get("enums",{})) == json_stringify(b.get("enums",{})) && json_stringify(a.get("conversions",[])) == json_stringify(b.get("conversions",[])); }
+fn clean(repo) {
+  s = git.status(repo);
+  return s.staged.len() == 0 && s.unstaged.len() == 0 && s.untracked.len() == 0 && s.conflicted.len() == 0;
+}
+fn selector(target) {
+  return replace_all(r'''#!/usr/bin/env bash
+set -euo pipefail
+MIN_VERSION="0.2.420"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/lmcode-compiler-XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) WORK="$(cd "$WORK" && pwd -W | tr '\\' '/')" ;;
+esac
+candidate="${LMSCRIPT_BIN:-}"
+if [[ -z "$candidate" ]]; then candidate="$(command -v lmscript || true)"; fi
+if [[ -z "$candidate" ]]; then echo "error: no lmscript compiler found; install @lmctl-ai/lmctl >= $MIN_VERSION or set LMSCRIPT_BIN" >&2; exit 2; fi
+version="$("$candidate" --version 2>/dev/null || true)"
+python3 - "$version" "$MIN_VERSION" <<'PY'
+import re, sys
+def parse(value):
+    match = re.search(r'^lmscript\s+(\d+)\.(\d+)\.(\d+)(?:\+[A-Za-z0-9.-]+)?\s*$', value)
+    return tuple(map(int, match.groups())) if match else None
+got, minimum = parse(sys.argv[1]), parse('lmscript ' + sys.argv[2])
+if got is None or got < minimum:
+    print(f"error: lmscript must be >= {sys.argv[2]} (got {sys.argv[1] or 'unknown'})", file=sys.stderr)
+    raise SystemExit(2)
+PY
+SCHEMA="$WORK/implicit-std.schema.json"
+PROBE="$WORK/probe.lms"
+cat > "$SCHEMA" <<'JSON'
+{"dsl.schema":2,"name":"implicit_std_probe","types":{},"functions":{},"context":{}}
+JSON
+python3 - "$SCHEMA" "$PROBE" "$WORK" <<'PY'
+import json, pathlib, sys
+schema, probe, work = sys.argv[1:]
+def source(marker):
+    return (f'p = {marker} schema={json.dumps(schema)};\n'
+            'let value = <<~STD_PROBE;\n'
+            '  raw ${not_an_outer_field} "quotes"\n'
+            '  STD_PROBE\n'
+            'let n = str_len(value);\n'
+            f'end {marker}\n'
+            f'savedsl(p, {json.dumps(str(pathlib.Path(work) / (marker[1:-1] + ".dslb")))});\n')
+pathlib.Path(probe).write_text(source('_dsl_'))
+pathlib.Path(work, 'probe-lmcode.lms').write_text(source('_lmcode_'))
+PY
+for source in "$PROBE" "$WORK/probe-lmcode.lms"; do
+  out="$WORK/$(basename "$source" .lms | sed 's/^probe$/dsl/; s/^probe-lmcode$/lmcode/')".dslb
+  "$candidate" "$source" "$out" >"$WORK/compiler.out" 2>"$WORK/compiler.err" || { cat "$WORK/compiler.err" >&2; exit 2; }
+  python3 - "$out" "$SCHEMA" <<'PY'
+import hashlib, pathlib, sys
+bytecode = pathlib.Path(sys.argv[1]).read_bytes()
+schema = pathlib.Path(sys.argv[2]).read_bytes()
+if bytecode[:6] != b'DSLB\x00\x05': raise SystemExit('error: compiler did not emit DSL bytecode v5')
+if bytecode[6:38] != hashlib.sha256(schema).digest(): raise SystemExit('error: bytecode schema hash does not match raw host schema bytes')
+PY
+done
+"$candidate" --dsl-signatures "$SCHEMA" | grep -Fq 'fn str_len(string) -> int' || { echo "error: compiler inspection surface lacks implicit std fn str_len(string) -> int" >&2; exit 2; }
+printf '%s\n' "$candidate"
+''', 'MIN_VERSION="0.2.420"', 'MIN_VERSION="' + target + '"');
+}
+fn pure_compile(text) {
+  # Recognize only existing compile wrappers, never execute general examples.
+  if (count_matches(text,"savedsl(") != 1 || contains(text,"${") || contains(text,"<<")) { return false; }
+  m = regex_match(text, "^([A-Za-z_][A-Za-z0-9_]*) = (_(?:lmcode|dsl)_) schema=\"[^\"\r\n]+\";\\r?$", "m");
+  if (m == null) { return false; }
+  opener = m[0];
+  closer = "end " + m[2];
+  if (count_matches(text,closer) != 1) { return false; }
+  before = split(text,opener)[0];
+  after = split(text,closer)[1];
+  for (line in lines(before)) {
+    t = trim(line);
+    if (t == "" || starts_with(t,"#")) { continue; }
+    if (!regex_test(t, '^[A-Za-z_][A-Za-z0-9_]* = ARGV\\.len\\(\\) > 0 \\? ARGV\\[0\\] : "[^"\\r\\n]+";$')) { return false; }
+  }
+  for (line in lines(after)) {
+    t = trim(line);
+    if (t == "" || starts_with(t,"#")) { continue; }
+    if (!regex_test(t, '^savedsl\\(' + m[1] + ', (?:[A-Za-z_][A-Za-z0-9_]*|"[^"\\r\\n]+")\\);$')) { return false; }
+  }
+  return true;
+}
+
+opts = {apply:false, historical:false, target:"0.2.420", repo:"", report:"", sdk:path_join(env("HOME"),"repos/dsl/lmcode-cpp"), compiler:"lmscript", tests:"auto"};
+i = 0;
+while (i < ARGV.len()) {
+  arg = ARGV[i];
+  if (arg == "--apply") { opts.apply = true; }
+  else if (arg == "--dry-run") { opts.apply = false; }
+  else if (arg == "--historical") { opts.historical = true; }
+  else {
+    if (!contains(["--repo","--target","--report","--sdk","--compiler","--tests"],arg) || i + 1 >= ARGV.len()) { refuse("usage: lmstd-migrate.lms --repo DIR [--target 0.2.420] [--dry-run|--apply] [--historical] [--sdk DIR] [--compiler PATH] [--tests auto|always|never] [--report FILE]"); }
+    i = i + 1;
+    opts[substring(arg,2)] = ARGV[i];
+  }
+  i = i + 1;
+}
+if (opts.repo == "" || !regex_test(opts.target,"^0\\.2\\.[0-9]+$") || json_parse(split(opts.target,".")[2]) < 420) { refuse("repo and stable target >= 0.2.420 are required"); }
+if (!contains(["auto","always","never"],opts.tests)) { refuse("unknown --tests mode"); }
+repo = abs_path(opts.repo);
+if (system(["git","--version"]).stdout == "") { refuse("invoke lmscript with --no-preflight (the script's --dry-run is its transactional preview)"); }
+root = trim(gitcmd(repo,["rev-parse","--show-toplevel"]));
+repo = root;
+name = basename(repo);
+excluded = ["lmproxy","lmcode-java","lmdb","lmctl-mono"];
+# Inspect the remote identity before reading host files, including renamed worktrees.
+remote_result = system(["git","-C",repo,"remote","get-url","origin"]);
+if (remote_result.code != 0) { refuse("no existing origin: leave local; no remote will be created"); }
+remote = trim(remote_result.stdout);
+remote_name = regex_match(remote,"(?:[:/])([^/]+?)(?:\\.git)?$");
+if (remote_name != null) { name = remote_name[1]; }
+if (contains(excluded,name) || regex_test(remote,"lmctl-mono(?:\\.git)?$")) { refuse("excluded repository " + name); }
+if (!opts.historical && !regex_test(remote,"(?:github\\.com[:/])lmctl-ai/")) { refuse("origin must already identify an lmctl-ai repository"); }
+if (opts.historical && (!starts_with(repo,"/tmp/claude-1000/scratch-lmcode/") || opts.apply)) { refuse("--historical is scratch-only and never commits/pushes"); }
+if (!clean(repo)) { refuse("dirty tree"); }
+head = trim(gitcmd(repo,["rev-parse","HEAD"]));
+push_url = trim(gitcmd(repo,["remote","get-url","--push","origin"]));
+if (push_url != remote) { refuse("different fetch/push remotes require manual review"); }
+if (!opts.historical) {
+  remote_head = trim(run(["git","ls-remote","--exit-code",remote,"refs/heads/main"],repo));
+  remote_sha = split_regex(remote_head,"\\s+")[0];
+  if (head != remote_sha) { refuse("tree is behind, ahead or diverged from origin/main; synchronize explicitly first"); }
+  if (trim(gitcmd(repo,["branch","--show-current"])) != "main") { refuse("apply/preview requires main; historical scratch states use --historical"); }
+}
+compiler_version = trim(run([opts.compiler,"--version"],repo));
+version = regex_match(compiler_version,"^lmscript (0)\\.(2)\\.([0-9]+)$");
+if (version == null || json_parse(version[3]) < json_parse(split(opts.target,".")[2])) { refuse("compiler must be a stable release >= target: " + compiler_version); }
+scratch = "/tmp/claude-1000/scratch-lmcode/";
+mkdir(scratch);
+work = trim(run(["mktemp","-d",scratch + "lmstd-migrate-XXXXXX"],scratch));
+stage = path_join(work,"tree");
+mkdir(stage);
+run(["git","-C",repo,"archive","--format=tar","--output=" + path_join(work,"tree.tar"),"HEAD"],repo);
+run(["tar","-xf",path_join(work,"tree.tar"),"-C",stage],repo);
+if (trim(run(["find",stage,"-type","l","-print"],stage)) != "") { refuse("unrecognized: tracked symlinks in archive; preview retained at " + work); }
+tracked = split(trim(gitcmd(repo,["ls-files"])),"\n");
+candidates = [];
+for (file in tracked) { push(candidates,file); }
+report = {repo:repo, name:name, mode:opts.apply ? "apply" : "dry-run", head:head, target:opts.target, status:"no-op", scratch:work, patterns:[], unrecognized:[], examples:[], bytecode:[], tests:"not-needed", diff:"", changed_files:[]};
+# Literal compiler pins only: unrelated version prose and fixture numbers survive.
+pins = system(["git","-C",repo,"grep","-IlE","@lmctl-ai/lmctl@0\\.2\\.[0-9]+"]);
+if (pins.code == 0) {
+  for (file in split(trim(pins.stdout),"\n")) {
+    source = read_file(path_join(stage,file));
+    result = regex_replace(source,"@lmctl-ai/lmctl@0\\.2\\.[0-9]+", "@lmctl-ai/lmctl@" + opts.target,"g");
+    if (source != result) { put(stage,file,result,candidates); }
+  }
+}
+std = path_join(opts.sdk,"std/lmcode-std.schema.json");
+helper = path_join(opts.sdk,"scripts/merge-std.py");
+empty = path_join(work,"empty.json");
+write_json(empty,{"dsl.schema":2,name:"migration_probe"});
+standard_sig = run([opts.compiler,"--dsl-signatures",empty],stage);
+if (!contains(standard_sig,"fn str_len(string) -> int\n") || split(trim(standard_sig),"\n").len() != 72) { refuse("compiler implicit std capability probe failed"); }
+cmake_file = path_join(stage,"CMakeLists.txt");
+migrating = false;
+schema_pair = null;
+if (file_exists(cmake_file)) {
+  cmake = read_file(cmake_file);
+  host_decl = regex_match(cmake,'set\\(([A-Z0-9_]+)_HOST_SCHEMA "\\$\\{CMAKE_CURRENT_SOURCE_DIR\\}/(schema/[^"\\n]+\\.host\\.json)"\\)');
+  if (host_decl != null) {
+    prefix = host_decl[1];
+    host = host_decl[2];
+    generated = replace_all(host,".host.json",".dsl.json");
+    derive = path_join(work,"host-only.json");
+    run(["python3",helper,"--std",std,"--host-only",path_join(stage,host),derive],stage);
+    if (!same_json(read_json(path_join(stage,host)),read_json(derive))) { put(stage,host,read_file(derive),candidates); migrating = true; }
+    compiler_sig = run([opts.compiler,"--dsl-signatures",derive,"--without-std"],stage);
+    if (join(sort(split(trim(compiler_sig),"\n")),"\n") != trim(signatures(read_json(derive)))) { refuse("host-only schema signature cross-check failed"); }
+    begin = index_of(cmake,"set(" + prefix + "_STD_SCHEMA ");
+    end = index_of(cmake,"set(" + prefix + "_SCHEMA ");
+    if (begin >= 0) {
+      merge = substring(cmake,begin,end);
+      if (end < begin || !contains(merge,'"${'+prefix+'_STD_MERGER}" "${'+prefix+'_HOST_SCHEMA}"') || !ends_with(merge,"endif()\n")) { push(report.unrecognized,"CMake std merge block"); }
+      else {
+        cmake = substring(cmake,0,begin) + substring(cmake,end);
+        declaration = 'set(' + prefix + '_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/' + generated + '")\n';
+        if (!contains(cmake,declaration)) { push(report.unrecognized,"CMake generated schema declaration"); }
+        else {
+          cmake = replace(cmake,declaration,declaration + 'configure_file("${' + prefix + '_HOST_SCHEMA}" "${' + prefix + '_SCHEMA}" COPYONLY)\n');
+          if (!contains(cmake,"${Python3_EXECUTABLE}")) { cmake = replace(cmake,"find_package(Python3 REQUIRED COMPONENTS Interpreter)\n",""); }
+          put(stage,"CMakeLists.txt",cmake,candidates);
+          migrating = true;
+          push(report.patterns,"cmake-std-merge-to-COPYONLY");
+        }
+      }
+    } else if (!contains(cmake,'configure_file("${'+prefix+'_HOST_SCHEMA}" "${'+prefix+'_SCHEMA}" COPYONLY)')) { push(report.unrecognized,"CMake host schema embedding"); }
+    # The generated file is ignored by these hosts; preserve it for compilation,
+    # but never add a previously ignored generated file to a commit.
+    write_file(path_join(stage,generated),read_file(path_join(stage,host)));
+    schema_pair = {host:host,generated:generated};
+    gen = path_join(stage,"scripts/gen-schema.py");
+    if (file_exists(gen)) {
+      text = read_file(gen);
+      if (contains(text,"bridge.remove_standard(schema, standard)")) { push(report.patterns,"generator-already-host-only"); }
+      else if (ends_with(text,"print(dump(schema))\n")) {
+        text = replace(text,"import json, re, subprocess, sys","import json, re, subprocess, sys, importlib.util\nfrom pathlib import Path");
+        footer = r'''root = Path(__file__).resolve().parent.parent
+spec = importlib.util.spec_from_file_location("std_merge", root / "scripts/merge-std.py")
+sys.dont_write_bytecode = True
+bridge = importlib.util.module_from_spec(spec); spec.loader.exec_module(bridge)
+standard = json.loads((root / "cpp/std/lmcode-std.schema.json").read_text())
+sys.stdout.buffer.write((json.dumps(bridge.remove_standard(schema, standard), indent=2) + "\n").encode("utf-8"))
+''';
+        text = replace(text,"print(dump(schema))\n",footer);
+        put(stage,"scripts/gen-schema.py",text,candidates);
+        push(report.patterns,"registry-dump-generator"); migrating = true;
+      } else { push(report.unrecognized,"scripts/gen-schema.py"); }
+    }
+    selector_file = path_join(stage,"scripts/select-compiler.sh");
+    if (!file_exists(selector_file)) { push(report.unrecognized,"missing compiler selector"); }
+    else {
+      text = read_file(selector_file);
+      if (!contains(text,"str_len(\"implicit std\")") && !contains(text,"implicit-std.schema.json")) {
+        if (!contains(text,"probe.schema.json") && !contains(text,"probe.dslb")) { push(report.unrecognized,"compiler selector probe"); }
+        else { put(stage,"scripts/select-compiler.sh",selector(opts.target),candidates); migrating = true; push(report.patterns,"v5-selector-to-implicit-std-probe"); }
+      } else {
+        updated = regex_replace(text,'MIN_VERSION="0\\.2\\.[0-9]+"','MIN_VERSION="'+opts.target+'"',"g");
+        if (updated != text) { put(stage,"scripts/select-compiler.sh",updated,candidates); }
+      }
+    }
+    test_file = path_join(stage,"test.sh");
+    if (file_exists(test_file)) {
+      text = read_file(test_file);
+      old = 'python3 scripts/merge-std.py --normalize-signatures ' + host + ' "$WORK/host-only.sig"\n';
+      if (contains(text,old)) {
+        start = index_of(text,old);
+        tail = substring(text,start);
+        test_lines = split(tail,"\n");
+        finish = len(join(slice(test_lines,0,3),"\n"));
+        if (test_lines.len() < 3 || !starts_with(test_lines[1],"diff ") || !starts_with(test_lines[2],"ok ")) { push(report.unrecognized,"test.sh normalization block"); }
+        else {
+          block = '"$LMSCRIPT" --dsl-signatures cpp/std/lmcode-std.schema.json > "$WORK/std.sig"\n' +
+            'grep -Fvx -f "$WORK/std.sig" "$WORK/host.sig" > "$WORK/host-only.sig" || true\n' +
+            '"$LMSCRIPT" --dsl-signatures ' + host + ' --without-std > "$WORK/compiler-host-only.sig"\n' +
+            'diff "$WORK/host-only.sig" "$WORK/compiler-host-only.sig" >/dev/null || fail "host-only registry/compiler parity"\n' +
+            'cmp -s ' + host + ' ' + generated + ' || fail "host-only schema byte identity"\n' +
+            'ok "host-only bytes and --without-std registry parity"';
+          put(stage,"test.sh",substring(text,0,start) + block + substring(tail,finish),candidates);
+          push(report.patterns,"test-effective-and-without-std-parity"); migrating = true;
+        }
+      }
+    }
+  } else if (contains(cmake,"merge-std") || contains(cmake,".dsl.json") && !contains(cmake,".host.json")) { push(report.unrecognized,"CMake schema pattern"); }
+}
+if (migrating && schema_pair != null) {
+  for (file in tracked) {
+    if (starts_with(file,"durable-memory/") && ends_with(file,".md")) {
+      original = read_file(path_join(stage,file));
+      rewritten = replace_all(original,"CMake merges it with the pinned canonical cpp/std/lmcode-std.schema.json using scripts/merge-std.py and generates ignored","CMake copies its exact bytes to ignored");
+      if (rewritten != original) { put(stage,file,rewritten,candidates); }
+    }
+  }
+  memory = "durable-memory/03-schema.md";
+  if (file_exists(path_join(stage,memory))) {
+    text = read_file(path_join(stage,memory));
+    note = "Compiler minimum " + opts.target + " resolves std implicitly; embedded bytes are host-only, and tests compare full and --without-std registry surfaces while optional testing remains host-declared.";
+    if (!contains(text,note)) { put(stage,memory,text + "\n" + note + "\n",candidates); }
+  }
+  if (file_exists(path_join(stage,"README.md"))) {
+    text = read_file(path_join(stage,"README.md"));
+    text = replace(text,"Needs `cmake`", "Needs `lmscript` >= " + opts.target + ", `cmake`");
+    put(stage,"README.md",text,candidates);
+  }
+}
+# A current compiler pin must never hide a stale VM runtime.
+vm = path_join(stage,"cpp/dslvm.hpp");
+if (file_exists(vm)) {
+  capable = contains(read_file(vm),"register_std") && file_exists(path_join(stage,"cpp/stdlib/std.hpp"));
+  if (!capable) { migrating = true; }
+  if (migrating) {
+    sync_file = path_join(stage,"scripts/sync-sdk.sh");
+    if (!file_exists(sync_file)) { push(report.unrecognized,"missing SDK sync script"); }
+    else {
+      run(["env","LMCODE_CPP="+opts.sdk,"bash",sync_file],stage);
+      if (!contains(read_file(vm),"register_std") || !file_exists(path_join(stage,"cpp/stdlib/std.hpp"))) { push(report.unrecognized,"SDK sync script does not vendor the default std catalogs"); }
+      for (source in split(trim(gitcmd(opts.sdk,["ls-tree","-r","--name-only","origin/main","--","include/dslvm.hpp","stdlib/","std/lmcode-std.schema.json","scripts/merge-std.py"])),"\n")) {
+        target = "cpp/" + source;
+        if (source == "include/dslvm.hpp") { target = "cpp/dslvm.hpp"; }
+        if (source == "scripts/merge-std.py") { target = source; }
+        if (file_exists(path_join(stage,target)) && !contains(candidates,target)) { push(candidates,target); }
+      }
+    }
+  }
+}
+# Determine an exact diff before executing any example or test wrapper.
+for (file in candidates) {
+  if (!file_exists(path_join(stage,file))) { continue; }
+  old = path_join(repo,file);
+  if (!contains(tracked,file)) { old = "/dev/null"; }
+  diff = system(["git","diff","--no-index","--no-ext-diff","--binary","--",old,path_join(stage,file)]);
+  if (diff.code == 1) { push(report.changed_files,file); report.diff = report.diff + diff.stdout; }
+  else if (diff.code != 0) { refuse("diff failed for " + file); }
+}
+if (report.changed_files.len() > 0) { report.status = "ready"; }
+if (report.unrecognized.len() > 0) { report.status = "unrecognized"; }
+if (report.status == "ready") {
+  # Compile only recognized pure wrappers. Unknown effects are a reported block.
+  artifacts = path_join(work,"artifacts"); mkdir(artifacts);
+  for (file in tracked) {
+    if (starts_with(file,"examples/") && ends_with(file,".lms") || ends_with(file,".dslb")) {
+      if (ends_with(file,".dslb")) { push(report.bytecode,{file:file,status:"unrecognized-recipe"}); push(report.unrecognized,"checked-in bytecode recipe: " + file); }
+      else {
+        text = read_file(path_join(stage,file));
+        if (pure_compile(text)) {
+          output = path_join(artifacts,replace_all(file,"/","_") + ".dslb");
+          run([opts.compiler,"--no-preflight",path_join(stage,file),output],stage);
+          if (!file_exists(output)) { push(report.unrecognized,"compile wrapper ignores output argument: " + file); }
+          else { push(report.examples,{file:file,status:"compiled",output:output}); }
+        } else { push(report.unrecognized,"example requires explicit compile recipe: " + file); }
+      }
+    }
+  }
+  if (file_exists(vm) && report.unrecognized.len() == 0) {
+    probe = path_join(work,"registry.cpp");
+    write_file(probe,"#include \"dslvm.hpp\"\n#include <iostream>\nint main(){dslvm::Registry r;for(auto&s:r.signatures())std::cout<<s<<'\\n';}\n");
+    run(["c++","-std=c++17","-I",path_join(stage,"cpp"),probe,"-o",path_join(work,"registry")],stage);
+    if (run([path_join(work,"registry")],stage) != standard_sig) { refuse("SDK default registry/compiler std parity failed"); }
+    push(report.patterns,"native-default-registry-72-signatures");
+  }
+  if (file_exists(path_join(stage,"test.sh"))) {
+    cheap = !file_exists(cmake_file) && !file_exists(path_join(stage,"third_party"));
+    if (opts.tests == "always" || opts.tests == "auto" && cheap) { run(["bash","test.sh"],stage); report.tests = "passed"; }
+    else { report.tests = "not-run-expensive-or-disabled"; }
+  }
+  if (report.unrecognized.len() > 0) { report.status = "unrecognized"; }
+}
+if (opts.apply && report.status == "ready") {
+  if (!clean(repo) || trim(gitcmd(repo,["rev-parse","HEAD"])) != head) { refuse("source tree changed during preview"); }
+  gitcmd(repo,["-c","user.name=mike-lmctl","-c","user.email=281311770+mike-lmctl@users.noreply.github.com","pull","--rebase","origin","main"]);
+  if (trim(gitcmd(repo,["rev-parse","HEAD"])) != head) { refuse("main advanced during preview: rerun"); }
+  for (file in report.changed_files) { mkdir(dirname(path_join(repo,file))); run(["cp",path_join(stage,file),path_join(repo,file)],repo); }
+  gitcmd(repo,concat(["add","--"],report.changed_files));
+  message = "Keep host schemas independent of the implicit standard catalog\n\nApply the reviewed lmstd migration patterns and compiler pin " + opts.target + ".\n\nTested: Compiler host-only parity, recognized example compilation and SDK registry probe; test.sh " + report.tests + "\nScope-risk: narrow\n\nCo-Authored-By: GPT-6 <noreply@anthropic.com>";
+  gitcmd(repo,["-c","user.name=mike-lmctl","-c","user.email=281311770+mike-lmctl@users.noreply.github.com","commit","-m",message]);
+  gitcmd(repo,["push","origin","HEAD:main"]);
+  report.commit = trim(gitcmd(repo,["rev-parse","HEAD"])); report.status = "applied";
+  ci = system(["gh","run","list","--repo","lmctl-ai/"+name,"--branch","main","--limit","1","--json","databaseId,headSha,url,status,conclusion"]);
+  report.ci = {code:ci.code,stdout:ci.stdout,stderr:ci.stderr};
+  if (ci.code == 0) {
+    runs = json_parse(ci.stdout);
+    if (runs.len() > 0 && runs[0].headSha == report.commit) { report.ci.jobs = run(["gh","run","view",str(runs[0].databaseId),"--repo","lmctl-ai/"+name,"--json","jobs,status,conclusion,url"],repo); }
+  }
+}
+if (opts.report != "") {
+  destination = abs_path(opts.report);
+  if (!starts_with(destination,scratch)) { refuse("reports must stay under scratch"); }
+  write_json(destination,report);
+}
+println(json_stringify(report));
+if (report.status == "unrecognized") { exit(3); }

@@ -44,3 +44,4 @@ scripts/matrix.sh                     # Cross-SDK verification across cpp, rust,
 
 `lmcode-cpp` is a header-only SDK. Releases and tags correspond to bytecode format and SDK versions. Downstream lmscript hosts vendor `cpp/dslvm.hpp` directly into their trees (usually at `cpp/dslvm.hpp` or `sdk/dslvm.hpp`) and pin the exact commit and sha256 in `sdk.lock`.
 Continuous Integration tests all pushes across 5 platforms: Linux x64/arm64, macOS arm64/x64, and Windows x64.
+- [Re-runnable std migrator](11-lmstd-migrator.md): lmscript transactional previews, known host patterns, compilation limits and historical SSL/SSH checks.
