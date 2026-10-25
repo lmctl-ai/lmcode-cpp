@@ -2,17 +2,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {TextDecoder} from 'node:util';
-import {fileURLToPath, pathToFileURL} from 'node:url';
+import {pathToFileURL} from 'node:url';
+import {homedir} from 'node:os';
 import {createHash} from 'node:crypto';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(process.env.LMCODE_SWEEP_ROOT || path.resolve(__dirname, '../../..'));
+const root = path.resolve(process.env.LMCODE_SWEEP_ROOT || path.join(homedir(), 'repos', 'dsl'));
 const mode = process.env.LMCODE_SWEEP_MODE || 'dry-run';
 const filter = process.env.LMCODE_SWEEP_REPO || '';
 const stageRoot = process.env.LMCODE_SWEEP_STAGE ? path.resolve(process.env.LMCODE_SWEEP_STAGE) : '';
 const reportPath = process.env.LMCODE_SWEEP_REPORT || '';
 const compilerPath = process.env.LMCODE_SWEEP_COMPILER || '';
-const scratch = process.env.LMCODE_SWEEP_SCRATCH || '/tmp/scratch-lmcode';
+const scratch = process.env.LMCODE_SWEEP_SCRATCH || '/tmp/claude-1000/scratch-lmcode';
 const skip = new Set(['lmproxy', 'lmctl-mono']);
 const decoder = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true});
 const cmp = (a, b) => a < b ? -1 : a > b ? 1 : 0;
@@ -25,7 +25,7 @@ function git(repo, args) {
 function repos() {
   const candidates = fs.readdirSync(root, {withFileTypes:true}).filter(d => d.isDirectory() && !skip.has(d.name)).map(d => path.join(root,d.name));
   // lmvideo currently lives outside the DSL parent; retain the adjacent layout too.
-  for (const p of [path.resolve(root,'../lmvideo'), path.resolve(root,'../../lmctlhq/lmvideo')]) if (fs.existsSync(p)) candidates.push(p);
+  for (const p of [path.resolve(root,'../lmvideo'), path.resolve(root,'../lmctlhq/lmvideo')]) if (fs.existsSync(p)) candidates.push(p);
   const found = new Map();
   for (const p of candidates.sort(cmp)) {
     if (skip.has(path.basename(p)) || !fs.existsSync(path.join(p,'.git')) || fs.lstatSync(p).isSymbolicLink()) continue;
