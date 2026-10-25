@@ -1063,7 +1063,7 @@
       "repo": "lmhtml"
     },
     {
-      "head": "53ef0c4 Follow the SDK rename: cpp-dsl-sdk is now lmcode-cpp (sdk.lock, sync script, docs)",
+      "head": "53ef0c4 Follow the SDK rename: lmcode-cpp (sdk.lock, sync script, docs)",
       "host_schema": null,
       "origin": "https://github.com/lmctl-ai/lmimg.git",
       "repo": "lmimg"
