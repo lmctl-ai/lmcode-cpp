@@ -27,12 +27,12 @@ SHA-256 binding).
 
 | **Bytecode Conformance Suite** | **Unit Tests & Invariants** |
 | --- | --- |
-| <img src="docs/images/conformance.png" width="440"> | <img src="docs/images/unit-tests.png" width="440"> |
+| <img src="docs/images/conformance.png" width="440" alt="Bytecode Conformance Suite"> | <img src="docs/images/unit-tests.png" width="440" alt="Unit Tests & Invariants"> |
 | All 51 core bytecode vectors pass across opcodes, types, error paths, and control flow.<br>`make conformance` | 103 unit tests verifying VM type invariants, line tables, and registry semantics.<br>`make test` |
 
 | **Standard Library Conformance** | **Same Bytecode, Four Runtimes** |
 | --- | --- |
-| <img src="docs/images/stdlib-conformance.png" width="440"> | <img src="docs/images/same-bytecode-four-runtimes.png" width="440"> |
+| <img src="docs/images/stdlib-conformance.png" width="440" alt="Standard Library Conformance"> | <img src="docs/images/same-bytecode-four-runtimes.png" width="440" alt="Same Bytecode, Four Runtimes"> |
 | 118 catalog vectors covering collections, math, string, file, and optional testing.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
 
 ## Embedding it in twenty lines

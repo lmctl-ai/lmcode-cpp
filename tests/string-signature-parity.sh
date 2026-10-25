@@ -27,8 +27,28 @@ const fragment = JSON.parse(fs.readFileSync(fragmentPath));
 assert.deepStrictEqual(fixture.functions, fragment.functions, 'test schema differs from shipped catalog fragment');
 assert.deepStrictEqual(fixture.types || {}, fragment.types || {}, 'test types differ from shipped catalog fragment');
 JS_CHECK
-"${COMPILER[@]}" --dsl-signatures "$SCHEMA" > "$WORK/compiler-signatures"
+"${COMPILER[@]}" --dsl-signatures "$SCHEMA" > "$WORK/compiler-signatures-all"
 "$HOST" --signatures > "$WORK/host-signatures"
+# Since lmscript 0.2.420 std is built into the compiler, so --dsl-signatures
+# merges the built-in std catalog with the schema instead of listing only the
+# schema's own functions. Restrict the compiler listing to the names this
+# catalog declares so the diff stays catalog-vs-catalog (a no-op for older
+# compilers that already list the schema only).
+node - "$WORK/compiler-signatures-all" "$WORK/compiler-signatures" "$FRAGMENT" <<'JS_FILTER'
+const fs = require('fs');
+const [srcPath, dstPath, fragmentPath] = process.argv.slice(2);
+const fragment = JSON.parse(fs.readFileSync(fragmentPath));
+const fns = new Set(Object.keys(fragment.functions || {}));
+const kept = fs.readFileSync(srcPath, 'utf8').split('\n').filter((line) => {
+  if (!line) return false;
+  let m = line.match(/^fn ([A-Za-z_][A-Za-z0-9_]*)\(/);
+  if (m) return fns.has(m[1]);
+  m = line.match(/^method ([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)\(/);
+  if (m) return Boolean(fragment.types && fragment.types[m[1]] && fragment.types[m[1]].methods && fragment.types[m[1]].methods[m[2]]);
+  return true;
+});
+fs.writeFileSync(dstPath, kept.join('\n') + '\n');
+JS_FILTER
 # Native Windows C++ stdout uses CRLF; Node emits LF. Compare logical lines,
 # preserving every signature byte (including lone CRs) and the final newline.
 node - "$WORK/compiler-signatures" "$WORK/host-signatures" <<'JS_EOL'
