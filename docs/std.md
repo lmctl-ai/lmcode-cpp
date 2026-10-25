@@ -2,6 +2,16 @@
 
 Canonical signatures: 72.
 
+**Bytes:** All strings are raw bytes; lengths and offsets are byte-based, NUL and invalid UTF-8 are preserved.
+
+**Errors:** Catalog failures use RUN_HOST; file failures use FUNCTION: PATH: OS reason.
+
+**Lifetime:** Collections are context-owned, share a 65536 allocation budget, and handles expire at run boundaries.
+
+**Paths:** File paths are native OS paths; Unix preserves path bytes, Windows requires strict UTF-8 and rejects embedded NUL.
+
+**Registration:** Registry defaults install 72 built-ins; testing print/assertions remain explicit host registrations.
+
 | Signature | Area | Semantics | Errors |
 | --- | --- | --- | --- |
 | `fn file_append(string, string) -> void` | file | Create or append all raw bytes to a regular file. | FUNCTION: PATH: OS reason |

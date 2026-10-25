@@ -31,17 +31,28 @@ def load_document(schema_path=SCHEMA, metadata_path=METADATA):
     return {"schema": "std/lmcode-std.schema.json", "version": 1, "notes": metadata.get("notes", {}), "signatures": actual}
 
 def render(doc):
-    lines = ["# Built-in lmcode std v1", "", f"Canonical signatures: {len(doc['signatures'])}.", "", "| Signature | Area | Semantics | Errors |", "| --- | --- | --- | --- |"]
+    def cell(text): return str(text).replace("|", "\\|").replace("\n", "<br>")
+    lines = ["# Built-in lmcode std v1", "", f"Canonical signatures: {len(doc['signatures'])}.", ""]
+    for name, note in sorted(doc.get("notes", {}).items()):
+        lines.extend([f"**{name.capitalize()}:** {note}", ""])
+    lines.extend(["| Signature | Area | Semantics | Errors |", "| --- | --- | --- | --- |"])
     for signature, meta in sorted(doc["signatures"].items()):
-        errors = "; ".join(meta["errors"]) or "—"; lines.append(f"| `{signature}` | {meta['area']} | {meta['summary']} | {errors} |")
+        errors = "; ".join(meta["errors"]) or "—"
+        lines.append(f"| `{cell(signature)}` | {cell(meta['area'])} | {cell(meta['summary'])} | {cell(errors)} |")
     return "\n".join(lines) + "\n"
 
 def main(argv=None):
     parser = argparse.ArgumentParser(); parser.add_argument("--schema", default=str(SCHEMA)); parser.add_argument("--metadata", default=str(METADATA)); parser.add_argument("--output", default=str(MD_OUT)); parser.add_argument("--check", action="store_true"); args = parser.parse_args(argv)
     try: doc = load_document(args.schema, args.metadata)
     except (OSError, ValueError, json.JSONDecodeError) as error: print(f"gen-std-docs: {error}", file=sys.stderr); return 2
-    expected_json = json.dumps(doc, indent=2, sort_keys=True) + "\n"; expected_md = render(doc); json_path = Path(args.metadata); md_path = Path(args.output)
-    if args.check: return 0 if json_path.read_text() == expected_json and md_path.read_text() == expected_md else 1
-    json_path.write_text(expected_json, encoding="utf-8"); md_path.parent.mkdir(parents=True, exist_ok=True); md_path.write_text(expected_md, encoding="utf-8"); return 0
+    expected_md = render(doc); md_path = Path(args.output)
+    if args.check:
+        if not md_path.exists() or md_path.read_text(encoding="utf-8") != expected_md:
+            print("std reference is stale; run scripts/gen-std-docs.py", file=sys.stderr)
+            return 1
+        return 0
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    md_path.write_text(expected_md, encoding="utf-8")
+    return 0
 
 if __name__ == "__main__": raise SystemExit(main())

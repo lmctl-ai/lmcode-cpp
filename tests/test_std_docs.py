@@ -44,3 +44,8 @@ with tempfile.TemporaryDirectory() as temp:
     output_copy.write_text("stale")
     stale = subprocess.run([sys.executable, str(GEN), "--schema", str(schema_copy), "--metadata", str(metadata_copy), "--output", str(output_copy), "--check"])
     assert stale.returncode == 1
+
+    original_metadata = metadata_copy.read_bytes()
+    subprocess.run([sys.executable, str(GEN), "--schema", str(schema_copy), "--metadata", str(metadata_copy), "--output", str(output_copy)], check=True)
+    assert metadata_copy.read_bytes() == original_metadata, "generation must not rewrite source metadata"
+    assert docs["notes"]["bytes"] in output_copy.read_text()
