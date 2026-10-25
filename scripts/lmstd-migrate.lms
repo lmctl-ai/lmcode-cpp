@@ -142,6 +142,12 @@ repo = abs_path(opts.repo);
 if (system(["git","--version"]).stdout == "") { refuse("invoke lmscript with --no-preflight (the script's --dry-run is its transactional preview)"); }
 root = trim(gitcmd(repo,["rev-parse","--show-toplevel"]));
 repo = root;
+if (opts.report != "") {
+  destination = abs_path(opts.report);
+  if (!starts_with(destination,"/tmp/claude-1000/scratch-lmcode/") || !file_exists(dirname(destination))) { refuse("report requires an existing scratch parent directory"); }
+  parent = trim(run(["realpath",dirname(destination)],repo));
+  if ((!starts_with(parent,"/tmp/claude-1000/scratch-lmcode/") && parent != "/tmp/claude-1000/scratch-lmcode") || parent == repo || starts_with(parent,repo + "/") || system(["test","-L",destination]).code == 0) { refuse("report must not resolve into the source tree or outside scratch"); }
+}
 name = basename(repo);
 excluded = ["lmproxy","lmcode-java","lmdb","lmctl-mono"];
 # Inspect the remote identity before reading host files, including renamed worktrees.

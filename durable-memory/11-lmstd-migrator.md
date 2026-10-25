@@ -23,6 +23,8 @@ Each preview archives HEAD into a fresh scratch directory, rewrites literal
 diff, changed paths, detected patterns, compiled examples and unknown patterns.
 `--sdk DIR`, `--compiler PATH`, and `--tests auto|always|never` select tools.
 Reports and scratch trees stay under `/tmp/claude-1000/scratch-lmcode/`.
+Report parents must already exist; report paths into the source tree, symlinks,
+or parents resolving outside scratch are refused before any apply effects.
 
 ## Supported C++ patterns
 
