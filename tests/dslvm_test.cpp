@@ -239,6 +239,89 @@ int main() {
   // No VM resource limits (design decision): deep stacks and large strings are the host's memory to spend, not the VM's to refuse.
   { Asm a; a.maxStack = 1; for (int i = 0; i < 5000; ++i) a.pushInt(1); for (int i = 0; i < 4999; ++i) a.u8(ADD_I); a.ctx("t", "Trace").u8(DUP).u8(POP); a.halt(); Program p = Program::load(a.file(SCHEMA), SCHEMA, h.reg); Context c; c.set("t", &h.trace); p.run(c, h.reg); passed++; std::cout << "ok - 5000 operands on the stack run without a cap (max_stack is a reservation hint only)\n"; }
   { Asm a; a.ctx("t", "Trace").pushStr(std::string(65536, 'x')); for (int i = 0; i < 9; ++i) a.u8(DUP).u8(CONCAT); a.method(T_STR, 1).halt(); auto got = h.run(a.file(SCHEMA)); assert(got.size() == 1 && got[0].size() == 4 + 65536u * 512u); passed++; std::cout << "ok - a 32 MiB concatenation succeeds (no string cap)\n"; }
+  // Mutating methods, Context::set_dry, PlanEntry call sites, VmConfig::step_budget, and set_std_output.
+  {
+    struct ChangeObj { std::string json_str; };
+    std::vector<ChangeObj> changes;
+    changes.reserve(16);
+    int plan_calls = 0, apply_calls = 0;
+    Registry reg;
+    reg.context("net", "Net");
+    reg.method("Change", "json", {}, "string", [](void* s, Args&) {
+      return Value::string(static_cast<ChangeObj*>(s)->json_str);
+    });
+    reg.mutating_method(
+        "Net", "link_set", {"string", "int"}, "Change",
+        [&](void*, Args& a) {
+          ++plan_calls;
+          changes.push_back(ChangeObj{"{\"planned\":\"" + a[0].s + "\",\"mtu\":" + std::to_string(a[1].i) + ",\"budget_exceeded\":false}"});
+          return Value::object("Change", &changes.back());
+        },
+        [&](void*, Args& a) {
+          ++apply_calls;
+          changes.push_back(ChangeObj{"{\"applied\":\"" + a[0].s + "\",\"mtu\":" + std::to_string(a[1].i) + "}"});
+          return Value::object("Change", &changes.back());
+        });
+    std::ostringstream out_sink;
+    reg.function("println", {"string"}, "void", [](Args& a) {
+      std::cout << a[0].s << "\n";
+      return Value::none();
+    });
+    reg.set_std_output(&out_sink);
+
+    Asm a;
+    a.pushStr("hello").fn("fn println(string) -> void", 1);
+    const size_t call1_pc = a.code.size() + 3 + 5 + 9; // after ctx + pushStr + pushInt
+    a.ctx("net", "Net").pushStr("eth0").pushInt(1400);
+    assert(a.code.size() == call1_pc);
+    a.line(uint32_t(call1_pc), 12, 5);
+    a.method("method Net.link_set(string, int) -> Change", 2).u8(POP);
+    const size_t call2_pc = a.code.size() + 3 + 5 + 9;
+    a.ctx("net", "Net").pushStr("eth1").pushInt(9000);
+    assert(a.code.size() == call2_pc);
+    a.line(uint32_t(call2_pc), 15, 3);
+    a.method("method Net.link_set(string, int) -> Change", 2).u8(POP);
+    a.halt();
+
+    Program p = Program::load(a.file(SCHEMA), SCHEMA, reg);
+    Thing net_obj{1};
+
+    // Dry mode: runs plan_fn, records PlanEntry with call-site line/column and detail_json.
+    Context dry_ctx;
+    dry_ctx.set("net", &net_obj);
+    dry_ctx.set_dry(true);
+    dry_ctx.set_file("test.dslb");
+    p.run(dry_ctx, reg);
+    assert(plan_calls == 2 && apply_calls == 0);
+    assert(!dry_ctx.truncated() && dry_ctx.plan_entries().size() == 2);
+    assert(out_sink.str() == "hello\n");
+    const auto& e0 = dry_ctx.plan_entries()[0];
+    assert(e0.seq == 1 && e0.kind == "host_effect" && e0.function == "net.link_set");
+    assert(e0.arguments_json == "[\"eth0\",1400]" && e0.file == "test.dslb" && e0.line == 12 && e0.column == 5);
+    assert(e0.simulated && e0.detail_json == "{\"planned\":\"eth0\",\"mtu\":1400,\"budget_exceeded\":false}" && !e0.budget_exceeded);
+    const auto& e1 = dry_ctx.plan_entries()[1];
+    assert(e1.seq == 2 && e1.line == 15 && e1.column == 3 && e1.arguments_json == "[\"eth1\",9000]");
+
+    // Step budget / dry loop limit: stops before (N+1)th mutating call.
+    plan_calls = 0;
+    Context lim_ctx;
+    lim_ctx.set("net", &net_obj);
+    lim_ctx.set_dry(true);
+    VmConfig cfg;
+    cfg.step_budget = 1;
+    lim_ctx.set_config(cfg);
+    p.run(lim_ctx, reg);
+    assert(plan_calls == 1 && lim_ctx.truncated() && lim_ctx.stop_reason() == "dry loop limit" && lim_ctx.plan_entries().size() == 1);
+
+    // Apply mode: runs apply_fn, records no plan entries.
+    Context app_ctx;
+    app_ctx.set("net", &net_obj);
+    app_ctx.set_dry(false);
+    p.run(app_ctx, reg);
+    assert(apply_calls == 2 && app_ctx.plan_entries().empty());
+    passed++;
+    std::cout << "ok - mutating_method, Context::set_dry, PlanEntry locations, VmConfig::step_budget, and set_std_output\n";
+  }
   std::cout << "PASS " << passed << " checks\n";
   return 0;
 }
