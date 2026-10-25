@@ -53,7 +53,7 @@ jobs:
 
       - name: lmscript compiler (npm @lmctl-ai/lmctl)
         run: |
-          npm i -g @lmctl-ai/lmctl@0.2.347
+          npm i -g @lmctl-ai/lmctl@0.2.419
           lmscript --version || true
 
       - name: python3 shim (windows)
