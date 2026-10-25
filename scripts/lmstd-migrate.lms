@@ -263,7 +263,9 @@ sys.stdout.buffer.write((json.dumps(bridge.remove_standard(schema, standard), in
     if (file_exists(test_file)) {
       text = read_file(test_file);
       old = 'python3 scripts/merge-std.py --normalize-signatures ' + host + ' "$WORK/host-only.sig"\n';
-      if (contains(text,old)) {
+      already_host_only = contains(text,"--dsl-signatures " + host + " --without-std") &&
+        (contains(text,"cmp " + host + " " + generated) || contains(text,"cmp -s " + host + " " + generated));
+      if (contains(text,old) && !already_host_only) {
         start = index_of(text,old);
         tail = substring(text,start);
         test_lines = split(tail,"\n");

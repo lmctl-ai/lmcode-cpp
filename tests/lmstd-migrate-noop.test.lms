@@ -1,0 +1,30 @@
+# A migrated host may retain its earlier normalization self-check alongside
+# the new host-only parity checks. That is not an unfinished migration.
+fn checked(argv,cwd) {
+  r=system(argv,{cwd:cwd,timeoutMs:120000});assert(r.code == 0,r.stderr);return trim(r.stdout);
+}
+fn g(repo,args) { return checked(concat(["git","-C",repo],args),repo); }
+root=ARGV[0];
+assert(starts_with(root,"/tmp/claude-1000/scratch-lmcode/") && !file_exists(root),"fresh scratch root required");mkdir(root);
+seed=path_join(root,"seed");origin=path_join(root,"origin.git");repo=path_join(root,"host");hooks=path_join(root,"hooks");mkdir(hooks);
+checked(["git","-c","core.hooksPath="+hooks,"init",seed],root);
+g(seed,["config","core.hooksPath",hooks]);g(seed,["config","user.name","fixture"]);g(seed,["config","user.email","fixture@example.invalid"]);
+for (folder in ["schema","scripts","cpp/stdlib"]) { mkdir(path_join(seed,folder)); }
+write_file(path_join(seed,"compiler.txt"),"@lmctl-ai/lmctl@0.2.420\n");
+write_file(path_join(seed,".gitignore"),"schema/demo.dsl.json\n");
+write_file(path_join(seed,"schema/demo.host.json"),'{"dsl.schema":2,"name":"demo"}\n');
+write_file(path_join(seed,"CMakeLists.txt"),'set(DEMO_HOST_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/schema/demo.host.json")\nset(DEMO_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/schema/demo.dsl.json")\nconfigure_file("${DEMO_HOST_SCHEMA}" "${DEMO_SCHEMA}" COPYONLY)\n');
+write_file(path_join(seed,"scripts/select-compiler.sh"),'MIN_VERSION="0.2.420"\n# existing implicit-std.schema.json probe\n');
+# Capability markers are sufficient for a no-op; no native probe should run.
+write_file(path_join(seed,"cpp/dslvm.hpp"),"// register_std\n");write_file(path_join(seed,"cpp/stdlib/std.hpp"),"// fixture\n");
+write_file(path_join(seed,"test.sh"),'python3 scripts/merge-std.py --normalize-signatures schema/demo.host.json "$WORK/host-only.sig"\ndiff "$WORK/host.sig" "$WORK/host-only.sig"\nok "old normalization check retained"\n"$LMSCRIPT" --dsl-signatures schema/demo.host.json --without-std > "$WORK/host-only-compiler.sig"\ncmp schema/demo.host.json schema/demo.dsl.json\n');
+g(seed,["add","."]);g(seed,["commit","-m","already migrated parity fixture"]);g(seed,["branch","-M","main"]);
+checked(["git","clone","--bare",seed,origin],root);g(origin,["config","core.hooksPath",hooks]);
+checked(["git","clone",origin,repo],root);g(repo,["config","core.hooksPath",hooks]);
+program=path_join(Directory,"scripts/lmstd-migrate.lms");if (ARGV.len() > 1) { program=ARGV[1]; }
+report=path_join(root,"report.json");
+checked(["env","GIT_ALLOW_PROTOCOL=file","lmscript","--no-preflight",program,"--repo",repo,"--historical","--dry-run","--tests","never","--report",report],root);
+r=read_json(report);
+assert(r.status == "no-op" && r.changed_files.len() == 0,"existing host-only parity must not trigger migration");
+assert(g(repo,["status","--porcelain"]) == "","no-op changed source");
+println(json_stringify({pass:1,fail:0,kind:"migrated-host-noop"}));
