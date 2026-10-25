@@ -54,6 +54,9 @@ adapters remain host-owned. No host C++ source adapter is synthesized.
 
 ## Compilation and tests
 
+Standalone schema fixtures are rewritten only when no native source/build pipeline
+is present. Non-CMake native pipelines require a recognized adapter.
+
 Only recognized single-block compile wrappers are executed: comments, an
 optional ARGV output-path assignment, a schema-backed block, and savedsl.
 Before execution, savedsl is redirected to a controlled artifact in the staged

@@ -355,10 +355,14 @@ if (migrating && schema_pair != null) {
   }
 }
 # Compile-only schema fixtures have no native embedding pipeline to rewrite.
+native_pipeline = false;
+for (file in tracked) {
+  if (regex_test(file,"(?:\\.(?:cpp|cc|c|rs|go|cs|csproj)|(?:^|/)Makefile|(?:^|/)Cargo\\.toml|(?:^|/)go\\.mod)$")) { native_pipeline = true; }
+}
 if (!file_exists(cmake_file)) {
   for (file in tracked) {
     if (starts_with(file,"schema/") && ends_with(file,".dsl.json")) {
-      if (file_exists(path_join(stage,"scripts/gen-schema.py")) || file_exists(path_join(stage,"Cargo.toml")) || file_exists(path_join(stage,"go.mod"))) { push(report.unrecognized,"non-CMake schema embedding: " + file); }
+      if (native_pipeline || file_exists(path_join(stage,"scripts/gen-schema.py"))) { push(report.unrecognized,"non-CMake schema embedding: " + file); }
       else {
         stripped = path_join(work,"standalone-host-only.json");
         run(["python3",helper,"--std",std,"--host-only",path_join(stage,file),stripped],stage);
