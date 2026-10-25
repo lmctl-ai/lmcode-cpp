@@ -2,7 +2,7 @@
 
 `scripts/bench-stdlib.py` generates temporary schema-bound DSL workloads and runs prebuilt conformance executables. Compilation is outside the measured interval. Each workload gets one warmup execution, then the requested number of timed repetitions; the runner must report the expected short trace. The harness captures only the small runner result, never the large file or string trace.
 
-The workloads exercise one million operations for `StrList` and `StrMap`, including full indexed reads, updates, removals and joins, a one-million-element replace/split/match workload, and a 200 MB write/read/append/lines workload. `--size 1000` is the fast smoke case. Supply additional SDK runners with repeated `--runner name=command`; the command receives the generated vector directory. The harness does not build SDKs or impose process limits.
+The workloads exercise one million operations for `StrList` and `StrMap`, including full indexed reads, updates, removals and joins, a one-million-element replace/split/match workload, and a 200 MB write/read/append/lines workload. `--size 1000` is the fast smoke case. Supply additional SDK runners with repeated `--runner name=command`; the command receives the generated vector directory. The harness does not build SDKs; `--timeout` bounds each runner process.
 
 Example:
 
@@ -11,9 +11,9 @@ python3 scripts/bench-stdlib.py --size 1000 --repeat 1
 python3 scripts/bench-stdlib.py --size 1000000 --repeat 3 --runner cpp=build/conformance
 ```
 
-The four-runner measurement used `--timeout 300`, with optimized prebuilt commands for `build/conformance`, Rust `target/release/dsl-conformance`, the Go conformance binary, and the C# Release conformance DLL.
+The four-runner measurement used `--timeout 300`, with an explicitly compiled `-O2` C++ runner in scratch storage, Rust `target/release/dsl-conformance`, the Go conformance binary, and the C# Release conformance DLL.
 
-The 1M run below was measured on 2026-10-24 in the shared Linux development container (GCC/Rust/Go/.NET optimized builds; one warmup and three measured repetitions; wall time includes runner startup and excludes compilation). Values are medians of the three samples:
+The 1M run below was measured on 2026-10-24 in the shared Linux development container (GCC/Rust/Go/.NET optimized builds; one warmup and three measured repetitions; wall time includes runner startup and excludes compilation). Each sample starts a fresh process, so runtime/JIT startup is included. The untimed run warms filesystem/OS caches, not a shared JIT process. Values are medians of the three samples, in **seconds**:
 
 | Workload | C++ | Rust | Go | C# |
 | --- | ---: | ---: | ---: | ---: |
