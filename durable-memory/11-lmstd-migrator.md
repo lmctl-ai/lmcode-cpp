@@ -54,14 +54,13 @@ adapters remain host-owned. No host C++ source adapter is synthesized.
 
 Only recognized single-block compile wrappers are executed: comments, an
 optional ARGV output-path assignment, a schema-backed block, and savedsl.
-Before executing a recognized wrapper, its savedsl destination is replaced
-with a controlled artifact path in the staged copy; the original source text
-is restored afterward. Passing an output argv alone cannot constrain a literal
-savedsl destination. `tests/lmstd-migrate-output.test.lms SCRATCH_DIR` checks
-absolute destinations outside the stage and inside the source checkout.
-
-All other examples and checked-in bytecode without an explicit recognized
-recipe are reported, never guessed or executed. The installed lmscript has no
+Before execution, savedsl is redirected to a controlled artifact in the staged
+copy and its exact source text is restored afterward. Output argv alone cannot
+contain literal destinations. `tests/lmstd-migrate-output.test.lms` covers
+absolute destinations outside staging and inside the source checkout.
+Checked-in bytecode is rebuilt only when exactly one tracked compile wrapper
+identifies its name/output; ambiguous recipes are reported. All other examples
+are reported, never guessed or executed. The installed lmscript has no
 general compile-only bytecode-output command; `--check` alone does not emit
 bytecode. This is the exact missing capability for arbitrary effectful wrappers.
 
@@ -72,8 +71,14 @@ available). Compiler and SDK probes still run when native host tests are skipped
 The script does not call `health.py --fix-pins` inside a preview because that
 helper independently commits and pushes. It reuses the same host SDK sync entry
 point; `lmgallery/scripts/health.py --json --repo NAME` supplies the existing
-read-only ecosystem audit. Delimiter changes remain the responsibility of
-`~/tools/lmcode-sweep.sh/.mjs`, rather than a second approximate lexer here.
+read-only ecosystem audit. The migrator invokes `~/tools/lmcode-sweep.sh/.mjs`
+in read-only staging mode and copies only its exact planned replacements into
+the migration archive. Ambiguous mentions are included in the JSON report.
+`--sweep FILE` and `--lexer FILE` override the helper and Lexer module. The
+published CLI bundle does not export Lexer; the default selects a compatible read-only
+source/built module from existing mono worktrees using the sweep self-test (or
+`LMSCRIPT_LEXER`). No mono worktree is edited or built. A missing helper/module is an explicit
+capability refusal, never a fallback regex delimiter rewrite.
 
 ## Historical validation
 
@@ -87,3 +92,20 @@ native test.sh suites are expensive and are not claimed by these preview checks.
 See [fixture controls](10-std-migration-validation.md) for independent negative
 and apply/idempotence controls; setup-only scaffold success is not migration
 coverage.
+
+## Local-only apply fixtures
+
+`--local-fixture` accepts an already-existing scratch repository whose existing
+origin resolves to a local path under scratch. It enforces file-only Git
+transports and never performs a GitHub CI query. The program still creates no
+repository or remote. This mode exercises commit/push and idempotence without
+publishing; it cannot target any real host or GitHub origin. The published-repo
+delimiter discovery helper is intentionally not run on local fixture origins.
+
+The configured fixture harness passes eight no-write/refusal controls and four
+apply/idempotence checks (pin-only and checked-in-bytecode fixtures). Its JSON
+reports actual migration checks separately from scaffold setup. An unknown
+schema pipeline containing std is a refusal, even if its compiler pin is current.
+The five already-migrated SSL/SSH/HTML/Shark/Space checkouts are no-ops; Magnum's
+single-header SDK sync and direct `.dsl.json` embedding are reported as
+unrecognized, so no real host apply is attempted for that runtime.

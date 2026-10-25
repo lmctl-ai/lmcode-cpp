@@ -149,7 +149,7 @@ fn run_program(config, item, mode) {
   }
   argv_template = config.argv;
   if (config.has("argvByMode")) {
-    assert(type(config.argvByMode) == "map", "config.argvByMode must be a map of mode to argv templates");
+    assert(type(config.argvByMode) == "object", "config.argvByMode must be a map of mode to argv templates");
     if (config.argvByMode.has(mode)) {
       argv_template = config.argvByMode.get(mode, config.argv);
     }
@@ -285,6 +285,7 @@ unknown = fixture(root, "unknown-pattern", [
 
 fixtures = [pin, cmake, generator, compile_case, stale_runtime, unknown];
 reports = [];
+migration_checks = 0;
 for (item in fixtures) {
   before = snapshot(item.repo, item.files);
   before_refs = refs(item.repo);
@@ -301,6 +302,9 @@ for (item in fixtures) {
   assert(before_origin_refs == after_origin_refs, item.name + " dry-run changed bare-origin refs");
   if (dry.status == "ok" && (!config.has("requireReport") || config.requireReport)) {
     assert(dry.report_ok, item.name + " successful dry-run has no parsed JSON report");
+  }
+  if (config.program != null && item.name == "unknown-pattern") {
+    assert(dry.status != "ok", "unrecognized schema pipeline was incorrectly accepted as a no-op");
   }
   apply_report = null;
   if (apply_enabled(config, item)) {
@@ -323,6 +327,7 @@ for (item in fixtures) {
     assert(apply_after_refs.head == refs(item.repo).head && apply_after_refs.origin == refs(item.repo).origin, item.name + " second apply changed refs");
     assert(apply_after_status == porcelain(item.repo), item.name + " second apply changed full porcelain status");
     assert(apply_after_origin_refs == origin_refs(item.origin), item.name + " second apply changed bare-origin refs");
+    migration_checks = migration_checks + 2;
     apply_report = {first:apply_run, second:second_run, before:apply_before, after:apply_after, before_refs:apply_before_refs, after_refs:apply_after_refs, after_status:apply_after_status, after_origin_refs:apply_after_origin_refs, push_target:trim(command(item.repo,["remote","get-url","--push","origin"]))};
   }
   push(reports, {name:item.name, repo:item.repo, origin:item.origin, before:before, after:after, before_refs:before_refs, after_refs:after_refs, before_origin_refs:before_origin_refs, after_origin_refs:after_origin_refs, dry_run:dry, apply:apply_report, no_write:apply_report == null, push_target:trim(command(item.repo,["remote","get-url","--push","origin"]))});
@@ -377,4 +382,4 @@ assert(behind_refs_before.head == behind_refs_after.head && behind_refs_before.o
 assert(behind_status_before == behind_status_after && behind_origin_before == behind_origin_after, "behind refusal changed status or origin refs");
 push(reports, {name:"behind-control", status:behind_state, run:behind_run, expected_refusal:true, refs_unchanged:true, status_unchanged:true, push_target:trim(command(behind_item.repo,["remote","get-url","--push","origin"]))});
 
-println(json_stringify({ok:true, scaffold:true, control_checks:8, migration_checks:0, program:config.program, target:config.target, fixtures:reports, note:"Program interface not assumed; stale runtime is not considered migrated until SDK registration is updated."}));
+println(json_stringify({ok:true, scaffold:config.program == null, control_checks:8, migration_checks:migration_checks, program:config.program, target:config.target, fixtures:reports, note:"Program interface not assumed; stale runtime is not considered migrated until SDK registration is updated."}));

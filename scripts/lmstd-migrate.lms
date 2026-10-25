@@ -36,7 +36,7 @@ fn signatures(schema) {
   }
   return join(sort(result),"\n") + (result.len() > 0 ? "\n" : "");
 }
-fn same_json(a,b) { return signatures(a) == signatures(b) && json_stringify(a.get("enums",{})) == json_stringify(b.get("enums",{})) && json_stringify(a.get("conversions",[])) == json_stringify(b.get("conversions",[])); }
+fn same_json(a,b) { return json_stringify(a) == json_stringify(b); }
 fn clean(repo) {
   s = git.status(repo);
   return s.staged.len() == 0 && s.unstaged.len() == 0 && s.untracked.len() == 0 && s.conflicted.len() == 0;
@@ -121,15 +121,16 @@ fn pure_compile(text) {
   return true;
 }
 
-opts = {apply:false, historical:false, target:"0.2.420", repo:"", report:"", sdk:path_join(env("HOME"),"repos/dsl/lmcode-cpp"), compiler:"lmscript", tests:"auto"};
+opts = {apply:false, historical:false, fixture:false, target:"0.2.420", repo:"", report:"", sdk:path_join(env("HOME"),"repos/dsl/lmcode-cpp"), compiler:"lmscript", tests:"auto", sweep:path_join(env("HOME"),"tools/lmcode-sweep.sh"), lexer:env("LMSCRIPT_LEXER","")};
 i = 0;
 while (i < ARGV.len()) {
   arg = ARGV[i];
   if (arg == "--apply") { opts.apply = true; }
   else if (arg == "--dry-run") { opts.apply = false; }
   else if (arg == "--historical") { opts.historical = true; }
+  else if (arg == "--local-fixture") { opts.fixture = true; }
   else {
-    if (!contains(["--repo","--target","--report","--sdk","--compiler","--tests"],arg) || i + 1 >= ARGV.len()) { refuse("usage: lmstd-migrate.lms --repo DIR [--target 0.2.420] [--dry-run|--apply] [--historical] [--sdk DIR] [--compiler PATH] [--tests auto|always|never] [--report FILE]"); }
+    if (!contains(["--repo","--target","--report","--sdk","--compiler","--tests","--sweep","--lexer"],arg) || i + 1 >= ARGV.len()) { refuse("usage: lmstd-migrate.lms --repo DIR [--target 0.2.420] [--dry-run|--apply] [--historical] [--sdk DIR] [--compiler PATH] [--tests auto|always|never] [--report FILE]"); }
     i = i + 1;
     opts[substring(arg,2)] = ARGV[i];
   }
@@ -150,8 +151,12 @@ remote = trim(remote_result.stdout);
 remote_name = regex_match(remote,"(?:[:/])([^/]+?)(?:\\.git)?$");
 if (remote_name != null) { name = remote_name[1]; }
 if (contains(excluded,name) || regex_test(remote,"lmctl-mono(?:\\.git)?$")) { refuse("excluded repository " + name); }
-if (!opts.historical && !regex_test(remote,"(?:github\\.com[:/])lmctl-ai/")) { refuse("origin must already identify an lmctl-ai repository"); }
+if (!opts.historical && !opts.fixture && !regex_test(remote,"(?:github\\.com[:/])lmctl-ai/")) { refuse("origin must already identify an lmctl-ai repository"); }
 if (opts.historical && (!starts_with(repo,"/tmp/claude-1000/scratch-lmcode/") || opts.apply)) { refuse("--historical is scratch-only and never commits/pushes"); }
+if (opts.fixture) {
+  if (!starts_with(repo,"/tmp/claude-1000/scratch-lmcode/") || !starts_with(remote,"/tmp/claude-1000/scratch-lmcode/") || !starts_with(trim(run(["realpath",remote],repo)),"/tmp/claude-1000/scratch-lmcode/")) { refuse("local fixture requires existing local-only scratch repository and origin"); }
+  set_env("GIT_ALLOW_PROTOCOL","file");
+}
 if (!clean(repo)) { refuse("dirty tree"); }
 head = trim(gitcmd(repo,["rev-parse","HEAD"]));
 push_url = trim(gitcmd(repo,["remote","get-url","--push","origin"]));
@@ -177,6 +182,44 @@ tracked = split(trim(gitcmd(repo,["ls-files"])),"\n");
 candidates = [];
 for (file in tracked) { push(candidates,file); }
 report = {repo:repo, name:name, mode:opts.apply ? "apply" : "dry-run", head:head, target:opts.target, status:"no-op", scratch:work, patterns:[], unrecognized:[], examples:[], bytecode:[], tests:"not-needed", diff:"", changed_files:[]};
+# Reuse the exact existing lexer-based delimiter sweep, always in staging mode.
+report.delimiters = {status:"not-run-local-fixture",ambiguous:[]};
+if (!opts.fixture && regex_test(remote,"github\\.com[:/]")) {
+  if (opts.lexer == "" && file_exists(opts.sweep)) {
+    mono = path_join(env("HOME"),"repos/lmctlhq/lmctl-mono");
+    trees = system(["git","-C",mono,"worktree","list","--porcelain"]);
+    if (trees.code == 0) {
+      for (line in lines(trees.stdout)) {
+        if (starts_with(line,"worktree ") && opts.lexer == "") {
+          tree = substring(line,len("worktree "));
+          for (module in ["lmscript/dist/lmscript.js","lmscript/lmscript.ts"]) {
+            candidate = path_join(tree,module);
+            if (opts.lexer == "" && file_exists(candidate)) {
+              probe = system(["bash",opts.sweep,"--self-test","--lexer",candidate]);
+              if (probe.code == 0) { opts.lexer = candidate; }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (!file_exists(opts.sweep) || opts.lexer == "" || !file_exists(opts.lexer)) { refuse("delimiter capability unavailable: supply --sweep and --lexer (published lmscript CLI does not export Lexer)"); }
+  sweep_stage = path_join(work,"delimiters");
+  sweep_report = path_join(work,"delimiter-report.json");
+  run(["bash",opts.sweep,"--dry-run","--root",dirname(repo),"--repo",basename(repo),"--lexer",opts.lexer,"--stage",sweep_stage,"--report-json",sweep_report],repo);
+  sweep = read_json(sweep_report);
+  if (sweep.repositories.len() != 1) { refuse("delimiter sweep did not identify exactly this existing repository"); }
+  info = sweep.repositories[0];
+  report.delimiters.status = "checked"; report.delimiters.lexer = opts.lexer;
+  for (entry in info.files) {
+    if (entry.has("replacements") && entry.replacements.len() > 0) {
+      if (!contains(tracked,entry.path)) { refuse("delimiter sweep proposed an untracked path"); }
+      put(stage,entry.path,read_file(path_join(sweep_stage,info.name,entry.path)),candidates);
+    }
+    for (hit in entry.get("ambiguous",[])) { push(report.delimiters.ambiguous,{file:entry.path,hit:hit}); }
+    if (entry.get("diagnostics",[]).len() > 0) { push(report.unrecognized,"delimiter diagnostics: " + entry.path); }
+  }
+}
 # Literal compiler pins only: unrelated version prose and fixture numbers survive.
 pins = system(["git","-C",repo,"grep","-IlE","@lmctl-ai/lmctl@0\\.2\\.[0-9]+"]);
 if (pins.code == 0) {
@@ -251,7 +294,7 @@ sys.stdout.buffer.write((json.dumps(bridge.remove_standard(schema, standard), in
     if (!file_exists(selector_file)) { push(report.unrecognized,"missing compiler selector"); }
     else {
       text = read_file(selector_file);
-      if (!contains(text,"str_len(\"implicit std\")") && !contains(text,"implicit-std.schema.json")) {
+      if (!contains(text,"str_len(") && !contains(text,"implicit-std.schema.json")) {
         if (!contains(text,"probe.schema.json") && !contains(text,"probe.dslb")) { push(report.unrecognized,"compiler selector probe"); }
         else { put(stage,"scripts/select-compiler.sh",selector(opts.target),candidates); migrating = true; push(report.patterns,"v5-selector-to-implicit-std-probe"); }
       } else {
@@ -305,6 +348,33 @@ if (migrating && schema_pair != null) {
     put(stage,"README.md",text,candidates);
   }
 }
+# Compile-only schema fixtures have no native embedding pipeline to rewrite.
+if (!file_exists(cmake_file)) {
+  for (file in tracked) {
+    if (starts_with(file,"schema/") && ends_with(file,".dsl.json")) {
+      if (file_exists(path_join(stage,"scripts/gen-schema.py")) || file_exists(path_join(stage,"Cargo.toml")) || file_exists(path_join(stage,"go.mod"))) { push(report.unrecognized,"non-CMake schema embedding: " + file); }
+      else {
+        stripped = path_join(work,"standalone-host-only.json");
+        run(["python3",helper,"--std",std,"--host-only",path_join(stage,file),stripped],stage);
+        if (!same_json(read_json(path_join(stage,file)),read_json(stripped))) {
+          put(stage,file,read_file(stripped),candidates);
+          migrating = true; push(report.patterns,"compile-only-schema");
+        }
+      }
+    }
+  }
+}
+# A declared standard surface in an unrecognized pipeline is never a no-op.
+for (file in tracked) {
+  if (starts_with(file,"schema/") && ends_with(file,".json")) {
+    value = json_parse_safe(read_file(path_join(stage,file)),null);
+    if (type(value) == "object" && value.get("dsl.schema",null) == 2) {
+      stripped = path_join(work,"schema-inspection.json");
+      run(["python3",helper,"--std",std,"--host-only",path_join(stage,file),stripped],stage);
+      if (!same_json(value,read_json(stripped))) { push(report.unrecognized,"standard declarations remain in unrecognized schema pipeline: " + file); }
+    }
+  }
+}
 # A current compiler pin must never hide a stale VM runtime.
 vm = path_join(stage,"cpp/dslvm.hpp");
 if (file_exists(vm)) {
@@ -337,28 +407,51 @@ for (file in candidates) {
 if (report.changed_files.len() > 0) { report.status = "ready"; }
 if (report.unrecognized.len() > 0) { report.status = "unrecognized"; }
 if (report.status == "ready") {
-  # Compile only recognized pure wrappers. Unknown effects are a reported block.
+  # Associate bytecode only when exactly one tracked wrapper identifies it.
+  recipes = {};
+  for (file in tracked) {
+    if (ends_with(file,".dslb")) {
+      matches = [];
+      for (source in tracked) {
+        if (ends_with(source,".lms") && (replace_all(basename(source),".lms",".dslb") == basename(file) || contains(read_file(path_join(stage,source)),json_stringify(file)))) { push(matches,source); }
+      }
+      if (matches.len() != 1) { push(report.unrecognized,"checked-in bytecode recipe: " + file); }
+      else {
+        source = matches[0];
+        if (!recipes.has(source)) { recipes[source] = []; }
+        push(recipes[source],file);
+      }
+    }
+  }
   artifacts = path_join(work,"artifacts"); mkdir(artifacts);
   for (file in tracked) {
-    if (starts_with(file,"examples/") && ends_with(file,".lms") || ends_with(file,".dslb")) {
-      if (ends_with(file,".dslb")) { push(report.bytecode,{file:file,status:"unrecognized-recipe"}); push(report.unrecognized,"checked-in bytecode recipe: " + file); }
-      else {
-        text = read_file(path_join(stage,file));
-        if (pure_compile(text)) {
-          output = path_join(artifacts,replace_all(file,"/","_") + ".dslb");
-          # Constrain writes before execution: passing argv does not override
-          # a wrapper's literal savedsl path. Keep the source's directory so
-          # relative schema lookup is unchanged, then restore its exact text.
-          save = regex_match(text, '^[ \t]*savedsl\\(([A-Za-z_][A-Za-z0-9_]*), [^\\r\\n]+\\);\\r?$', "m");
-          if (save == null) { refuse("recognized wrapper lacks an isolated savedsl: " + file); }
-          sanitized = replace(text,save[0],"savedsl(" + save[1] + ", " + json_stringify(output) + ");");
-          write_file(path_join(stage,file),sanitized);
-          run([opts.compiler,"--no-preflight",path_join(stage,file),output],stage);
-          write_file(path_join(stage,file),text);
-          if (!file_exists(output)) { push(report.unrecognized,"compile wrapper ignores output argument: " + file); }
-          else { push(report.examples,{file:file,status:"compiled",output:output}); }
-        } else { push(report.unrecognized,"example requires explicit compile recipe: " + file); }
-      }
+    if (ends_with(file,".lms") && (starts_with(file,"examples/") || recipes.has(file))) {
+      text = read_file(path_join(stage,file));
+      if (pure_compile(text)) {
+        schema_option = regex_match(text,'schema="([^"\\r\\n]+)"');
+        resolved = path_join(dirname(path_join(stage,file)),schema_option[1]);
+        if (!starts_with(resolved,stage + "/")) { push(report.unrecognized,"schema outside archive: " + file); continue; }
+        output = path_join(artifacts,replace_all(file,"/","_") + ".dslb");
+        # Compile a controlled copy while preserving relative schema lookup.
+        save = regex_match(text, '^[ \t]*savedsl\\(([A-Za-z_][A-Za-z0-9_]*), [^\\r\\n]+\\);\\r?$', "m");
+        if (save == null) { refuse("recognized wrapper lacks an isolated savedsl: " + file); }
+        sanitized = replace(text,save[0],"savedsl(" + save[1] + ", " + json_stringify(output) + ");");
+        write_file(path_join(stage,file),sanitized);
+        run([opts.compiler,"--no-preflight",path_join(stage,file),output],stage);
+        write_file(path_join(stage,file),text);
+        if (!file_exists(output)) { push(report.unrecognized,"compile wrapper ignores output argument: " + file); }
+        else {
+          push(report.examples,{file:file,status:"compiled",output:output});
+          for (binary in recipes.get(file,[])) {
+            target = path_join(stage,binary);
+            if (target != output) { run(["cp",output,target],stage); }
+            push(report.bytecode,{file:binary,source:file,status:"compiled"});
+            diff = system(["git","diff","--no-index","--no-ext-diff","--binary","--",path_join(repo,binary),target]);
+            if (diff.code == 1 && !contains(report.changed_files,binary)) { push(report.changed_files,binary); report.diff = report.diff + diff.stdout; }
+            else if (diff.code != 0 && diff.code != 1) { refuse("bytecode diff failed: " + binary); }
+          }
+        }
+      } else { push(report.unrecognized,"example requires explicit compile recipe: " + file); }
     }
   }
   if (file_exists(vm) && report.unrecognized.len() == 0) {
@@ -385,7 +478,8 @@ if (opts.apply && report.status == "ready") {
   gitcmd(repo,["-c","user.name=mike-lmctl","-c","user.email=281311770+mike-lmctl@users.noreply.github.com","commit","-m",message]);
   gitcmd(repo,["push","origin","HEAD:main"]);
   report.commit = trim(gitcmd(repo,["rev-parse","HEAD"])); report.status = "applied";
-  ci = system(["gh","run","list","--repo","lmctl-ai/"+name,"--branch","main","--limit","1","--json","databaseId,headSha,url,status,conclusion"]);
+  ci = {code:0,stdout:"[]",stderr:"local fixture has no CI"};
+  if (!opts.fixture) { ci = system(["gh","run","list","--repo","lmctl-ai/"+name,"--branch","main","--limit","1","--json","databaseId,headSha,url,status,conclusion"]); }
   report.ci = {code:ci.code,stdout:ci.stdout,stderr:ci.stderr};
   if (ci.code == 0) {
     runs = json_parse(ci.stdout);
