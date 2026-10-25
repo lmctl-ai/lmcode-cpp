@@ -1,0 +1,268 @@
+# CI-free fixture scaffold for ~/tools/lmstd-migrate.lms.
+#
+# Usage:
+#   lmscript tests/lmstd-migrate-selftest.lms CONFIG.json SCRATCH_DIR
+#
+# CONFIG.json is deliberately interface-neutral. Until lmstd-migrate.lms has
+# a stable CLI, set {"program": null}; the script then validates fixture
+# setup, local-only origins, dirty/behind controls and expected no-write
+# boundaries without claiming migration success. Once the program is ready,
+# CONFIG.argv supplies an argv template for one invocation, for example:
+# {"program":"/tmp/.../lmstd-migrate.lms",
+#  "argv":["{program}","--repo","{repo}","--target","{target}","--dry-run",
+#          "--report","{report}"]}
+# Placeholders are substituted by this script; no migration flags are guessed.
+
+import "native:git";
+
+fn fail(message) {
+  println(json_stringify({ok:false, error:message}));
+  return false;
+}
+
+fn checked(argv, cwd) {
+  result = system(argv, {cwd:cwd, timeoutMs:120000});
+  assert(result.code == 0, json_stringify({argv:argv, cwd:cwd, code:result.code, stderr:result.stderr, stdout:result.stdout}));
+  return result.stdout;
+}
+
+fn command(repo, args) {
+  return checked(concat(["git", "-C", repo], args), repo);
+}
+
+fn sha(repo) {
+  return trim(git.rev_parse(repo, "HEAD"));
+}
+
+fn status(repo) {
+  return git.status(repo);
+}
+
+fn clean(repo) {
+  state = status(repo);
+  return state.unstaged.len() == 0 && state.staged.len() == 0 && state.untracked.len() == 0 && state.conflicted.len() == 0;
+}
+
+fn blob_hash(repo, file) {
+  return trim(command(repo, ["hash-object", "--no-filters", file]));
+}
+
+fn snapshot(repo, files) {
+  result = {};
+  for (file in files) {
+    path = path_join(repo, file);
+    result[file] = null;
+    if (file_exists(path)) {
+      result[file] = blob_hash(repo, file);
+    }
+  }
+  return result;
+}
+
+fn porcelain(repo) {
+  return command(repo, ["status", "--porcelain=v1", "--untracked-files=all"]);
+}
+
+fn origin_refs(origin) {
+  return command(origin, ["show-ref"]);
+}
+
+fn fixture(root, name, files) {
+  folder = path_join(root, name);
+  origin = path_join(folder, "origin.git");
+  seed = path_join(folder, "seed");
+  repo = path_join(folder, name);
+  seed_hooks = path_join(folder, "seed-hooks");
+  origin_hooks = path_join(folder, "origin-hooks");
+  hooks = path_join(folder, "private-hooks");
+  mkdir(folder);
+  mkdir(seed_hooks);
+  mkdir(origin_hooks);
+  mkdir(hooks);
+  checked(["git","init",seed], root);
+  command(seed, ["config","user.name","fixture"]);
+  command(seed, ["config","user.email","fixture@example.invalid"]);
+  command(seed, ["config","core.hooksPath",seed_hooks]);
+  for (entry in files) {
+    path = path_join(seed, entry.path);
+    mkdir(dirname(path));
+    write_file(path, entry.content);
+  }
+  command(seed, ["add","."]);
+  command(seed, ["commit","-m","fixture base"]);
+  command(seed, ["branch","-M","main"]);
+  checked(["git","clone","--bare",seed,origin], root);
+  command(origin, ["config","core.hooksPath",origin_hooks]);
+  checked(["git","clone","--branch","main",origin,repo], root);
+  command(repo, ["config","user.name","fixture"]);
+  command(repo, ["config","user.email","fixture@example.invalid"]);
+  command(repo, ["config","core.hooksPath",hooks]);
+  assert(trim(command(repo,["remote","get-url","--push","origin"])) == origin, "fixture push target must stay local");
+  paths = [];
+  for (entry in files) {
+    push(paths, entry.path);
+  }
+  return {name:name, root:folder, repo:repo, origin:origin, seed:seed, hooks:hooks, seed_hooks:seed_hooks, origin_hooks:origin_hooks, files:paths, base:sha(repo)};
+}
+
+fn compile_fixture(item) {
+  source = path_join(item.repo, "program.lms");
+  output = path_join(item.repo, "program.dslb");
+  checked(["lmscript",source,output], item.repo);
+  command(item.repo, ["add","program.dslb"]);
+  command(item.repo, ["commit","-m","compile fixture"]);
+  command(item.repo, ["push","origin","main"]);
+  item.files = concat(item.files, ["program.dslb"]);
+  item.base = sha(item.repo);
+  return item;
+}
+
+fn render(template, values) {
+  output = [];
+  for (part in template) {
+    text = part;
+    for (key in ["program","repo","target","report","root"]) {
+      text = replace_all(text, "{" + key + "}", values[key]);
+    }
+    push(output, text);
+  }
+  return output;
+}
+
+fn run_program(config, item, mode) {
+  if (!config.has("program") || config.program == null) {
+    return {status:"skipped", reason:"migration program unavailable"};
+  }
+  assert(type(config.argv) == "array", "config.argv must be an argv template when program is configured");
+  report = path_join(item.root, mode + ".report.json");
+  values = {program:config.program, repo:item.repo, target:config.target, report:report, root:item.root};
+  argv = render(config.argv, values);
+  timeout = 120000;
+  if (config.has("timeoutMs")) {
+    timeout = config.timeoutMs;
+  }
+  result = system(argv, {cwd:item.repo, timeoutMs:timeout});
+  outcome = "failed";
+  if (result.code == 0) {
+    outcome = "ok";
+  }
+  report_text = null;
+  if (file_exists(report)) {
+    report_text = read_file(report);
+  }
+  return {status:outcome, code:result.code, argv:argv, stdout:result.stdout, stderr:result.stderr, report:report_text};
+}
+
+fn refs(repo) {
+  return {head:sha(repo), origin:trim(command(repo,["rev-parse","refs/remotes/origin/main"]))};
+}
+
+config = read_json(ARGV[0]);
+root = ARGV[1];
+assert(regex_test(root, "^/tmp/claude-1000/scratch-lmcode/"), "scratch root is required");
+if (!config.has("program")) {
+  config.program = null;
+}
+if (!config.has("target")) {
+  config.target = "0.2.420";
+}
+if (!config.has("sourceRoot")) {
+  config.sourceRoot = Directory;
+}
+if (config.has("repo")) {
+  assert(!contains(["lmproxy","lmcode-java","lmdb","lmctl-mono"], config.repo), "excluded repository");
+}
+assert(!file_exists(root), "choose a fresh scratch directory");
+mkdir(root);
+source_root = config.sourceRoot;
+merge_helper = read_file(path_join(source_root, "scripts/merge-std.py"));
+canonical_std = read_file(path_join(source_root, "std/lmcode-std.schema.json"));
+
+pin = fixture(root, "plain-pin", [
+  {path:".github/workflows/ci.yml", content:"npm i -g @lmctl-ai/lmctl@0.2.419\n"},
+  {path:"README.md", content:"version 0.2.4199 remains unrelated\n"}
+]);
+cmake = fixture(root, "cmake-merge", [
+  {path:"schema/demo.host.json", content:"{\"dsl.schema\":2,\"name\":\"demo\",\"functions\":{},\"types\":{},\"context\":{}}\n"},
+  {path:"cpp/std/lmcode-std.schema.json", content:canonical_std},
+  {path:"scripts/merge-std.py", content:merge_helper},
+  {path:"CMakeLists.txt", content:"set(STD_SCHEMA cpp/std/lmcode-std.schema.json)\nset(MERGE scripts/merge-std.py)\nexecute_process(COMMAND python3 ${MERGE} schema/demo.host.json schema/demo.dsl.json)\n"}
+]);
+generator = fixture(root, "schema-generator", [
+  {path:"scripts/gen-schema.py", content:"import subprocess\nout = subprocess.check_output([host, '--dsl-signatures'])\n"},
+  {path:"schema/demo.dsl.json", content:"{\"dsl.schema\":2,\"name\":\"demo\",\"functions\":{\"str_len\":[{\"params\":[\"string\"],\"returns\":\"int\"}]},\"types\":{},\"context\":{}}\n"}
+]);
+compile_case = fixture(root, "compile-fixture", [
+  {path:"schema/demo.dsl.json", content:"{\"dsl.schema\":2,\"name\":\"demo\",\"functions\":{\"str_len\":[{\"params\":[\"string\"],\"returns\":\"int\"}]},\"types\":{},\"context\":{}}\n"},
+  {path:"program.lms", content:"p = _dsl_ schema=\"schema/demo.dsl.json\";\nlet n = str_len(\"abc\");\nend _dsl_\nsavedsl(p, \"program.dslb\");\n"}
+]);
+compile_case = compile_fixture(compile_case);
+unknown = fixture(root, "unknown-pattern", [
+  {path:"schema/demo.dsl.json", content:"{\"dsl.schema\":2,\"name\":\"demo\",\"functions\":{\"str_len\":[{\"params\":[\"string\"],\"returns\":\"int\"}]},\"types\":{},\"context\":{}}\n"},
+  {path:"CMakeLists.txt", content:"execute_process(COMMAND custom_merger --mystery)\n"},
+  {path:"scripts/select-compiler.sh", content:"custom_probe --schema merged.json\n"}
+]);
+
+fixtures = [pin, cmake, generator, compile_case, unknown];
+reports = [];
+for (item in fixtures) {
+  before = snapshot(item.repo, item.files);
+  before_refs = refs(item.repo);
+  before_status = porcelain(item.repo);
+  before_origin_refs = origin_refs(item.origin);
+  dry = run_program(config, item, "dry-run");
+  after = snapshot(item.repo, item.files);
+  after_refs = refs(item.repo);
+  after_status = porcelain(item.repo);
+  after_origin_refs = origin_refs(item.origin);
+  assert(json_stringify(before) == json_stringify(after), item.name + " dry-run wrote files");
+  assert(before_refs.head == after_refs.head && before_refs.origin == after_refs.origin, item.name + " dry-run changed git refs");
+  assert(before_status == after_status, item.name + " dry-run changed complete porcelain status");
+  assert(before_origin_refs == after_origin_refs, item.name + " dry-run changed bare-origin refs");
+  push(reports, {name:item.name, repo:item.repo, origin:item.origin, before:before, after:after, before_refs:before_refs, after_refs:after_refs, before_origin_refs:before_origin_refs, after_origin_refs:after_origin_refs, dry_run:dry, no_write:true, push_target:trim(command(item.repo,["remote","get-url","--push","origin"]))});
+}
+
+# Dirty refusal control: no program invocation is needed to prove the fixture
+# is correctly prepared for this negative case.
+write_file(path_join(pin.repo, "DIRTY.marker"), "uncommitted\n");
+dirty_state = status(pin.repo);
+assert(!clean(pin.repo), "dirty control must be dirty");
+dirty_before = snapshot(pin.repo, [".github/workflows/ci.yml", "README.md", "DIRTY.marker"]);
+dirty_refs_before = refs(pin.repo);
+dirty_status_before = porcelain(pin.repo);
+dirty_origin_before = origin_refs(pin.origin);
+dirty_run = run_program(config, pin, "dirty");
+dirty_after = snapshot(pin.repo, [".github/workflows/ci.yml", "README.md", "DIRTY.marker"]);
+dirty_refs_after = refs(pin.repo);
+dirty_status_after = porcelain(pin.repo);
+dirty_origin_after = origin_refs(pin.origin);
+assert(json_stringify(dirty_before)==json_stringify(dirty_after), "dirty refusal wrote files");
+assert(dirty_refs_before.head == dirty_refs_after.head && dirty_refs_before.origin == dirty_refs_after.origin, "dirty refusal changed git refs");
+assert(dirty_status_before == dirty_status_after && dirty_origin_before == dirty_origin_after, "dirty refusal changed status or origin refs");
+push(reports, {name:"dirty-control", status:dirty_state, run:dirty_run, no_write:true, refs_unchanged:true, status_unchanged:true});
+
+# Behind control uses a second local clone and never a network remote.
+behind_item = fixture(root, "behind-control", [{path:"README.md", content:"behind base\n"}]);
+behind = path_join(root, "behind-control-clone");
+checked(["git","clone","--branch","main",behind_item.origin,behind], root);
+command(behind,["config","user.name","fixture"]);
+command(behind,["config","user.email","fixture@example.invalid"]);
+command(behind,["config","core.hooksPath",behind_item.hooks]);
+write_file(path_join(behind,"remote-change.txt"), "remote\n");
+command(behind,["add","."]); command(behind,["commit","-m","remote update"]); command(behind,["push","origin","main"]);
+command(behind_item.repo,["fetch","origin"]);
+behind_state = status(behind_item.repo);
+assert(clean(behind_item.repo), "behind control must be clean independent of dirty control");
+behind_refs_before = refs(behind_item.repo);
+behind_status_before = porcelain(behind_item.repo);
+behind_origin_before = origin_refs(behind_item.origin);
+behind_run = run_program(config, behind_item, "behind");
+behind_refs_after = refs(behind_item.repo);
+behind_status_after = porcelain(behind_item.repo);
+behind_origin_after = origin_refs(behind_item.origin);
+assert(behind_state.behind > 0, "behind control must be behind");
+assert(behind_refs_before.head == behind_refs_after.head && behind_refs_before.origin == behind_refs_after.origin, "behind refusal changed git refs");
+assert(behind_status_before == behind_status_after && behind_origin_before == behind_origin_after, "behind refusal changed status or origin refs");
+push(reports, {name:"behind-control", status:behind_state, run:behind_run, expected_refusal:true, refs_unchanged:true, status_unchanged:true, push_target:trim(command(behind_item.repo,["remote","get-url","--push","origin"]))});
+
+println(json_stringify({ok:true, scaffold:true, control_checks:7, migration_checks:0, program:config.program, target:config.target, fixtures:reports, note:"Program interface not assumed; skipped migration assertions are explicit."}));
