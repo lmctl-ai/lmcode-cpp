@@ -14,10 +14,15 @@ def make_schema(path):
     path.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
 
 def workloads(n):
+    query = "reinsert" if n == 1 else "k1"
+    query_expected = "z" if n == 1 else ("updated" if n // 2 == 1 else "v")
+    key_zero = "reinsert" if n == 1 else "k1"
+    key_sum = len("reinsert") if n == 1 else sum(len("k" + str(i)) for i in range(1, n, 2)) + len("reinsert")
+    value_sum = n + 6
     return {
         "startup": ('t.int(1);', ["int 1"]),
-        "str-list": (f'let l = str_list(); for (i in range(0, {n})) {{ l.add("x"); }} t.int(l.len()); t.int(str_len(l.at({n-1}))); t.bool(l.contains("x")); t.int(l.index_of("x")); t.int(str_len(l.join("")));', [f"int {n}", "int 1", "bool true", "int 0", f"int {n}"]),
-        "str-map": (f'let m = str_map(); for (i in range(0, {n})) {{ m.set("k" + str(i), "v"); }} m.set("k{n//2}", "updated"); m.set("reinsert", "z"); t.int(m.len()); t.bool(m.has("k{n//2}")); t.str(m.get("k{n//2}")); t.str(m.get_or("missing", "fallback")); t.str(m.key_at({n-1})); for (i in range(0, {n})) {{ if (i % 2 == 0) {{ m.remove("k" + str(i)); }} }} t.int(m.len()); t.str(m.key_at(0)); t.str(m.get("k{n//2+1}"));', [f"int {n+1}", "bool true", "str updated", "str fallback", f"str k{n-1}", f"int {n//2+1}", "str k1", f"str v"]),
+        "str-list": (f'let l = str_list(); for (i in range(0, {n})) {{ l.add("x"); }} let sum = 0; for (i in range(0, {n})) {{ sum = sum + str_len(l.at(i)); }} t.int(l.len()); t.int(sum); t.bool(l.contains("x")); t.int(l.index_of("x")); t.int(str_len(l.join("")));', [f"int {n}", f"int {n}", "bool true", "int 0", f"int {n}"]),
+        "str-map": (f'let m = str_map(); for (i in range(0, {n})) {{ m.set("k" + str(i), "v"); }} m.set("k{n//2}", "updated"); m.set("reinsert", "z"); let has_count = 0; let value_sum = 0; for (i in range(0, {n})) {{ if (m.has("k" + str(i))) {{ has_count = has_count + 1; value_sum = value_sum + str_len(m.get("k" + str(i))); }} }} t.int(m.len()); t.int(has_count); t.int(value_sum); t.bool(m.has("k{n//2}")); t.str(m.get("k{n//2}")); t.str(m.get_or("missing", "fallback")); t.str(m.key_at({n-1})); for (i in range(0, {n})) {{ if (i % 2 == 0) {{ m.remove("k" + str(i)); }} else {{ let ignored = m.key_at(m.len() - 1); }} }} let key_sum = 0; for (i in range(0, m.len())) {{ key_sum = key_sum + str_len(m.key_at(i)); }} t.int(m.len()); t.int(key_sum); t.str(m.key_at(0)); t.str(m.get("{query}"));', [f"int {n+1}", f"int {n}", f"int {value_sum}", "bool true", "str updated", "str fallback", f"str k{n-1}", f"int {n//2+1}", f"int {key_sum}", f"str {key_zero}", f"str {query_expected}"]),
         "string-heavy": (f'let x = str_repeat("ab", {n}); let r = str_replace(x, "ab", "x"); t.int(str_len(r)); let p = str_split(str_repeat("a,", {n}), ","); t.int(p.len()); t.bool(str_match(str_repeat("a", {n}), "a*"));', [f"int {n}", f"int {n+1}", "bool true"]),
         "file-200mb": ('let p = test_temp_dir() + "/bench.bin"; let x = str_repeat("x", 50000000) + str_repeat("y", 50000000); file_write(p, x); t.int(str_len(file_read(p))); file_append(p, str_repeat("z", 50000000) + str_repeat("w", 50000000)); t.int(str_len(file_read(p))); t.int(file_lines(p).len());', ["int 100000000", "int 200000000", "int 1"]),
     }
@@ -47,7 +52,7 @@ def main():
             vector = compile_vector(Path(scratch), name, source, expected)
             for runner, command in runners.items():
                 warm = subprocess.run(command + [str(vector)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=args.timeout)
-                if warm.returncode: raise SystemExit(f"{runner}/{name} warmup failed: {warm.stderr[-1000:]}")
+                if warm.returncode: raise SystemExit(f"{runner}/{name} warmup failed: {warm.stdout[-1000:]} {warm.stderr[-1000:]}")
                 samples = []
                 for _ in range(args.repeat):
                     start = time.perf_counter(); run = subprocess.run(command + [str(vector)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=args.timeout); seconds = time.perf_counter() - start

@@ -1,0 +1,267 @@
+{
+  "date": "2026-10-24",
+  "machine": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "cpu": "x86_64",
+  "cpu_count": 4,
+  "toolchains": {
+    "gcc": "g++ 11.4.0",
+    "rust": "rustc 1.92.0",
+    "go": "go1.26.3 linux/amd64",
+    "dotnet": "8.0.132"
+  },
+  "build_flags": {
+    "cpp": "-std=c++17 -O2 -Wall -Wextra -pedantic",
+    "rust": "cargo build --release",
+    "go": "go build -trimpath -ldflags=-s -w",
+    "csharp": "dotnet build -c Release -warnaserror"
+  },
+  "heads": {
+    "cpp": "732f323db23896c73b9d9a5d92e820183826d148",
+    "rust": "e23b6130a0f2d7c00d0aa3314e72dc5b14639e95",
+    "go": "1b82b92c55a1cfbbb66bd6599669048810ec9427",
+    "csharp": "a21f346ba9bd97f8c81406fc4ca7d2827c96d7a2"
+  },
+  "method": "fresh process per sample; one warmup; three timed repetitions; compilation excluded; seconds; size=1000000",
+  "results": [
+    {
+      "runner": "cpp",
+      "workload": "startup",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.0014648870019300375,
+        0.0011276920013187919,
+        0.0012603909999597818
+      ]
+    },
+    {
+      "runner": "rust",
+      "workload": "startup",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.00081688900172594,
+        0.0007927719998406246,
+        0.0008290709993161727
+      ]
+    },
+    {
+      "runner": "go",
+      "workload": "startup",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.001198535999719752,
+        0.001208903002407169,
+        0.0011995149980066344
+      ]
+    },
+    {
+      "runner": "csharp",
+      "workload": "startup",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.04865502699976787,
+        0.0470844629999192,
+        0.04808778799997526
+      ]
+    },
+    {
+      "runner": "cpp",
+      "workload": "str-list",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.2826124200000777,
+        0.2833912189998955,
+        0.27680195100037963
+      ]
+    },
+    {
+      "runner": "rust",
+      "workload": "str-list",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.34965347400066094,
+        0.36270714400234283,
+        0.36002768999969703
+      ]
+    },
+    {
+      "runner": "go",
+      "workload": "str-list",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.38282304600215866,
+        0.3725954850015114,
+        0.3748420910014829
+      ]
+    },
+    {
+      "runner": "csharp",
+      "workload": "str-list",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.40221487500093644,
+        0.4072116969982744,
+        0.40853946099741734
+      ]
+    },
+    {
+      "runner": "cpp",
+      "workload": "str-map",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        1.872840013998939,
+        2.05304483999862,
+        1.9673953110032016
+      ]
+    },
+    {
+      "runner": "rust",
+      "workload": "str-map",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        1.6435963969997829,
+        1.8682730110012926,
+        1.624335948999942
+      ]
+    },
+    {
+      "runner": "go",
+      "workload": "str-map",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        2.4037691419980547,
+        2.4970430820030742,
+        6.637102764998417
+      ]
+    },
+    {
+      "runner": "csharp",
+      "workload": "str-map",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        5.115520449999167,
+        5.553656471998693,
+        4.831171858000744
+      ]
+    },
+    {
+      "runner": "cpp",
+      "workload": "string-heavy",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.11180918500031112,
+        0.13315800299824332,
+        0.0966761729978316
+      ]
+    },
+    {
+      "runner": "rust",
+      "workload": "string-heavy",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.21627778499896522,
+        0.15293724699949962,
+        0.17070250500182738
+      ]
+    },
+    {
+      "runner": "go",
+      "workload": "string-heavy",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.08967802299957839,
+        0.07403072700253688,
+        0.13347030700242613
+      ]
+    },
+    {
+      "runner": "csharp",
+      "workload": "string-heavy",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.6238917609989585,
+        0.4233438510018459,
+        0.5543002960002923
+      ]
+    },
+    {
+      "runner": "cpp",
+      "workload": "file-200mb",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        1.0084026680015086,
+        0.9969920020012069,
+        1.026249757000187
+      ]
+    },
+    {
+      "runner": "rust",
+      "workload": "file-200mb",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.4978130700001202,
+        0.48023425200153724,
+        0.47427749000053154
+      ]
+    },
+    {
+      "runner": "go",
+      "workload": "file-200mb",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        0.6527331110009982,
+        0.5344385060016066,
+        0.6487873060032143
+      ]
+    },
+    {
+      "runner": "csharp",
+      "workload": "file-200mb",
+      "size": 1000000,
+      "warmup": "pass",
+      "repetitions": 3,
+      "seconds": [
+        1.3362624539986427,
+        1.322221915001137,
+        1.3369306290005625
+      ]
+    }
+  ]
+}

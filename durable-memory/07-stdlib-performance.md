@@ -2,7 +2,7 @@
 
 `scripts/bench-stdlib.py` generates temporary schema-bound DSL workloads and runs prebuilt conformance executables. Compilation is outside the measured interval. Each workload gets one warmup execution, then the requested number of timed repetitions; the runner must report the expected short trace. The harness captures only the small runner result, never the large file or string trace.
 
-The workloads exercise one million operations for `StrList` and `StrMap`, a one-million-element replace/split/match workload, and a 100 MB write/read/append/lines workload. `--size 1000` is the fast smoke case. Supply additional SDK runners with repeated `--runner name=command`; the command receives the generated vector directory. The harness does not build SDKs or impose process limits.
+The workloads exercise one million operations for `StrList` and `StrMap`, including full indexed reads, updates, removals and joins, a one-million-element replace/split/match workload, and a 200 MB write/read/append/lines workload. `--size 1000` is the fast smoke case. Supply additional SDK runners with repeated `--runner name=command`; the command receives the generated vector directory. The harness does not build SDKs or impose process limits.
 
 Example:
 
@@ -17,10 +17,10 @@ The 1M run below was measured on 2026-10-24 in the shared Linux development cont
 
 | Workload | C++ | Rust | Go | C# |
 | --- | ---: | ---: | ---: | ---: |
-| Runner startup | 0.001491 | 0.001191 | 0.001593 | 0.066542 |
-| StrList add/at/contains/index_of/join | 0.170643 | 0.199916 | 0.560864 | 0.638771 |
-| StrMap set/has/get/get_or/key_at/remove/update/reinsert | 5.306035 | 1.711034 | 1.715219 | 1.576544 |
-| replace/split/match | 0.062723 | 0.064047 | 0.046193 | 0.219099 |
-| write/read/append/lines (200 MB total) | 1.399735 | 0.658817 | 0.806082 | 5.547340 |
+| Runner startup | 0.001260 | 0.000817 | 0.001200 | 0.048088 |
+| StrList add/at/contains/index_of/join | 0.282612 | 0.360028 | 0.374842 | 0.407212 |
+| StrMap set/has/get/get_or/key_at/remove/update/reinsert | 1.967395 | 1.643596 | 2.497043 | 5.115520 |
+| replace/split/match | 0.111809 | 0.170703 | 0.089678 | 0.554300 |
+| write/read/append/lines (200 MB total) | 1.008403 | 0.480234 | 0.648787 | 1.336262 |
 
-These are reference measurements for detecting regressions. They are not release gates and should be refreshed with the same workload size, warmup, repetition count, and machine description when comparing SDK implementations.
+Machine: x86_64, 4 available CPUs, Intel Core i9-14900HX; GCC 11.4.0, rustc 1.92.0, Go 1.26.3, .NET 8.0.132. Exact heads, flags, raw samples and method metadata are in `benchmarks/results/2026-10-24-linux-x64.json`. These are reference measurements for detecting regressions, not release gates.
