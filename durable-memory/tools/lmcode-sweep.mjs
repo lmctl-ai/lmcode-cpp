@@ -38,7 +38,7 @@ function repos() {
     const repo = fs.realpathSync(p), name = path.basename(repo);
     if (skip.has(name) || filter && filter !== name) continue;
     const remotes = git(repo,['config','--get-regexp','^remote\\..*\\.url$']).trim().split('\n').map(l => l.replace(/^\S+\s+/,''));
-    const remote = remotes.find(r => /github\.com[/:]lmctl-ai\//i.test(r));
+    const remote = remotes.find(r => /github\.com[/:](?:lmctl-ai|lmctlhq)\//i.test(r));
     if (remote) found.set(repo,{name,repo,remote});
   }
   return [...found.values()].sort((a,b) => cmp(a.name,b.name));
