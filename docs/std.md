@@ -6,9 +6,9 @@ Canonical signatures: 72.
 
 **Errors:** Catalog failures use RUN_HOST; file failures use FUNCTION: PATH: OS reason.
 
-**Lifetime:** Collections are context-owned, share a 65536 allocation budget, and handles expire at run boundaries.
+**Lifetime:** Default registries own standard collection lifetimes; handles are valid only for the active run. All collection types share a 65536-object allocation budget; clearing a collection does not reclaim an allocation.
 
-**Paths:** File paths are native OS paths; Unix preserves path bytes, Windows requires strict UTF-8 and rejects embedded NUL.
+**Paths:** Relative file paths use the process cwd without sandbox or root checks. Unix preserves native path bytes; Windows requires strict UTF-8 and supports long drive/UNC paths. Every platform rejects embedded NUL. Symlinks are followed; missing/broken paths and nonregular objects return false from file_exists, while other metadata errors trap.
 
 **Registration:** Registry defaults install 72 built-ins; testing print/assertions remain explicit host registrations.
 
@@ -16,7 +16,7 @@ Canonical signatures: 72.
 | --- | --- | --- | --- |
 | `fn file_append(string, string) -> void` | file | Create or append all raw bytes to a regular file. | FUNCTION: PATH: OS reason |
 | `fn file_exists(string) -> bool` | file | Return true only when metadata identifies a regular file; missing and nonregular paths return false. | FUNCTION: PATH: OS reason |
-| `fn file_lines(string) -> StrList` | file | Read raw bytes and split on LF, preserving CR, empty fields, and the final field. | FUNCTION: PATH: OS reason; StrList object limit exceeded (65536) |
+| `fn file_lines(string) -> StrList` | file | Read raw bytes and split on every LF, preserving CR and empty fields: empty file gives [""], and "a\n" gives ["a", ""]. Return an arena-owned StrList. | FUNCTION: PATH: OS reason; StrList object limit exceeded (65536) |
 | `fn file_read(string) -> string` | file | Read a complete regular file as raw bytes. | FUNCTION: PATH: OS reason |
 | `fn file_write(string, string) -> void` | file | Create or truncate a regular file and write all raw bytes. | FUNCTION: PATH: OS reason |
 | `fn float_list() -> FloatList` | collections | Construct an empty FloatList in the active collection arena. | FloatList object limit exceeded (65536) |
@@ -40,7 +40,7 @@ Canonical signatures: 72.
 | `fn str_contains(string, string) -> bool` | string | Byte substring search; an empty needle matches. | — |
 | `fn str_ends_with(string, string) -> bool` | string | Byte suffix comparison; an empty suffix matches. | — |
 | `fn str_find(string, string) -> int` | string | Return the first byte offset or -1; an empty needle returns 0. | — |
-| `fn str_is_float(string) -> bool` | string | Report whether the complete decimal token is a finite binary64, including representable subnormals. | — |
+| `fn str_is_float(string) -> bool` | string | Accept a complete signed decimal with optional decimal point and exponent, including representable subnormals. Reject whitespace, hex, NaN/infinity, overflow and underflow to zero. | — |
 | `fn str_is_int(string) -> bool` | string | Report whether the complete signed decimal token fits int64. | — |
 | `fn str_len(string) -> int` | string | Return the raw byte length, including NUL and invalid UTF-8 bytes. | — |
 | `fn str_list() -> StrList` | collections | Construct an empty StrList in the active collection arena. | StrList object limit exceeded (65536) |
@@ -48,11 +48,11 @@ Canonical signatures: 72.
 | `fn str_map() -> StrMap` | collections | Construct an empty insertion-ordered StrMap in the active collection arena. | StrMap object limit exceeded (65536) |
 | `fn str_match(string, string) -> bool` | string | Match a whole byte string with *, ?, classes, ranges, negation, and backslash escapes. | str_match: pattern exceeds the 2^27 work limit |
 | `fn str_repeat(string, int) -> string` | string | Repeat raw bytes; reject negative counts and results above 64 MiB. | str_repeat: count must be nonnegative and result at most 67108864 bytes |
-| `fn str_replace(string, string, string) -> string` | string | Replace nonoverlapping byte matches left to right; an empty search is a no-op. | str_replace: result must be at most 67108864 bytes |
+| `fn str_replace(string, string, string) -> string` | string | Replace nonoverlapping byte matches left to right; an empty search leaves bytes unchanged. Every result, including unchanged copies, is limited to 64 MiB. | str_replace: result must be at most 67108864 bytes |
 | `fn str_split(string, string) -> StrList` | collections | Split raw bytes on every nonoverlapping nonempty separator into a StrList. | str_split: separator must not be empty; StrList object limit exceeded (65536) |
 | `fn str_starts_with(string, string) -> bool` | string | Byte prefix comparison; an empty prefix matches. | — |
 | `fn str_substr(string, int, int) -> string` | string | Return a byte slice; clamp negative starts and overlong counts, with nonpositive counts empty. | — |
-| `fn str_to_float(string) -> float` | string | Parse a finite locale-independent decimal binary64 token; return zero on failure. | — |
+| `fn str_to_float(string) -> float` | string | Parse the same complete decimal grammar as str_is_float; return 0.0 on invalid input, overflow or underflow to zero. Preserve valid signed zero. | — |
 | `fn str_to_int(string) -> int` | string | Parse a complete signed decimal int64 token; return zero on failure. | — |
 | `fn str_trim(string) -> string` | string | Remove ASCII space and bytes 0x09 through 0x0d from both ends. | — |
 | `fn str_upper(string) -> string` | string | Uppercase ASCII a-z bytes; preserve every other byte. | — |

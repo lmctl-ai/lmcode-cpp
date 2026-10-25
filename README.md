@@ -33,7 +33,7 @@ SHA-256 binding).
 | **Standard Library Conformance** | **Same Bytecode, Four Runtimes** |
 | --- | --- |
 | <img src="docs/images/stdlib-conformance.png" width="440"> | <img src="docs/images/same-bytecode-four-runtimes.png" width="440"> |
-| 77 catalog vectors covering collections, math, string, file, and optional testing.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
+| 118 catalog vectors covering collections, math, string, file, and optional testing.<br>`build/conformance conformance/stdlib-vectors` | Cross-language parity: C++, Rust, Go, and C# run the exact same bytecode.<br>`PASS 51/51 vectors across 4 runtimes` |
 
 ## Embedding it in twenty lines
 
@@ -201,3 +201,5 @@ Every `dslvm::Registry` now includes the 72-signature standard by default. `Regi
 `std/lmcode-std.schema.json` is the canonical versioned surface. Until the compiler injects it implicitly, `python3 scripts/merge-std.py host.schema.json effective.schema.json` generates the effective compile/load schema without copying std declarations into host sources. The helper also extracts host-only schemas and normalizes compiler signature lists. Vendor `include/dslvm.hpp` together with all `stdlib/*.hpp`; default registration has no external library dependency. Individual group headers and explicit binders remain supported for manual opted-out registries. Domain-specific types and stricter assertions remain host APIs.
 
 `stdlib/file.hpp` supplies built-in `file_read`, `file_write`, `file_append`, `file_exists`, and `file_lines`: raw bytes, native paths, no newline translation. LF splitting preserves CR and a trailing empty field; failures report function, original path and OS reason.
+
+The [generated std reference](docs/std.md) lists every built-in signature, its byte semantics, and errors.
