@@ -6,7 +6,7 @@ set -euo pipefail
 # mutation commands or a repository build.
 SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
 COMPILER="${LMSCRIPT_LEXER:-/tmp/claude-1000/scratch-lmcode/compiler-lmctl-mono/lmscript/dist/lmscript.js}"
-ROOT="${LMCODE_SWEEP_ROOT:-/home/mma/repos/dsl}"
+ROOT="${LMCODE_SWEEP_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
 MODE=dry-run
 SELFTEST=0
 REPO_FILTER=""
