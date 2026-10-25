@@ -51,9 +51,9 @@ def main():
         result=subprocess.run(list(map(str,runners[sdk]+[corpus])),cwd=roots[sdk],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
         (output/(sdk+'-run.log')).write_bytes(result.stdout)
         if result.returncode: raise SystemExit(f'{sdk} corpus failed; see {output}/{sdk}-run.log')
-        lines=[line for line in result.stdout.splitlines(keepends=True) if line.startswith((b'TRACE\t',b'ERROR\t'))]
+        lines=[line for line in result.stdout.splitlines() if line.startswith((b'TRACE\t',b'ERROR\t'))]
         if not lines: raise SystemExit(f'{sdk}: runner emitted no actual traces; rebuild the runner')
-        traces[sdk]=b''.join(lines);(output/(sdk+'.trace')).write_bytes(traces[sdk])
+        traces[sdk]=b'\n'.join(lines)+b'\n';(output/(sdk+'.trace')).write_bytes(traces[sdk])
         print(f'{sdk}: {len(lines)} exact observations passed')
     for sdk in ['rust','go','csharp']:
         if traces[sdk]!=traces['cpp']:

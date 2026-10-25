@@ -46,8 +46,8 @@ The additional 11 `math-*` vectors use `math.schema.json` to cover all 16 intege
 ## Collections and testing
 
 The 32 additional collection/testing vectors use `collections.schema.json`;
-the complete catalog suite contains 117 vectors (61 string/math/collection/testing,
-16 file cases, and 40 seeded corpus cases). They cover every list/map
+the complete catalog suite contains 118 vectors (61 string/math/collection/testing,
+16 file cases, and 41 seeded corpus cases). They cover every list/map
 method, mutation chaining, insertion order, replacement without reordering,
 removal with index shifting, raw-byte keys/values, NaN lookup, empty iteration,
 split edge cases, and the shared 65536-object arena limit. Each vector starts
@@ -68,7 +68,7 @@ and pins the collection bounds, missing-key and assertion error contracts.
 
 ## Seeded property corpus
 
-The 40 `fuzz-*` cases use seeds 7, 42 and 20261024, with 16 rounds per seed,
+The 41 `fuzz-*` cases use seeds 7, 42 and 20261024, with 16 rounds per seed,
 plus independent trap cases and a 1,200,005-byte file round-trip.
 `scripts/gen-std-corpus.py` derives exact expectations from Python byte operations,
 ordered dictionaries, and independent numeric/glob rules, never from SDK output.

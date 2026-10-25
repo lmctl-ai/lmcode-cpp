@@ -47,6 +47,34 @@ int main(int argc, char** argv) {
   check(call("method StrMap.clear() -> StrMap", map.obj).obj == map.obj);
   check(call("method StrList.clear() -> StrList", s.obj).obj == s.obj);
   check(call("method StrList.len() -> int", s.obj).i == 0);
+  // Compaction must not resurrect a deleted first slot or lose a surviving key.
+  auto churn = construct("fn str_map() -> StrMap");
+  auto put = [&](void* obj, const std::string& key) { call("method StrMap.set(string, string) -> StrMap", obj, {Value::string(key), Value::string("v")}); };
+  auto drop = [&](void* obj, const std::string& key) { return call("method StrMap.remove(string) -> bool", obj, {Value::string(key)}).b; };
+  auto key_at = [&](void* obj, int64_t i) { return call("method StrMap.key_at(int) -> string", obj, {Value::integer(i)}).s; };
+  put(churn.obj, "deleted"); put(churn.obj, "stable"); check(drop(churn.obj, "deleted"));
+  bool churn_ok = true;
+  for (int i = 0; i < 5000; ++i) {
+    const auto key = std::to_string(i); put(churn.obj, key);
+    churn_ok = churn_ok && key_at(churn.obj, 0) == "stable" && drop(churn.obj, key);
+  }
+  check(churn_ok && call("method StrMap.len() -> int", churn.obj).i == 1);
+  check(!call("method StrMap.has(string) -> bool", churn.obj, {Value::string("deleted")}).b);
+  check(static_cast<StrMap*>(churn.obj)->items.size() <= 1028);
+  check(static_cast<StrMap*>(churn.obj)->entries() == std::vector<std::pair<std::string, std::string>>({{"stable", "v"}}));
+  auto* native_map = arena.make_str_map(); native_map->set("native", "value");
+  check(call("method StrMap.get(string) -> string", native_map, {Value::string("native")}).s == "value");
+  auto bulk = construct("fn str_map() -> StrMap");
+  for (int i = 0; i < 20000; ++i) put(bulk.obj, std::to_string(i));
+  bool order_ok = true;
+  for (int i = 0; i < 20000; i += 2) {
+    order_ok = order_ok && drop(bulk.obj, std::to_string(i));
+    order_ok = order_ok && key_at(bulk.obj, 20000 - i / 2 - 2) == "19999";
+  }
+  for (int i = 0; i < 10000; ++i) order_ok = order_ok && key_at(bulk.obj, i) == std::to_string(i * 2 + 1);
+  check(order_ok);
+  put(bulk.obj, "0"); put(bulk.obj, "1");
+  check(key_at(bulk.obj, 10000) == "0" && key_at(bulk.obj, 0) == "1");
   while (arena.size() < 65536) arena.make_int_list();
   check(static_cast<StrList*>(s.obj)->items.empty());
   refused([&] { arena.make_str_list(); }, "StrList object limit exceeded (65536)");

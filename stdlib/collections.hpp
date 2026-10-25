@@ -18,7 +18,70 @@ template<class T> struct CollectionList { std::vector<T> items; };
 using StrList = CollectionList<std::string>;
 using IntList = CollectionList<int64_t>;
 using FloatList = CollectionList<double>;
-struct StrMap { std::vector<std::pair<std::string, std::string>> items; std::unordered_map<std::string, size_t> index; size_t active = 0; std::vector<int32_t> fenwick; int prefix(size_t end) const { int sum = 0; while (end) { sum += fenwick[end]; end &= end - 1; } return sum; } void add_rank(size_t pos, int delta) { for (size_t i = pos + 1; i < fenwick.size(); i += i & (~i + 1)) fenwick[i] += delta; } size_t select_rank(size_t rank) const { size_t idx = 0, bit = 1; while ((bit << 1) < fenwick.size()) bit <<= 1; int sum = 0; for (; bit; bit >>= 1) { size_t next = idx + bit; if (next < fenwick.size() && sum + fenwick[next] <= int(rank)) { idx = next; sum += fenwick[next]; } } return idx; } void compact() { std::vector<std::pair<std::string, std::string>> live; live.reserve(active); for (size_t pos = 0; pos < items.size(); ++pos) if (index[items[pos].first] == pos) live.push_back(std::move(items[pos])); items.swap(live); index.clear(); for (size_t i = 0; i < items.size(); ++i) index.emplace(items[i].first, i); fenwick.assign(items.size() + 1, 0); for (size_t i = 1; i < fenwick.size(); ++i) fenwick[i] = int32_t(i & (~i + 1)); } };
+struct StrMap {
+  // Physical storage can contain tombstones. Native readers use entries().
+  std::vector<std::pair<std::string, std::string>> items;
+  std::unordered_map<std::string, size_t> index;
+  size_t active = 0;
+  std::vector<size_t> fenwick;
+
+  static size_t low_bit(size_t value) { return value & (~value + 1); }
+  size_t prefix(size_t end) const {
+    size_t count = 0;
+    for (; end; end -= low_bit(end)) count += fenwick[end];
+    return count;
+  }
+  void remove_rank(size_t position) {
+    for (size_t i = position + 1; i < fenwick.size(); i += low_bit(i)) --fenwick[i];
+  }
+  size_t select_rank(size_t rank) const {
+    size_t position = 0, bit = 1;
+    while (bit <= (fenwick.size() - 1) / 2) bit *= 2;
+    for (; bit; bit >>= 1) {
+      const size_t next = position + bit;
+      if (next < fenwick.size() && fenwick[next] <= rank) {
+        position = next;
+        rank -= fenwick[next];
+      }
+    }
+    return position;
+  }
+  bool live(size_t position) const {
+    const auto found = index.find(items[position].first);
+    return found != index.end() && found->second == position;
+  }
+  std::vector<std::pair<std::string, std::string>> entries() const {
+    std::vector<std::pair<std::string, std::string>> result;
+    result.reserve(active);
+    for (size_t i = 0; i < items.size(); ++i) if (live(i)) result.push_back(items[i]);
+    return result;
+  }
+  void compact() {
+    std::vector<std::pair<std::string, std::string>> retained;
+    retained.reserve(active);
+    for (size_t i = 0; i < items.size(); ++i) if (live(i)) retained.push_back(std::move(items[i]));
+    items.swap(retained);
+    index.clear();
+    for (size_t i = 0; i < items.size(); ++i) index.emplace(items[i].first, i);
+    fenwick.assign(items.size() + 1, 0);
+    for (size_t i = 1; i < fenwick.size(); ++i) fenwick[i] = low_bit(i);
+  }
+  void set(const std::string& key, const std::string& value) {
+    const auto found = index.find(key);
+    if (found != index.end()) items[found->second].second = value;
+    else append(key, value);
+  }
+  void append(const std::string& key, const std::string& value) {
+    if (items.size() > active * 2 + 1024) compact();
+    index.emplace(key, items.size());
+    items.emplace_back(key, value);
+    if (fenwick.empty()) fenwick.push_back(0);
+    const size_t i = items.size();
+    // A growing Fenwick node includes the previous live entries in its range.
+    fenwick.push_back(1 + prefix(i - 1) - prefix(i - low_bit(i)));
+    ++active;
+  }
+};
 
 // Stable addresses for the whole run. Keep this arena and its registry alive
 // while any handle is in use. Reset only between runs, after all handles expire.
@@ -111,7 +174,7 @@ inline Registry& register_collections(Registry& r, Collections& arena) {
   r.method("StrMap", "get", {"string"}, "string", [](void* p, Args& a) {
     const auto& map = *static_cast<StrMap*>(p); auto found = map.index.find(a[0].s);
     if (found != map.index.end()) return Value::string(map.items[found->second].second);
-    throw Error("StrMap.get: missing key"); return Value::none();
+    throw Error("StrMap.get: missing key");
   });
   r.method("StrMap", "get_or", {"string", "string"}, "string", [](void* p, Args& a) {
     const auto& map = *static_cast<StrMap*>(p); auto found = map.index.find(a[0].s);
@@ -119,9 +182,8 @@ inline Registry& register_collections(Registry& r, Collections& arena) {
     return Value::string(a[1].s);
   });
   r.method("StrMap", "set", {"string", "string"}, "StrMap", [](void* p, Args& a) {
-    auto& map = *static_cast<StrMap*>(p); auto found = map.index.find(a[0].s);
-    if (found != map.index.end()) { map.items[found->second].second = a[1].s; return Value::object("StrMap", p); }
-    if (map.items.size() > map.active * 2 + 1024) map.compact(); map.index.emplace(a[0].s, map.items.size()); map.items.emplace_back(a[0].s, a[1].s); if (map.fenwick.empty()) map.fenwick.push_back(0); const size_t pos = map.items.size() - 1, i = pos + 1, low = i & (~i + 1); map.fenwick.push_back(1 + map.prefix(pos) - map.prefix(i - low)); for (size_t parent = i + low; parent < map.fenwick.size(); parent += parent & (~parent + 1)) map.fenwick[parent] += 1; ++map.active; return Value::object("StrMap", p);
+    static_cast<StrMap*>(p)->set(a[0].s, a[1].s);
+    return Value::object("StrMap", p);
   });
   r.method("StrMap", "key_at", {"int"}, "string", [](void* p, Args& a) {
     auto& map = *static_cast<StrMap*>(p);
@@ -131,7 +193,7 @@ inline Registry& register_collections(Registry& r, Collections& arena) {
   r.method("StrMap", "remove", {"string"}, "bool", [](void* p, Args& a) {
     auto& map = *static_cast<StrMap*>(p); auto found = map.index.find(a[0].s);
     if (found == map.index.end()) return Value::boolean(false);
-    const size_t pos = found->second; map.index.erase(found); map.add_rank(pos, -1); --map.active; return Value::boolean(true);
+    const size_t pos = found->second; map.index.erase(found); map.remove_rank(pos); --map.active; return Value::boolean(true);
   });
   r.method("StrMap", "clear", {}, "StrMap", [](void* p, Args&) { auto& map = *static_cast<StrMap*>(p); map.items.clear(); map.index.clear(); map.active = 0; map.fenwick.clear(); return Value::object("StrMap", p); });
   return r;

@@ -162,7 +162,7 @@ Constructors: `str_list()`, `int_list()`, `float_list()`, `str_map()` return a n
 C++ hosts vendor `include/dslvm.hpp` plus the stdlib headers they use (`stdlib/string.hpp`, `collections.hpp`, `math.hpp`, `testing.hpp`) through `scripts/sync-sdk.sh`,
 with every vendored file pinned (path, sha256) in `sdk.lock`. The host schema embeds the fragment entries unchanged; a host with a narrower type keeps it under its own name.
 
-C++ uses `dslvm::stdlib::Collections` with stable-address `std::deque` storage per type. Native hosts create objects through `make_str_list(values)`, `make_int_list(values)`, `make_float_list(values)` and `make_str_map()` so host-returned collections obey the same shared arena limit. List elements are in `.items`; maps store insertion-ordered key/value pairs in `.items`. `reset()` invalidates every handle and is permitted only between runs after all prior handles have expired. Collection `clear()` methods remove elements without freeing an arena slot or invalidating their receiver.
+C++ uses `dslvm::stdlib::Collections` with stable-address `std::deque` storage per type. Native hosts create objects through `make_str_list(values)`, `make_int_list(values)`, `make_float_list(values)` and `make_str_map()` so host-returned collections obey the same shared arena limit. List elements are in `.items`; native maps use `set(key, value)` to insert and `entries()` for live insertion-ordered snapshots. Their `.items` is physical backing storage, which can contain tombstones and must not be mutated directly. `reset()` invalidates every handle and is permitted only between runs after all prior handles have expired. Collection `clear()` methods remove elements without freeing an arena slot or invalidating their receiver.
 
 ## Collection/testing integration in the SDKs
 
@@ -177,11 +177,22 @@ Go exports collection types with snapshot `Values()`/`Entries()` accessors;
 C# exposes read-only `Values`/`Entries` views. Rust and C++ collection structs
 expose their item storage to host callbacks. Strings remain bytes at these boundaries.
 
-The shared suite contains 117 vectors: 18 string, 11 math, 32
-collection/optional-testing cases, 16 file cases, and 40 seeded property cases. `runtime_error_exact` pins error codes and complete
+The shared suite contains 118 vectors: 18 string, 11 math, 32
+collection/optional-testing cases, 16 file cases, and 41 seeded property cases. `runtime_error_exact` pins error codes and complete
 base messages after removal of an SDK source-location prefix. Captured print
 output is compared as hexadecimal bytes. The assertion comparison is exactly
 `abs(a-b) <= tolerance`: equal infinities fail because their difference is NaN;
 an infinite tolerance can accept an infinite difference.
 
 Measured collection, string and native file workloads are described in [Standard catalog performance](07-stdlib-performance.md).
+
+## Ordered-map indexing
+
+All SDKs maintain a byte-key hash index and a Fenwick live-count index over
+physical insertion slots. Key lookup/replacement is average O(1); insertion,
+removal and ordinal `key_at` are O(log n). Removal leaves a tombstone, so
+interleaved deletion and indexed reads do not shift the remaining entries.
+Compaction before insertion when physical slots exceed `2 * live + 1024`
+bounds retained history; the all-live Fenwick index rebuild is O(n). Native
+C++/Rust adapters use map `set` and `entries` rather than editing `.items`.
+Go `Entries` returns a snapshot; C# `Entries` remains a live read-only view.

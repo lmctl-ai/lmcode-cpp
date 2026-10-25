@@ -148,7 +148,19 @@ def cases(seeds, rounds):
     c=Case();c.emit('let path = test_temp_dir() + "/large.bin"; let chunk = str_repeat(bytes("00ff0a"), 400001); file_write(path, chunk); file_append(path, bytes("ff00"));')
     c.trace('str_len(file_read(path))',1200005);c.trace('str_substr(file_read(path), 1200000, 5)',bytes.fromhex('00ff0aff00'))
     c.emit('let lines = file_lines(path);');c.trace('lines.len()',400002);c.trace('lines.at(400001)',bytes.fromhex('ff00'));c.emit('file_write(path, "");');c.trace('str_len(file_read(path))',0)
-    out['fuzz-large-file']=(c.source,['trace',*c.expected]);return out
+    out['fuzz-large-file']=(c.source,['trace',*c.expected])
+    c=Case()
+    c.emit('let m = str_map(); m.set(bytes("00ff"), "deleted").set("stable", "v"); m.remove(bytes("00ff"));')
+    c.emit('for (i in range(0, 4096)) { m.set(str(i), "v"); m.remove(str(i)); }')
+    c.trace('m.len()',1);c.trace('m.has(bytes("00ff"))',False);c.trace('m.key_at(0)',b'stable')
+    c.emit('m.set("other", bytes("ff00")).set("stable", bytes("00ff"));')
+    c.trace('m.key_at(0)',b'stable');c.trace('m.key_at(1)',b'other');c.trace('m.get("stable")',bytes.fromhex('00ff'))
+    c.emit('m.clear(); for (i in range(0, 4096)) { m.set(str(i), "v"); } let good = true;')
+    c.emit('for (i in range(0, 4096)) { if (i % 2 == 0) { m.remove(str(i)); good = good && m.key_at(m.len() - 1) == "4095"; } }')
+    c.trace('good',True);c.trace('m.len()',2048)
+    c.emit('let sum = 0; for (i in range(0, 2048)) { sum = sum + str_to_int(m.key_at(i)); }')
+    c.trace('sum',2048**2);c.emit('m.set("0", "reinsert");');c.trace('m.key_at(2048)',b'0');c.trace('m.key_at(0)',b'1')
+    out['fuzz-map-churn']=(c.source,['trace',*c.expected]);return out
 
 def generate(directory,seeds,rounds,check=False,compile_bytecode=False):
     generated=cases(seeds,rounds); files={'fuzz.schema.json':schema()}; entries=[]
@@ -175,5 +187,6 @@ def generate(directory,seeds,rounds,check=False,compile_bytecode=False):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,default=ROOT/'conformance/stdlib-vectors');p.add_argument('--seeds',default=','.join(map(str,DEFAULT_SEEDS)));p.add_argument('--rounds',type=int,default=16);p.add_argument('--check',action='store_true');p.add_argument('--compile',action='store_true');a=p.parse_args()
+    if a.check and a.compile: p.error('--check and --compile are mutually exclusive')
     if not 1 <= a.rounds <= 64: p.error('rounds must be 1..64 per program')
     generate(a.output.resolve(),[int(s) for s in a.seeds.split(',')],a.rounds,a.check,a.compile)
