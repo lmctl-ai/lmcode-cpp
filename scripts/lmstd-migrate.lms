@@ -344,7 +344,15 @@ if (report.status == "ready") {
         text = read_file(path_join(stage,file));
         if (pure_compile(text)) {
           output = path_join(artifacts,replace_all(file,"/","_") + ".dslb");
+          # Constrain writes before execution: passing argv does not override
+          # a wrapper's literal savedsl path. Keep the source's directory so
+          # relative schema lookup is unchanged, then restore its exact text.
+          save = regex_match(text, '^[ \t]*savedsl\\(([A-Za-z_][A-Za-z0-9_]*), [^\\r\\n]+\\);\\r?$', "m");
+          if (save == null) { refuse("recognized wrapper lacks an isolated savedsl: " + file); }
+          sanitized = replace(text,save[0],"savedsl(" + save[1] + ", " + json_stringify(output) + ");");
+          write_file(path_join(stage,file),sanitized);
           run([opts.compiler,"--no-preflight",path_join(stage,file),output],stage);
+          write_file(path_join(stage,file),text);
           if (!file_exists(output)) { push(report.unrecognized,"compile wrapper ignores output argument: " + file); }
           else { push(report.examples,{file:file,status:"compiled",output:output}); }
         } else { push(report.unrecognized,"example requires explicit compile recipe: " + file); }

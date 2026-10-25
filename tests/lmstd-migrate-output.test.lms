@@ -1,0 +1,43 @@
+# Regression oracle: compiler wrappers cannot write through their original
+# literal destinations during a transactional migration preview.
+fn checked(argv,cwd) {
+  r=system(argv,{cwd:cwd,timeoutMs:120000});
+  assert(r.code == 0,json_stringify({argv:argv,code:r.code,stdout:r.stdout,stderr:r.stderr}));
+  return trim(r.stdout);
+}
+fn g(repo,args) { return checked(concat(["git","-C",repo],args),repo); }
+root=ARGV[0];
+assert(starts_with(root,"/tmp/claude-1000/scratch-lmcode/"),"scratch root required");
+assert(!file_exists(root),"use a fresh scratch root");
+mkdir(root);
+program=path_join(Directory,"scripts/lmstd-migrate.lms");
+if (ARGV.len() > 1) { program=ARGV[1]; }
+for (kind in ["outside-stage","source-checkout"]) {
+  folder=path_join(root,kind);mkdir(folder);
+  seed=path_join(folder,"seed");origin=path_join(folder,"origin.git");repo=path_join(folder,"host");hooks=path_join(folder,"empty-hooks");mkdir(hooks);
+  checked(["git","-c","core.hooksPath="+hooks,"init",seed],folder);
+  g(seed,["config","core.hooksPath",hooks]);g(seed,["config","user.name","fixture"]);g(seed,["config","user.email","fixture@example.invalid"]);
+  mkdir(path_join(seed,"schema"));mkdir(path_join(seed,"examples"));
+  write_file(path_join(seed,"README.md"),"source must stay unchanged\n");
+  write_file(path_join(seed,"compiler.txt"),"@lmctl-ai/lmctl@0.2.419\n");
+  write_file(path_join(seed,"schema/host.json"),'{"dsl.schema":2,"name":"fixture"}\n');
+  destination=path_join(folder,"escaped.dslb");
+  if (kind == "source-checkout") { destination=path_join(repo,"README.md"); }
+  source='p = _lmcode_ schema="../schema/host.json";\nlet n = str_len("abc");\nend _lmcode_\nsavedsl(p, '+json_stringify(destination)+');\n';
+  write_file(path_join(seed,"examples/compile.lms"),source);
+  g(seed,["add","."]);g(seed,["commit","-m","compile-output containment fixture"]);g(seed,["branch","-M","main"]);
+  checked(["git","clone","--bare",seed,origin],folder);g(origin,["config","core.hooksPath",hooks]);
+  checked(["git","clone",origin,repo],folder);g(repo,["config","core.hooksPath",hooks]);
+  before=g(repo,["rev-parse","HEAD"]);report=path_join(folder,"report.json");
+  checked(["env","GIT_ALLOW_PROTOCOL=file","lmscript","--no-preflight",program,"--repo",repo,"--historical","--dry-run","--tests","never","--report",report],folder);
+  result=read_json(report);
+  assert(result.status == "ready","recognized wrapper should compile to a controlled artifact");
+  assert(result.examples.len() == 1 && result.examples[0].status == "compiled","wrapper must actually compile");
+  assert(file_exists(result.examples[0].output),"controlled artifact must exist");
+  assert(g(repo,["status","--porcelain"]) == "","preview changed the source checkout");
+  assert(g(repo,["rev-parse","HEAD"]) == before,"preview changed source HEAD");
+  assert(read_file(path_join(repo,"README.md")) == "source must stay unchanged\n","literal destination overwrote source");
+  assert(read_file(path_join(result.scratch,"tree/examples/compile.lms")) == source,"staged source must be restored after compilation");
+  if (kind == "outside-stage") { assert(!file_exists(destination),"literal savedsl escaped the stage"); }
+}
+println(json_stringify({pass:2,fail:0,kind:"literal-output-containment"}));

@@ -54,6 +54,12 @@ adapters remain host-owned. No host C++ source adapter is synthesized.
 
 Only recognized single-block compile wrappers are executed: comments, an
 optional ARGV output-path assignment, a schema-backed block, and savedsl.
+Before executing a recognized wrapper, its savedsl destination is replaced
+with a controlled artifact path in the staged copy; the original source text
+is restored afterward. Passing an output argv alone cannot constrain a literal
+savedsl destination. `tests/lmstd-migrate-output.test.lms SCRATCH_DIR` checks
+absolute destinations outside the stage and inside the source checkout.
+
 All other examples and checked-in bytecode without an explicit recognized
 recipe are reported, never guessed or executed. The installed lmscript has no
 general compile-only bytecode-output command; `--check` alone does not emit
