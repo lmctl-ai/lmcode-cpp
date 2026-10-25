@@ -9,7 +9,7 @@
 # boundaries without claiming migration success. Once the program is ready,
 # CONFIG.argv supplies an argv template for one invocation, for example:
 # {"program":"/tmp/.../lmstd-migrate.lms",
-#  "argv":["{program}","--repo","{repo}","--target","{target}","--dry-run",
+#  "argv":["lmscript","--no-preflight","{program}","--repo","{repo}","--target","{target}","--dry-run",
 #          "--report","{report}"]}
 # Placeholders are substituted by this script; no migration flags are guessed.
 
@@ -141,7 +141,7 @@ fn run_program(config, item, mode) {
   if (config.has("timeoutMs")) {
     timeout = config.timeoutMs;
   }
-  result = system(argv, {cwd:item.repo, timeoutMs:timeout});
+  result = system(concat(["env","GIT_ALLOW_PROTOCOL=file","GH_TOKEN=","GITHUB_TOKEN="],argv), {cwd:item.repo, timeoutMs:timeout});
   outcome = "failed";
   if (result.code == 0) {
     outcome = "ok";
@@ -197,13 +197,23 @@ compile_case = fixture(root, "compile-fixture", [
   {path:"program.lms", content:"p = _dsl_ schema=\"schema/demo.dsl.json\";\nlet n = str_len(\"abc\");\nend _dsl_\nsavedsl(p, \"program.dslb\");\n"}
 ]);
 compile_case = compile_fixture(compile_case);
+old_runtime_header = "namespace dslvm { struct Registry { void function(); }; }\n";
+stale_runtime = fixture(root, "stale-runtime", [
+  {path:".github/workflows/ci.yml", content:"npm i -g @lmctl-ai/lmctl@0.2.420\n"},
+  {path:"sdk.lock", content:"repo=https://github.com/lmctl-ai/lmcode-cpp\ncommit=a876646a0bb66137a87a82eed124b5dfd4906da0\nsha256="+sha256(old_runtime_header)+"\n"},
+  {path:"cpp/dslvm.hpp", content:old_runtime_header},
+  {path:"scripts/sync-sdk.sh", content:"#!/usr/bin/env bash\nHEADER=cpp/dslvm.hpp\ncp \"$SDK/include/dslvm.hpp\" \"$HEADER\"\n"},
+  {path:"schema/lmmagnum.host.json", content:"{\"dsl.schema\":2,\"name\":\"lmmagnum\",\"functions\":{},\"types\":{},\"context\":{}}\n"},
+  {path:"schema/lmmagnum.dsl.json", content:"{\"dsl.schema\":2,\"name\":\"lmmagnum\",\"functions\":{},\"types\":{},\"context\":{}}\n"},
+  {path:"CMakeLists.txt", content:"set(HOST_SCHEMA schema/lmmagnum.host.json)\nset(SCHEMA schema/lmmagnum.dsl.json)\nfile(READ ${SCHEMA} EMBEDDED_SCHEMA)\n"}
+]);
 unknown = fixture(root, "unknown-pattern", [
   {path:"schema/demo.dsl.json", content:"{\"dsl.schema\":2,\"name\":\"demo\",\"functions\":{\"str_len\":[{\"params\":[\"string\"],\"returns\":\"int\"}]},\"types\":{},\"context\":{}}\n"},
   {path:"CMakeLists.txt", content:"execute_process(COMMAND custom_merger --mystery)\n"},
   {path:"scripts/select-compiler.sh", content:"custom_probe --schema merged.json\n"}
 ]);
 
-fixtures = [pin, cmake, generator, compile_case, unknown];
+fixtures = [pin, cmake, generator, compile_case, stale_runtime, unknown];
 reports = [];
 for (item in fixtures) {
   before = snapshot(item.repo, item.files);
@@ -265,4 +275,4 @@ assert(behind_refs_before.head == behind_refs_after.head && behind_refs_before.o
 assert(behind_status_before == behind_status_after && behind_origin_before == behind_origin_after, "behind refusal changed status or origin refs");
 push(reports, {name:"behind-control", status:behind_state, run:behind_run, expected_refusal:true, refs_unchanged:true, status_unchanged:true, push_target:trim(command(behind_item.repo,["remote","get-url","--push","origin"]))});
 
-println(json_stringify({ok:true, scaffold:true, control_checks:7, migration_checks:0, program:config.program, target:config.target, fixtures:reports, note:"Program interface not assumed; skipped migration assertions are explicit."}));
+println(json_stringify({ok:true, scaffold:true, control_checks:8, migration_checks:0, program:config.program, target:config.target, fixtures:reports, note:"Program interface not assumed; stale runtime is not considered migrated until SDK registration is updated."}));

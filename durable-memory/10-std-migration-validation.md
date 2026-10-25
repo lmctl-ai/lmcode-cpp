@@ -8,13 +8,14 @@ folders prevent user Git hooks from participating in fixture runs.
 
 The fixture set includes plain compiler pins, a CMake merge, a schema generator,
 a pure compilation source with checked-in bytecode, an unknown build pattern,
-a dirty tree and a separately clean but behind tree. Snapshots compare raw blob
+a dirty tree, a separately clean but behind tree, and a current compiler pin
+with an old SDK lacking default standard registration. Snapshots compare raw blob
 hashes, complete porcelain status, local refs and bare-origin refs. Read-only
 checks must preserve all four. A configured migration command is an argv
 template, so shell evaluation is not involved.
 
 The initial scaffold configuration is `{"program":null,"target":"0.2.420"}`.
-It reports seven fixture controls and **zero migration checks**. This setup mode
+It reports eight fixture controls and **zero migration checks**. This setup mode
 is not evidence that a migrator works. A new, unused scratch directory is
 required on each run:
 
@@ -34,3 +35,7 @@ need an identified compilation recipe before they can be reported as rebuilt.
 The comparison oracle itself is checked with unmigrated baselines (must differ),
 expected trees compared with themselves (must match), and a valid-JSON
 whitespace mutation (must change schema-byte identity).
+
+Fixture invocations disable Git network transports (`GIT_ALLOW_PROTOCOL=file`)
+and clear child GitHub tokens. A current compiler pin alone does not prove
+that the runtime registers std.
