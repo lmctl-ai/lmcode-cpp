@@ -7,10 +7,16 @@
 # a stable CLI, set {"program": null}; the script then validates fixture
 # setup, local-only origins, dirty/behind controls and expected no-write
 # boundaries without claiming migration success. Once the program is ready,
-# CONFIG.argv supplies an argv template for one invocation, for example:
+# CONFIG.argv supplies a default argv template. CONFIG.argvByMode may override
+# it for dry-run, apply, dirty, behind, or apply-second. For example:
 # {"program":"/tmp/.../lmstd-migrate.lms",
 #  "argv":["lmscript","--no-preflight","{program}","--repo","{repo}","--target","{target}","--dry-run",
-#          "--report","{report}"]}
+#          "--report","{report}"],
+#  "argvByMode":{"apply":["...","--apply"],"apply-second":["...","--apply"]},
+#  "applyFixtures":["plain-pin"],"requireReport":true}
+# Apply is opt-in per fixture because only a configured fixture with a local
+# bare origin is safe to mutate. Reports are required for successful configured
+# runs by default and are deleted after parsing so they cannot dirty fixtures.
 # Placeholders are substituted by this script; no migration flags are guessed.
 
 import "native:git";
@@ -57,6 +63,14 @@ fn snapshot(repo, files) {
     }
   }
   return result;
+}
+
+fn tree_snapshot(repo) {
+  listed = trim(command(repo, ["ls-files", "--cached", "--others", "--exclude-standard"]));
+  if (listed == "") {
+    return {};
+  }
+  return snapshot(repo, split(listed, "\n"));
 }
 
 fn porcelain(repo) {
@@ -121,7 +135,7 @@ fn render(template, values) {
   output = [];
   for (part in template) {
     text = part;
-    for (key in ["program","repo","target","report","root"]) {
+    for (key in ["program","repo","target","report","root","mode"]) {
       text = replace_all(text, "{" + key + "}", values[key]);
     }
     push(output, text);
@@ -133,10 +147,19 @@ fn run_program(config, item, mode) {
   if (!config.has("program") || config.program == null) {
     return {status:"skipped", reason:"migration program unavailable"};
   }
-  assert(type(config.argv) == "array", "config.argv must be an argv template when program is configured");
+  argv_template = config.argv;
+  if (config.has("argvByMode")) {
+    assert(type(config.argvByMode) == "map", "config.argvByMode must be a map of mode to argv templates");
+    if (config.argvByMode.has(mode)) {
+      argv_template = config.argvByMode.get(mode, config.argv);
+    }
+  }
+  assert(type(argv_template) == "array", "argv template must be an array when program is configured");
   report = path_join(item.root, mode + ".report.json");
-  values = {program:config.program, repo:item.repo, target:config.target, report:report, root:item.root};
-  argv = render(config.argv, values);
+  values = {program:config.program, repo:item.repo, target:config.target, report:report, root:item.root, mode:mode};
+  argv = render(argv_template, values);
+  push_target = trim(command(item.repo, ["remote", "get-url", "--push", "origin"]));
+  assert(push_target == item.origin, "migration invocation push target must remain the fixture's local origin");
   timeout = 120000;
   if (config.has("timeoutMs")) {
     timeout = config.timeoutMs;
@@ -147,10 +170,57 @@ fn run_program(config, item, mode) {
     outcome = "ok";
   }
   report_text = null;
+  report_source = null;
   if (file_exists(report)) {
     report_text = read_file(report);
+    report_source = "file";
   }
-  return {status:outcome, code:result.code, argv:argv, stdout:result.stdout, stderr:result.stderr, report:report_text};
+  report_ok = report_text != null;
+  if (report_ok) {
+    # Preserve the parsed report as evidence. Reject malformed JSON without
+    # imposing a schema on a future migrator's machine-readable report.
+    read_json(report);
+  } else if (trim(result.stdout) != "") {
+    # The contract permits a JSON report on stdout when no --report option is
+    # supported. Keep a scratch copy for the caller's evidence and parse it
+    # through the same JSON validator.
+    stdout_report = report + ".stdout.json";
+    write_file(stdout_report, result.stdout);
+    read_json(stdout_report);
+    report_text = result.stdout;
+    report_source = "stdout";
+    report_ok = true;
+  }
+  require_report = true;
+  if (config.has("requireReport")) {
+    require_report = config.requireReport;
+  }
+  if (result.code == 0 && require_report) {
+    assert(report_ok, "configured migration returned success without a JSON report: " + mode);
+  }
+  return {status:outcome, code:result.code, argv:argv, stdout:result.stdout, stderr:result.stderr, report:report_text, report_source:report_source, report_ok:report_ok, push_target:push_target};
+}
+
+fn apply_enabled(config, item) {
+  if (!config.has("applyFixtures")) {
+    return false;
+  }
+  assert(type(config.applyFixtures) == "array", "config.applyFixtures must be an array");
+  return contains(config.applyFixtures, item.name);
+}
+
+fn assert_trailer(repo) {
+  message = command(repo, ["log", "-1", "--format=%B"]);
+  author = trim(command(repo, ["log", "-1", "--format=%an <%ae>"]));
+  assert(author == "mike-lmctl <281311770+mike-lmctl@users.noreply.github.com>", "apply commit has the wrong Git identity: " + author);
+  assert(regex_test(trim(message), "\n\nCo-Authored-By: .+ <noreply@anthropic\\.com>$"), "apply commit is missing the model Co-Authored-By trailer");
+}
+
+fn assert_synced(item, label) {
+  assert(clean(item.repo), item.name + " " + label + " left the fixture dirty");
+  local_head = sha(item.repo);
+  origin_head = trim(command(item.origin, ["rev-parse", "refs/heads/main"]));
+  assert(local_head == origin_head, item.name + " " + label + " HEAD is not the pushed origin/main");
 }
 
 fn refs(repo) {
@@ -229,7 +299,33 @@ for (item in fixtures) {
   assert(before_refs.head == after_refs.head && before_refs.origin == after_refs.origin, item.name + " dry-run changed git refs");
   assert(before_status == after_status, item.name + " dry-run changed complete porcelain status");
   assert(before_origin_refs == after_origin_refs, item.name + " dry-run changed bare-origin refs");
-  push(reports, {name:item.name, repo:item.repo, origin:item.origin, before:before, after:after, before_refs:before_refs, after_refs:after_refs, before_origin_refs:before_origin_refs, after_origin_refs:after_origin_refs, dry_run:dry, no_write:true, push_target:trim(command(item.repo,["remote","get-url","--push","origin"]))});
+  if (dry.status == "ok" && (!config.has("requireReport") || config.requireReport)) {
+    assert(dry.report_ok, item.name + " successful dry-run has no parsed JSON report");
+  }
+  apply_report = null;
+  if (apply_enabled(config, item)) {
+    apply_before = snapshot(item.repo, item.files);
+    apply_before_refs = refs(item.repo);
+    apply_run = run_program(config, item, "apply");
+    assert(apply_run.status == "ok", item.name + " apply failed: " + apply_run.stderr);
+    assert(apply_run.report_ok, item.name + " apply has no parsed JSON report");
+    assert_trailer(item.repo);
+    assert_synced(item, "first apply");
+    apply_after = tree_snapshot(item.repo);
+    apply_after_refs = refs(item.repo);
+    apply_after_status = porcelain(item.repo);
+    apply_after_origin_refs = origin_refs(item.origin);
+    second_run = run_program(config, item, "apply-second");
+    assert(second_run.status == "ok", item.name + " idempotence run failed: " + second_run.stderr);
+    assert(second_run.report_ok, item.name + " idempotence run has no parsed JSON report");
+    assert_synced(item, "second apply");
+    assert(json_stringify(apply_after) == json_stringify(tree_snapshot(item.repo)), item.name + " second apply changed tracked or untracked file bytes");
+    assert(apply_after_refs.head == refs(item.repo).head && apply_after_refs.origin == refs(item.repo).origin, item.name + " second apply changed refs");
+    assert(apply_after_status == porcelain(item.repo), item.name + " second apply changed full porcelain status");
+    assert(apply_after_origin_refs == origin_refs(item.origin), item.name + " second apply changed bare-origin refs");
+    apply_report = {first:apply_run, second:second_run, before:apply_before, after:apply_after, before_refs:apply_before_refs, after_refs:apply_after_refs, after_status:apply_after_status, after_origin_refs:apply_after_origin_refs, push_target:trim(command(item.repo,["remote","get-url","--push","origin"]))};
+  }
+  push(reports, {name:item.name, repo:item.repo, origin:item.origin, before:before, after:after, before_refs:before_refs, after_refs:after_refs, before_origin_refs:before_origin_refs, after_origin_refs:after_origin_refs, dry_run:dry, apply:apply_report, no_write:apply_report == null, push_target:trim(command(item.repo,["remote","get-url","--push","origin"]))});
 }
 
 # Dirty refusal control: no program invocation is needed to prove the fixture
@@ -242,6 +338,9 @@ dirty_refs_before = refs(pin.repo);
 dirty_status_before = porcelain(pin.repo);
 dirty_origin_before = origin_refs(pin.origin);
 dirty_run = run_program(config, pin, "dirty");
+if (config.program != null) {
+  assert(dirty_run.status != "ok", "configured migrator did not refuse a dirty tree");
+}
 dirty_after = snapshot(pin.repo, [".github/workflows/ci.yml", "README.md", "DIRTY.marker"]);
 dirty_refs_after = refs(pin.repo);
 dirty_status_after = porcelain(pin.repo);
@@ -267,6 +366,9 @@ behind_refs_before = refs(behind_item.repo);
 behind_status_before = porcelain(behind_item.repo);
 behind_origin_before = origin_refs(behind_item.origin);
 behind_run = run_program(config, behind_item, "behind");
+if (config.program != null) {
+  assert(behind_run.status != "ok", "configured migrator did not refuse a behind tree");
+}
 behind_refs_after = refs(behind_item.repo);
 behind_status_after = porcelain(behind_item.repo);
 behind_origin_after = origin_refs(behind_item.origin);

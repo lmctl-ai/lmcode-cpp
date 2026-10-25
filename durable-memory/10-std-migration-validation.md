@@ -39,3 +39,20 @@ whitespace mutation (must change schema-byte identity).
 Fixture invocations disable Git network transports (`GIT_ALLOW_PROTOCOL=file`)
 and clear child GitHub tokens. A current compiler pin alone does not prove
 that the runtime registers std.
+
+Configured invocations accept `{mode}` alongside `{program}`, `{repo}`,
+`{target}`, `{report}` and `{root}`. `argvByMode` can supply separate argv arrays
+for `dry-run`, `apply`, `apply-second`, `dirty` and `behind`; the default is
+`argv`. Mode values are labels, so an argv override must translate them into
+whatever flags the migration CLI accepts. JSON may be emitted on stdout or
+written to `{report}`; both are retained outside the fixture checkout.
+
+`applyFixtures` is an explicit list of fixture names to exercise against their
+private origins. Apply must leave a clean checkout, publish HEAD to that local
+origin, and use the required author and final Co-Authored-By trailer. A second
+apply must preserve all tracked/untracked file hashes, porcelain status, local
+tracking refs and private-origin refs. Dirty and behind controls require a
+nonzero result and unchanged trees/refs. This harness verifies those execution
+invariants; assertions about recognized patterns, exact diffs and regenerated
+bytecode additionally require the actual migrator's configured reports and
+historical expected trees. Synthetic harness controls are not migration passes.
