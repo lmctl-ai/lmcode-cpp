@@ -70,6 +70,55 @@ Shared file vectors use a test-only `test_temp_dir() -> string` callback, declar
 - File OS reason wording and NaN payloads are platform-specific; shared tests pin portable behavior rather than those representations.
 - CSV/JSON catalogs are future work only. They can later build on StrList, StrMap and byte-clean strings to exchange data between tools; no format parser or dependency is introduced now.
 
+### Host duplicate inventory (2026-10-24)
+
+The source survey covers 25 host repositories under the sibling repos directory,
+including lmdb's programmatic Java schema, and 30 schema/programmatic profiles.
+Paired generated effective schemas are distinguished from host-only source
+schemas. lmproxy is excluded; lmgallery is an example catalog rather than a
+host. lmvideo is outside this host-adoption directory scope and is included in
+the separate compiler readiness sweep.
+
+The only shared non-testing free-function tuple is `material() -> Material`
+in lmcad/lmmagnum. It creates renderer-owned material state and is outside the
+four std areas. Fifty exact shared method tuples are domain methods, not
+interchangeable generic functions. No new std surface or clean remaining host
+replacement was identified; SDK hardening and standard signatures are unchanged.
+
+| Shared host type | Repositories | Why it remains host-owned |
+| --- | --- | --- |
+| `Animation` | `lmcad`, `lmimg` | CAD animation controllers and image animation frames have different payloads and ownership. |
+| `Body` | `lmphysics`, `lmspace` | Physics and orbital bodies carry simulation state and domain-specific units. |
+| `Camera` | `lmcad`, `lmmagnum` | Renderer-specific camera handles and scene lifetimes. |
+| `Curve` | `lmfinance`, `lmimg` | Financial curves and image tone curves represent different data and operations. |
+| `Group` | `lmdraw`, `lmmagnum` | Drawing groups and graphics scene graph nodes own backend-specific objects. |
+| `Key` | `lmssh`, `lmssl` | OpenSSH/OpenSSL key formats, native ownership and fingerprint policies differ. |
+| `Light` | `lmcad`, `lmmagnum` | Lighting state belongs to each renderer and scene. |
+| `Material` | `lmblender`, `lmcad`, `lmfilament`, `lmmagnum`, `lmparticle` | Backend-specific material state and shader/rendering behavior. |
+| `Matrix` | `lmcell`, `lmfluid`, `lmnum`, `lmspace` | Storage, mutation, numerical operations and arena ownership vary. |
+| `Mesh` | `lmblender`, `lmfilament`, `lmfluid` | Renderer and simulation mesh handles have different topology/state ownership. |
+| `Model` | `lmbio`, `lmfinance` | Biological models and financial models have different meanings and native state. |
+| `Node` | `lmdraw`, `lmfilament`, `lmhtml` | DOM, drawing and rendering nodes are distinct object graphs. |
+| `Report` | `lmhtml`, `lmssh` | Host report storage, diagnostics and output formats; outside the four std areas. |
+| `Result` | `lmbio`, `lmcell`, `lmdb`, `lmfinance`, `lmparticle`, `lmssh` | Domain results (including JDBC rows and SSH process results) have incompatible payloads. |
+| `Scene` | `lmblender`, `lmcad`, `lmdraw`, `lmfilament`, `lmmagnum` | Backend-specific render state, native resources and output operations. |
+| `Shape` | `lmcad`, `lmdraw`, `lmmagnum` | Drawing/CAD/renderer geometry has backend-specific ownership and transforms. |
+| `Sim` | `lmcell`, `lmmolecule`, `lmparticle` | Different simulation models, configuration and result lifetimes. |
+| `System` | `lmmolecule`, `lmnum`, `lmphysics`, `lmspace` | Numerical/molecular/physical/orbital contexts have different state and units. |
+| `Texture` | `lmfilament`, `lmmagnum` | Renderer resource ownership, sampling and pixel formats. |
+
+The four common value types `StrList`, `IntList`, `FloatList` and `StrMap` are
+already SDK std types. The five migrated hosts' generated effective schemas
+contain the 72 canonical declarations for today's compiler; their host-only
+sources omit them. No host outside those five declares an exact canonical std
+signature in the surveyed source schemas. Printing and assertions are excluded
+from migration candidates, including their domain-specific variants.
+
+The complete signature/type inventory and source locations are recorded in
+[08-host-adoption-inventory.md](08-host-adoption-inventory.md) and its JSON
+snapshot. Matching names alone do not justify replacing native state with a
+standard collection or introducing a fifth std area.
+
 ## Byte-string rule
 
 VM strings are byte sequences in every SDK: lengths and offsets are bytes, no decoding or validation happens, NUL bytes are legal,

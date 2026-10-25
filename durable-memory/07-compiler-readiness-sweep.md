@@ -23,8 +23,8 @@ Markdown LMScript fences, indented code and LMScript shell heredocs are
 handled separately from prose; incomplete snippets remain unchanged.
 
 The repository inventory uses existing GitHub `lmctl-ai` remotes under
-`/home/mma/repos/dsl`, plus lmvideo (currently
-`/home/mma/repos/lmctlhq/lmvideo`). lmproxy and lmctl-mono are excluded before
+the sibling checkouts directory, plus lmvideo (currently
+`<checkout>/lmvideo`). lmproxy and lmctl-mono are excluded before
 source inspection. Repository discovery never creates repositories or changes
 remotes. Nonignored `.lms` files, READMEs and documentation are inventoried,
 including untracked examples; build/vendor directories are excluded.
@@ -39,10 +39,11 @@ scratch directory. The published compiler lacks the new spelling at the time
 of this snapshot, so a current built lexer is required.
 
 ```sh
-compiler_worktree=/tmp/claude-1000/scratch-lmcode/compiler-lmctl-mono
+compiler_worktree=/tmp/scratch-lmcode/compiler-lmctl-mono
 # Register a detached scratch worktree if it does not already exist:
-git -C /home/mma/repos/lmctlhq/lmctl-mono worktree add --detach "$compiler_worktree" origin/main
+git -C "${LMCTL_MONO_DIR:-../lmctl-mono}" worktree add --detach "$compiler_worktree" origin/main
 # In the scratch worktree:
+cd "$compiler_worktree"
 npm ci --ignore-scripts
 npm run build --workspace @lmctl-ai/native-git
 npm run build --workspace lmctl

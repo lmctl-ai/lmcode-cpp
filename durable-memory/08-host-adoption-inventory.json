@@ -1,0 +1,2105 @@
+{
+  "canonical_std_overlap_all_profiles": {
+    "functions": {
+      "('file_append', ('string', 'string'), 'void')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('file_exists', ('string',), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('file_lines', ('string',), 'StrList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('file_read', ('string',), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('file_write', ('string', 'string'), 'void')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('float_list', (), 'FloatList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('int_list', (), 'IntList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_abs', ('float',), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_abs', ('int',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_ceil', ('float',), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_ceil', ('int',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_floor', ('float',), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_floor', ('int',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_max', ('float', 'float'), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_max', ('int', 'int'), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_min', ('float', 'float'), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_min', ('int', 'int'), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_pow', ('float', 'float'), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_pow', ('int', 'int'), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_round', ('float',), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_round', ('int',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_sqrt', ('float',), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('math_sqrt', ('int',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_contains', ('string', 'string'), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_ends_with', ('string', 'string'), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_find', ('string', 'string'), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_is_float', ('string',), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_is_int', ('string',), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_len', ('string',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_list', (), 'StrList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_lower', ('string',), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_map', (), 'StrMap')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_match', ('string', 'string'), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_repeat', ('string', 'int'), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_replace', ('string', 'string', 'string'), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_split', ('string', 'string'), 'StrList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_starts_with', ('string', 'string'), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_substr', ('string', 'int', 'int'), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_to_float', ('string',), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_to_int', ('string',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_trim', ('string',), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('str_upper', ('string',), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ]
+    },
+    "methods": {
+      "('FloatList', 'add', ('float',), 'FloatList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('FloatList', 'at', ('int',), 'float')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('FloatList', 'clear', (), 'FloatList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('FloatList', 'contains', ('float',), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('FloatList', 'index_of', ('float',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('FloatList', 'len', (), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('FloatList', 'set', ('int', 'float'), 'FloatList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('IntList', 'add', ('int',), 'IntList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('IntList', 'at', ('int',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('IntList', 'clear', (), 'IntList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('IntList', 'contains', ('int',), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('IntList', 'index_of', ('int',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('IntList', 'len', (), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('IntList', 'set', ('int', 'int'), 'IntList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrList', 'add', ('string',), 'StrList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrList', 'at', ('int',), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrList', 'clear', (), 'StrList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrList', 'contains', ('string',), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrList', 'index_of', ('string',), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrList', 'join', ('string',), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrList', 'len', (), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrList', 'set', ('int', 'string'), 'StrList')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrMap', 'clear', (), 'StrMap')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrMap', 'get', ('string',), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrMap', 'get_or', ('string', 'string'), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrMap', 'has', ('string',), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrMap', 'key_at', ('int',), 'string')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrMap', 'len', (), 'int')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrMap', 'remove', ('string',), 'bool')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "('StrMap', 'set', ('string', 'string'), 'StrMap')": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ]
+    }
+  },
+  "canonical_std_overlap_in_source_declarations": {
+    "functions": {},
+    "methods": {}
+  },
+  "canonical_std_overlap_repositories": [
+    "lmhtml",
+    "lmshark",
+    "lmspace",
+    "lmssh",
+    "lmssl"
+  ],
+  "canonical_std_source_repositories": [],
+  "function_name_groups_all_signature_variants": {
+    "file_append": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('file_append', ('string', 'string'), 'void')"
+      ]
+    },
+    "file_exists": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('file_exists', ('string',), 'bool')"
+      ]
+    },
+    "file_lines": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('file_lines', ('string',), 'StrList')"
+      ]
+    },
+    "file_read": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('file_read', ('string',), 'string')"
+      ]
+    },
+    "file_write": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('file_write', ('string', 'string'), 'void')"
+      ]
+    },
+    "float_list": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('float_list', (), 'FloatList')"
+      ]
+    },
+    "int_list": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('int_list', (), 'IntList')"
+      ]
+    },
+    "material": {
+      "profiles": [
+        "lmcad",
+        "lmmagnum"
+      ],
+      "signatures": [
+        "('material', (), 'Material')"
+      ]
+    },
+    "math_abs": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('math_abs', ('float',), 'float')",
+        "('math_abs', ('int',), 'int')"
+      ]
+    },
+    "math_ceil": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('math_ceil', ('float',), 'float')",
+        "('math_ceil', ('int',), 'int')"
+      ]
+    },
+    "math_floor": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('math_floor', ('float',), 'float')",
+        "('math_floor', ('int',), 'int')"
+      ]
+    },
+    "math_max": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('math_max', ('float', 'float'), 'float')",
+        "('math_max', ('int', 'int'), 'int')"
+      ]
+    },
+    "math_min": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('math_min', ('float', 'float'), 'float')",
+        "('math_min', ('int', 'int'), 'int')"
+      ]
+    },
+    "math_pow": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('math_pow', ('float', 'float'), 'float')",
+        "('math_pow', ('int', 'int'), 'int')"
+      ]
+    },
+    "math_round": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('math_round', ('float',), 'float')",
+        "('math_round', ('int',), 'int')"
+      ]
+    },
+    "math_sqrt": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('math_sqrt', ('float',), 'float')",
+        "('math_sqrt', ('int',), 'int')"
+      ]
+    },
+    "str_contains": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_contains', ('string', 'string'), 'bool')"
+      ]
+    },
+    "str_ends_with": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_ends_with', ('string', 'string'), 'bool')"
+      ]
+    },
+    "str_find": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_find', ('string', 'string'), 'int')"
+      ]
+    },
+    "str_is_float": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_is_float', ('string',), 'bool')"
+      ]
+    },
+    "str_is_int": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_is_int', ('string',), 'bool')"
+      ]
+    },
+    "str_len": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_len', ('string',), 'int')"
+      ]
+    },
+    "str_list": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_list', (), 'StrList')"
+      ]
+    },
+    "str_lower": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_lower', ('string',), 'string')"
+      ]
+    },
+    "str_map": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_map', (), 'StrMap')"
+      ]
+    },
+    "str_match": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_match', ('string', 'string'), 'bool')"
+      ]
+    },
+    "str_repeat": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_repeat', ('string', 'int'), 'string')"
+      ]
+    },
+    "str_replace": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_replace', ('string', 'string', 'string'), 'string')"
+      ]
+    },
+    "str_split": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_split', ('string', 'string'), 'StrList')"
+      ]
+    },
+    "str_starts_with": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_starts_with', ('string', 'string'), 'bool')"
+      ]
+    },
+    "str_substr": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_substr', ('string', 'int', 'int'), 'string')"
+      ]
+    },
+    "str_to_float": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_to_float', ('string',), 'float')"
+      ]
+    },
+    "str_to_int": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_to_int', ('string',), 'int')"
+      ]
+    },
+    "str_trim": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_trim', ('string',), 'string')"
+      ]
+    },
+    "str_upper": {
+      "profiles": [
+        "lmhtml",
+        "lmshark",
+        "lmspace",
+        "lmssh",
+        "lmssl"
+      ],
+      "signatures": [
+        "('str_upper', ('string',), 'string')"
+      ]
+    }
+  },
+  "generated": "2026-10-24",
+  "notes": {
+    "host_schema_preference": "A corresponding *.host.json is the host declaration set; its *.dsl.json is retained as the generated/effective profile.",
+    "source_hits": "Source registration hits are heuristic inventory leads; schema declarations remain authoritative.",
+    "testing": "print and assert_close are excluded from main shared-candidate tables and reported separately."
+  },
+  "optional_testing_functions_separate": {
+    "('assert_close', ('float', 'float', 'float'), 'void')": [
+      "lmhtml",
+      "lmshark",
+      "lmspace",
+      "lmssh",
+      "lmssl"
+    ],
+    "('print', ('string',), 'void')": [
+      "lmhtml",
+      "lmshark",
+      "lmspace",
+      "lmssh",
+      "lmssl"
+    ]
+  },
+  "programmatic_host_details": {
+    "lmdb": {
+      "Row": "No Row DSL type or Java record found in HostApi/Database; rows are List<List<Object>> inside QueryResult.",
+      "dsl_functions": [
+        "connect",
+        "connect_file"
+      ],
+      "dsl_types": [
+        "Connection",
+        "Result"
+      ],
+      "internal_java_types": [
+        "Database",
+        "Database.QueryResult"
+      ],
+      "runtime_schema": "Main --dsl-schema emitted JSON parsed without DB operations",
+      "source": "src/main/java/ai/lmctl/lmdb/HostApi.java"
+    }
+  },
+  "repositories": [
+    {
+      "head": "506f7d1 docs(readme): add alt text attributes to gallery images",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmaudio.git",
+      "repo": "lmaudio"
+    },
+    {
+      "head": "c6bffca docs(durable-memory): expand index with document map, example guides, and release procedures",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmbio.git",
+      "repo": "lmbio"
+    },
+    {
+      "head": "fc12f90 Update durable-memory index and clean policy notes",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmblender.git",
+      "repo": "lmblender"
+    },
+    {
+      "head": "1e7fa21 Add durable-memory index and development guide",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmcad",
+      "repo": "lmcad"
+    },
+    {
+      "head": "a5c2da0 docs(durable-memory): index next-release-version.md and add operational guides",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmcell.git",
+      "repo": "lmcell"
+    },
+    {
+      "head": "dd8a7953a3 Add durable-memory index and development guide",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmcloud.git",
+      "repo": "lmcloud"
+    },
+    {
+      "head": "a46075e Preserve portable typed results and recognize the Windows GraalVM launcher",
+      "host_schema": "src/main/java/ai/lmctl/lmdb/HostApi.java",
+      "origin": "https://github.com/lmctl-ai/lmdb.git",
+      "repo": "lmdb"
+    },
+    {
+      "head": "8d234b1 Fix Scene.grid on linux-arm64 (gcc 11 aarch64 -O3 codegen)",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmdraw.git",
+      "repo": "lmdraw"
+    },
+    {
+      "head": "761aea0 Add durable-memory index and development guide",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmfilament.git",
+      "repo": "lmfilament"
+    },
+    {
+      "head": "bca75b7 docs(durable-memory): index portable-gallery.md and add operational guides",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmfinance.git",
+      "repo": "lmfinance"
+    },
+    {
+      "head": "fb81b4b docs(durable-memory): index all files, remove policy text, and add operational guides",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmfluid.git",
+      "repo": "lmfluid"
+    },
+    {
+      "head": "ec46c7e chore(sdk): sync SDK pin to lmcode-cpp b7e4f47",
+      "host_schema": "schema/lmhtml.host.json",
+      "origin": "https://github.com/lmctl-ai/lmhtml",
+      "repo": "lmhtml"
+    },
+    {
+      "head": "53ef0c4 Follow the SDK rename: cpp-dsl-sdk is now lmcode-cpp (sdk.lock, sync script, docs)",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmimg.git",
+      "repo": "lmimg"
+    },
+    {
+      "head": "b039050 docs(readme): add alt text attributes to gallery images",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmmagnum.git",
+      "repo": "lmmagnum"
+    },
+    {
+      "head": "f3be4e3 docs(durable-memory): index all files, remove policy text, and add operational guides",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmmolecule.git",
+      "repo": "lmmolecule"
+    },
+    {
+      "head": "88ba487 docs(durable-memory): index release json manifests and add operational guides",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmnum.git",
+      "repo": "lmnum"
+    },
+    {
+      "head": "58f0fdc Support illustrated worksheets and editable document review workflows",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmoffice.git",
+      "repo": "lmoffice"
+    },
+    {
+      "head": "b83ddf5 docs(durable-memory): index next-release-version.md and add operational guides",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmparticle.git",
+      "repo": "lmparticle"
+    },
+    {
+      "head": "1bd19a0 Update durable-memory index and clean process text",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmphysics.git",
+      "repo": "lmphysics"
+    },
+    {
+      "head": "72ab2f2 Show the new examples in the README gallery",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmplot.git",
+      "repo": "lmplot"
+    },
+    {
+      "head": "b4b33bb chore(sdk): sync SDK pin to lmcode-cpp 34c02b5",
+      "host_schema": "schema/lmshark.host.json",
+      "origin": "https://github.com/lmctl-ai/lmshark.git",
+      "repo": "lmshark"
+    },
+    {
+      "head": "afcbfc4 chore(sdk): sync SDK pin to lmcode-cpp b7e4f47",
+      "host_schema": "schema/lmspace.host.json",
+      "origin": "https://github.com/lmctl-ai/lmspace.git",
+      "repo": "lmspace"
+    },
+    {
+      "head": "25508e0 docs(readme): add alt text attributes to gallery images",
+      "host_schema": "schema/lmssh.host.json",
+      "origin": "https://github.com/lmctl-ai/lmssh.git",
+      "repo": "lmssh"
+    },
+    {
+      "head": "58d81b6 docs(readme): add alt text attributes to gallery images",
+      "host_schema": "schema/lmssl.host.json",
+      "origin": "https://github.com/lmctl-ai/lmssl.git",
+      "repo": "lmssl"
+    },
+    {
+      "head": "863fa68 docs(readme): add alt text attributes to gallery images",
+      "host_schema": null,
+      "origin": "https://github.com/lmctl-ai/lmweather.git",
+      "repo": "lmweather"
+    }
+  ],
+  "schema_profiles": [
+    {
+      "functions": 0,
+      "methods": 170,
+      "profile": "host-source",
+      "repo": "lmaudio",
+      "schema": "schema/lmaudio.dsl.json",
+      "types": [
+        "Audio",
+        "Biquad",
+        "Buffer",
+        "Spectrogram",
+        "Spectrum"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 37,
+      "profile": "host-source",
+      "repo": "lmbio",
+      "schema": "schema/lmbio.dsl.json",
+      "types": [
+        "Bio",
+        "Model",
+        "Result"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 96,
+      "profile": "host-source",
+      "repo": "lmblender",
+      "schema": "schema/lmblender.dsl.json",
+      "types": [
+        "Material",
+        "Mesh",
+        "Scene"
+      ]
+    },
+    {
+      "functions": 2,
+      "methods": 62,
+      "profile": "host-source",
+      "repo": "lmcad",
+      "schema": "schema/lmcad.dsl.json",
+      "types": [
+        "Animation",
+        "Camera",
+        "Keyframe",
+        "Keyframes",
+        "Light",
+        "Material",
+        "Scene",
+        "Shape",
+        "Sketch"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 36,
+      "profile": "host-source",
+      "repo": "lmcell",
+      "schema": "schema/lmcell.dsl.json",
+      "types": [
+        "Cell",
+        "CellType",
+        "Matrix",
+        "Result",
+        "Sim"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 15,
+      "profile": "host-source",
+      "repo": "lmcloud",
+      "schema": "schema/lmcloud.dsl.json",
+      "types": [
+        "Plan",
+        "Tofu"
+      ]
+    },
+    {
+      "functions": 2,
+      "methods": 26,
+      "profile": "programmatic-host-source",
+      "repo": "lmdb",
+      "schema": "HostApi.java (Main --dsl-schema)",
+      "types": [
+        "Connection",
+        "Result"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 46,
+      "profile": "host-source",
+      "repo": "lmdraw",
+      "schema": "schema/lmdraw.dsl.json",
+      "types": [
+        "Gradient",
+        "Grid",
+        "Group",
+        "Node",
+        "Scene",
+        "Shape"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 62,
+      "profile": "host-source",
+      "repo": "lmfilament",
+      "schema": "schema/lmfilament.dsl.json",
+      "types": [
+        "Filament",
+        "Material",
+        "Mesh",
+        "Node",
+        "Part",
+        "Scene",
+        "Texture"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 107,
+      "profile": "host-source",
+      "repo": "lmfinance",
+      "schema": "schema/lmfinance.dsl.json",
+      "types": [
+        "Bond",
+        "CalibrationApi",
+        "CapFloor",
+        "Curve",
+        "CurveBuilder",
+        "Engine",
+        "HestonFit",
+        "InstrumentApi",
+        "LmfApi",
+        "MarketApi",
+        "Model",
+        "ModelApi",
+        "Option",
+        "PricingApi",
+        "Result",
+        "RiskApi",
+        "Series",
+        "Swap",
+        "Swaption"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 59,
+      "profile": "host-source",
+      "repo": "lmfluid",
+      "schema": "schema/lmfluid.dsl.json",
+      "types": [
+        "Field",
+        "Fluid",
+        "LBM",
+        "Matrix",
+        "Mesh",
+        "Problem"
+      ]
+    },
+    {
+      "functions": 48,
+      "methods": 97,
+      "profile": "effective/generated",
+      "repo": "lmhtml",
+      "schema": "schema/lmhtml.dsl.json",
+      "types": [
+        "Doc",
+        "DocList",
+        "FloatList",
+        "Html",
+        "ImageSize",
+        "IntList",
+        "Node",
+        "NodeList",
+        "Report",
+        "StrList",
+        "StrMap"
+      ]
+    },
+    {
+      "functions": 6,
+      "methods": 67,
+      "profile": "host-only",
+      "repo": "lmhtml",
+      "schema": "schema/lmhtml.host.json",
+      "types": [
+        "Doc",
+        "DocList",
+        "Html",
+        "ImageSize",
+        "Node",
+        "NodeList",
+        "Report"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 72,
+      "profile": "host-source",
+      "repo": "lmimg",
+      "schema": "schema/lmimg.dsl.json",
+      "types": [
+        "Animation",
+        "Curve",
+        "Image",
+        "Img",
+        "Layers",
+        "Montage"
+      ]
+    },
+    {
+      "functions": 2,
+      "methods": 58,
+      "profile": "host-source",
+      "repo": "lmmagnum",
+      "schema": "schema/lmmagnum.dsl.json",
+      "types": [
+        "Camera",
+        "Group",
+        "Light",
+        "Material",
+        "Scene",
+        "Shape",
+        "Texture"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 66,
+      "profile": "host-source",
+      "repo": "lmmolecule",
+      "schema": "schema/lmmolecule.dsl.json",
+      "types": [
+        "Md",
+        "Sim",
+        "System"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 70,
+      "profile": "host-source",
+      "repo": "lmnum",
+      "schema": "schema/lmnum.dsl.json",
+      "types": [
+        "Func",
+        "Matrix",
+        "Num",
+        "Ode",
+        "System"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 130,
+      "profile": "host-source",
+      "repo": "lmoffice",
+      "schema": "schema/lmoffice.dsl.json",
+      "types": [
+        "Docx",
+        "Office",
+        "Paragraph",
+        "Pptx",
+        "PptxTable",
+        "Sheet",
+        "Slide",
+        "Table",
+        "Xlsx"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 69,
+      "profile": "host-source",
+      "repo": "lmparticle",
+      "schema": "schema/lmparticle.dsl.json",
+      "types": [
+        "Geometry",
+        "Material",
+        "Rad",
+        "Result",
+        "Sim",
+        "Source"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 77,
+      "profile": "host-source",
+      "repo": "lmphysics",
+      "schema": "schema/lmphysics.dsl.json",
+      "types": [
+        "Body",
+        "Joint",
+        "Phys",
+        "System"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 13,
+      "profile": "host-source",
+      "repo": "lmplot",
+      "schema": "schema/lmplot.dsl.json",
+      "types": [
+        "Plot"
+      ]
+    },
+    {
+      "functions": 48,
+      "methods": 115,
+      "profile": "effective/generated",
+      "repo": "lmshark",
+      "schema": "schema/lmshark.dsl.json",
+      "types": [
+        "Capture",
+        "FloatList",
+        "IntList",
+        "Shark",
+        "StrList",
+        "StrMap"
+      ]
+    },
+    {
+      "functions": 6,
+      "methods": 85,
+      "profile": "host-only",
+      "repo": "lmshark",
+      "schema": "schema/lmshark.host.json",
+      "types": [
+        "Capture",
+        "Shark"
+      ]
+    },
+    {
+      "functions": 54,
+      "methods": 71,
+      "profile": "effective/generated",
+      "repo": "lmspace",
+      "schema": "schema/lmspace.dsl.json",
+      "types": [
+        "Body",
+        "Elements",
+        "FloatList",
+        "IntList",
+        "Matrix",
+        "Space",
+        "State",
+        "StrList",
+        "StrMap",
+        "System",
+        "Vector"
+      ]
+    },
+    {
+      "functions": 12,
+      "methods": 41,
+      "profile": "host-only",
+      "repo": "lmspace",
+      "schema": "schema/lmspace.host.json",
+      "types": [
+        "Body",
+        "Elements",
+        "Matrix",
+        "Space",
+        "State",
+        "System",
+        "Vector"
+      ]
+    },
+    {
+      "functions": 44,
+      "methods": 132,
+      "profile": "effective/generated",
+      "repo": "lmssh",
+      "schema": "schema/lmssh.dsl.json",
+      "types": [
+        "FloatList",
+        "IntList",
+        "Io",
+        "Key",
+        "Keys",
+        "Report",
+        "Result",
+        "ResultList",
+        "Session",
+        "Ssh",
+        "StrList",
+        "StrMap"
+      ]
+    },
+    {
+      "functions": 2,
+      "methods": 102,
+      "profile": "host-only",
+      "repo": "lmssh",
+      "schema": "schema/lmssh.host.json",
+      "types": [
+        "Io",
+        "Key",
+        "Keys",
+        "Report",
+        "Result",
+        "ResultList",
+        "Session",
+        "Ssh"
+      ]
+    },
+    {
+      "functions": 44,
+      "methods": 157,
+      "profile": "effective/generated",
+      "repo": "lmssl",
+      "schema": "schema/lmssl.dsl.json",
+      "types": [
+        "Cert",
+        "Conn",
+        "Csr",
+        "FloatList",
+        "Fs",
+        "IntList",
+        "Key",
+        "Listener",
+        "Net",
+        "Out",
+        "Ssl",
+        "StrList",
+        "StrMap",
+        "Tls",
+        "TlsCtx"
+      ]
+    },
+    {
+      "functions": 2,
+      "methods": 127,
+      "profile": "host-only",
+      "repo": "lmssl",
+      "schema": "schema/lmssl.host.json",
+      "types": [
+        "Cert",
+        "Conn",
+        "Csr",
+        "Fs",
+        "Key",
+        "Listener",
+        "Net",
+        "Out",
+        "Ssl",
+        "Tls",
+        "TlsCtx"
+      ]
+    },
+    {
+      "functions": 0,
+      "methods": 81,
+      "profile": "host-source",
+      "repo": "lmweather",
+      "schema": "schema/lmweather.dsl.json",
+      "types": [
+        "Plane",
+        "Sphere",
+        "Wx"
+      ]
+    }
+  ],
+  "scope": "Every schema profile and host source under sibling checkouts directory, excluding lmproxy and SDK repositories",
+  "scope_exclusions": {
+    "lmgallery": "gallery/non-host repository, no DSL host schema",
+    "lmproxy": "owner prohibition",
+    "lmvideo": "outside the DSL host adoption set; not audited for migration"
+  },
+  "shared_host_functions_by_exact_signature": {
+    "('material', (), 'Material')": [
+      "lmcad",
+      "lmmagnum"
+    ]
+  },
+  "shared_host_methods_by_exact_signature": {
+    "('Camera', 'look_at', ('float', 'float', 'float', 'float', 'float', 'float'), 'Camera')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Key', 'bits', (), 'int')": [
+      "lmssh",
+      "lmssl"
+    ],
+    "('Key', 'fingerprint', (), 'string')": [
+      "lmssh",
+      "lmssl"
+    ],
+    "('Key', 'type', (), 'string')": [
+      "lmssh",
+      "lmssl"
+    ],
+    "('Light', 'intensity', ('float',), 'Light')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Material', 'color', ('float', 'float', 'float'), 'Material')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Material', 'name', (), 'string')": [
+      "lmfilament",
+      "lmparticle"
+    ],
+    "('Material', 'roughness', ('float',), 'Material')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Material', 'shininess', ('float',), 'Material')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Material', 'specular', ('float',), 'Material')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Matrix', 'cols', (), 'int')": [
+      "lmcell",
+      "lmfluid",
+      "lmnum",
+      "lmspace"
+    ],
+    "('Matrix', 'get', ('int', 'int'), 'float')": [
+      "lmcell",
+      "lmfluid",
+      "lmnum",
+      "lmspace"
+    ],
+    "('Matrix', 'rows', (), 'int')": [
+      "lmcell",
+      "lmfluid",
+      "lmnum",
+      "lmspace"
+    ],
+    "('Matrix', 'save_csv', ('string',), 'void')": [
+      "lmcell",
+      "lmfluid",
+      "lmnum",
+      "lmspace"
+    ],
+    "('Matrix', 'set', ('int', 'int', 'float'), 'Matrix')": [
+      "lmfluid",
+      "lmnum"
+    ],
+    "('Mesh', 'triangle_count', (), 'int')": [
+      "lmblender",
+      "lmfilament"
+    ],
+    "('Mesh', 'vertex_count', (), 'int')": [
+      "lmblender",
+      "lmfilament"
+    ],
+    "('Report', 'add', ('string', 'string', 'int', 'string'), 'void')": [
+      "lmhtml",
+      "lmssh"
+    ],
+    "('Report', 'fail_if_any', (), 'void')": [
+      "lmhtml",
+      "lmssh"
+    ],
+    "('Report', 'write_json', ('string',), 'void')": [
+      "lmhtml",
+      "lmssh"
+    ],
+    "('Report', 'write_text', ('string',), 'void')": [
+      "lmhtml",
+      "lmssh"
+    ],
+    "('Result', 'column', ('int',), 'string')": [
+      "lmbio",
+      "lmdb"
+    ],
+    "('Result', 'rows', (), 'int')": [
+      "lmbio",
+      "lmdb"
+    ],
+    "('Scene', 'ambient', ('float',), 'Scene')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'background', ('float', 'float', 'float'), 'Scene')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'box', ('float', 'float', 'float', 'Material'), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'camera', ('float', 'float', 'float', 'float', 'float', 'float', 'float'), 'Camera')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'cylinder', ('float', 'float', 'Material'), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'directional_light', ('float', 'float', 'float', 'float'), 'Light')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'export_obj', ('string',), 'void')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'export_stl', ('string',), 'void')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'group', (), 'Group')": [
+      "lmdraw",
+      "lmmagnum"
+    ],
+    "('Scene', 'render_png', ('string', 'int', 'int'), 'void')": [
+      "lmcad",
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "('Scene', 'render_png', ('string', 'int', 'int', 'int'), 'void')": [
+      "lmblender",
+      "lmdraw"
+    ],
+    "('Scene', 'render_ppm', ('string', 'int', 'int'), 'void')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'shadows', ('bool',), 'Scene')": [
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "('Scene', 'sphere', ('float', 'Material'), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Scene', 'tube_between', ('float', 'float', 'float', 'float', 'float', 'float', 'float', 'Material'), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Shape', 'color', ('float', 'float', 'float'), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Shape', 'name', ('string',), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Shape', 'rotate', ('float', 'float', 'float'), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Shape', 'scale', ('float', 'float', 'float'), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Shape', 'translate', ('float', 'float', 'float'), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('Shape', 'visible', ('bool',), 'Shape')": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "('System', 'energy', (), 'float')": [
+      "lmphysics",
+      "lmspace"
+    ],
+    "('Texture', 'filter', ('string',), 'Texture')": [
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "('Texture', 'height', (), 'int')": [
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "('Texture', 'pixel', ('int', 'int', 'float', 'float', 'float'), 'Texture')": [
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "('Texture', 'repeat', ('float', 'float'), 'Texture')": [
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "('Texture', 'save_png', ('string',), 'void')": [
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "('Texture', 'width', (), 'int')": [
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "('Texture', 'wrap', ('string',), 'Texture')": [
+      "lmfilament",
+      "lmmagnum"
+    ]
+  },
+  "type_name_groups_across_profiles": {
+    "Animation": [
+      "lmcad:lmcad.dsl.json",
+      "lmimg:lmimg.dsl.json"
+    ],
+    "Body": [
+      "lmphysics:lmphysics.dsl.json",
+      "lmspace:lmspace.dsl.json",
+      "lmspace:lmspace.host.json"
+    ],
+    "Camera": [
+      "lmcad:lmcad.dsl.json",
+      "lmmagnum:lmmagnum.dsl.json"
+    ],
+    "Curve": [
+      "lmfinance:lmfinance.dsl.json",
+      "lmimg:lmimg.dsl.json"
+    ],
+    "FloatList": [
+      "lmhtml:lmhtml.dsl.json",
+      "lmshark:lmshark.dsl.json",
+      "lmspace:lmspace.dsl.json",
+      "lmssh:lmssh.dsl.json",
+      "lmssl:lmssl.dsl.json"
+    ],
+    "Group": [
+      "lmdraw:lmdraw.dsl.json",
+      "lmmagnum:lmmagnum.dsl.json"
+    ],
+    "IntList": [
+      "lmhtml:lmhtml.dsl.json",
+      "lmshark:lmshark.dsl.json",
+      "lmspace:lmspace.dsl.json",
+      "lmssh:lmssh.dsl.json",
+      "lmssl:lmssl.dsl.json"
+    ],
+    "Key": [
+      "lmssh:lmssh.dsl.json",
+      "lmssh:lmssh.host.json",
+      "lmssl:lmssl.dsl.json",
+      "lmssl:lmssl.host.json"
+    ],
+    "Light": [
+      "lmcad:lmcad.dsl.json",
+      "lmmagnum:lmmagnum.dsl.json"
+    ],
+    "Material": [
+      "lmblender:lmblender.dsl.json",
+      "lmcad:lmcad.dsl.json",
+      "lmfilament:lmfilament.dsl.json",
+      "lmmagnum:lmmagnum.dsl.json",
+      "lmparticle:lmparticle.dsl.json"
+    ],
+    "Matrix": [
+      "lmcell:lmcell.dsl.json",
+      "lmfluid:lmfluid.dsl.json",
+      "lmnum:lmnum.dsl.json",
+      "lmspace:lmspace.dsl.json",
+      "lmspace:lmspace.host.json"
+    ],
+    "Mesh": [
+      "lmblender:lmblender.dsl.json",
+      "lmfilament:lmfilament.dsl.json",
+      "lmfluid:lmfluid.dsl.json"
+    ],
+    "Model": [
+      "lmbio:lmbio.dsl.json",
+      "lmfinance:lmfinance.dsl.json"
+    ],
+    "Node": [
+      "lmdraw:lmdraw.dsl.json",
+      "lmfilament:lmfilament.dsl.json",
+      "lmhtml:lmhtml.dsl.json",
+      "lmhtml:lmhtml.host.json"
+    ],
+    "Report": [
+      "lmhtml:lmhtml.dsl.json",
+      "lmhtml:lmhtml.host.json",
+      "lmssh:lmssh.dsl.json",
+      "lmssh:lmssh.host.json"
+    ],
+    "Result": [
+      "lmbio:lmbio.dsl.json",
+      "lmcell:lmcell.dsl.json",
+      "lmdb:HostApi.java (Main --dsl-schema)",
+      "lmfinance:lmfinance.dsl.json",
+      "lmparticle:lmparticle.dsl.json",
+      "lmssh:lmssh.dsl.json",
+      "lmssh:lmssh.host.json"
+    ],
+    "Scene": [
+      "lmblender:lmblender.dsl.json",
+      "lmcad:lmcad.dsl.json",
+      "lmdraw:lmdraw.dsl.json",
+      "lmfilament:lmfilament.dsl.json",
+      "lmmagnum:lmmagnum.dsl.json"
+    ],
+    "Shape": [
+      "lmcad:lmcad.dsl.json",
+      "lmdraw:lmdraw.dsl.json",
+      "lmmagnum:lmmagnum.dsl.json"
+    ],
+    "Sim": [
+      "lmcell:lmcell.dsl.json",
+      "lmmolecule:lmmolecule.dsl.json",
+      "lmparticle:lmparticle.dsl.json"
+    ],
+    "StrList": [
+      "lmhtml:lmhtml.dsl.json",
+      "lmshark:lmshark.dsl.json",
+      "lmspace:lmspace.dsl.json",
+      "lmssh:lmssh.dsl.json",
+      "lmssl:lmssl.dsl.json"
+    ],
+    "StrMap": [
+      "lmhtml:lmhtml.dsl.json",
+      "lmshark:lmshark.dsl.json",
+      "lmspace:lmspace.dsl.json",
+      "lmssh:lmssh.dsl.json",
+      "lmssl:lmssl.dsl.json"
+    ],
+    "System": [
+      "lmmolecule:lmmolecule.dsl.json",
+      "lmnum:lmnum.dsl.json",
+      "lmphysics:lmphysics.dsl.json",
+      "lmspace:lmspace.dsl.json",
+      "lmspace:lmspace.host.json"
+    ],
+    "Texture": [
+      "lmfilament:lmfilament.dsl.json",
+      "lmmagnum:lmmagnum.dsl.json"
+    ]
+  },
+  "type_name_groups_by_repository": {
+    "Animation": [
+      "lmcad",
+      "lmimg"
+    ],
+    "Body": [
+      "lmphysics",
+      "lmspace"
+    ],
+    "Camera": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "Curve": [
+      "lmfinance",
+      "lmimg"
+    ],
+    "FloatList": [
+      "lmhtml",
+      "lmshark",
+      "lmspace",
+      "lmssh",
+      "lmssl"
+    ],
+    "Group": [
+      "lmdraw",
+      "lmmagnum"
+    ],
+    "IntList": [
+      "lmhtml",
+      "lmshark",
+      "lmspace",
+      "lmssh",
+      "lmssl"
+    ],
+    "Key": [
+      "lmssh",
+      "lmssl"
+    ],
+    "Light": [
+      "lmcad",
+      "lmmagnum"
+    ],
+    "Material": [
+      "lmblender",
+      "lmcad",
+      "lmfilament",
+      "lmmagnum",
+      "lmparticle"
+    ],
+    "Matrix": [
+      "lmcell",
+      "lmfluid",
+      "lmnum",
+      "lmspace"
+    ],
+    "Mesh": [
+      "lmblender",
+      "lmfilament",
+      "lmfluid"
+    ],
+    "Model": [
+      "lmbio",
+      "lmfinance"
+    ],
+    "Node": [
+      "lmdraw",
+      "lmfilament",
+      "lmhtml"
+    ],
+    "Report": [
+      "lmhtml",
+      "lmssh"
+    ],
+    "Result": [
+      "lmbio",
+      "lmcell",
+      "lmdb",
+      "lmfinance",
+      "lmparticle",
+      "lmssh"
+    ],
+    "Scene": [
+      "lmblender",
+      "lmcad",
+      "lmdraw",
+      "lmfilament",
+      "lmmagnum"
+    ],
+    "Shape": [
+      "lmcad",
+      "lmdraw",
+      "lmmagnum"
+    ],
+    "Sim": [
+      "lmcell",
+      "lmmolecule",
+      "lmparticle"
+    ],
+    "StrList": [
+      "lmhtml",
+      "lmshark",
+      "lmspace",
+      "lmssh",
+      "lmssl"
+    ],
+    "StrMap": [
+      "lmhtml",
+      "lmshark",
+      "lmspace",
+      "lmssh",
+      "lmssl"
+    ],
+    "System": [
+      "lmmolecule",
+      "lmnum",
+      "lmphysics",
+      "lmspace"
+    ],
+    "Texture": [
+      "lmfilament",
+      "lmmagnum"
+    ]
+  }
+}
