@@ -24,10 +24,32 @@ handled separately from prose; incomplete snippets remain unchanged.
 
 The repository inventory uses existing GitHub `lmctl-ai` remotes under
 the sibling checkouts directory, plus lmvideo (currently
-`<checkout>/lmvideo`). lmproxy and lmctl-mono are excluded before
-source inspection. Repository discovery never creates repositories or changes
-remotes. Nonignored `.lms` files, READMEs and documentation are inventoried,
-including untracked examples; build/vendor directories are excluded.
+`<checkout>/lmvideo`). lmproxy, lmctl-mono, lmdb and lmcode-java are excluded
+before source inspection. Repository discovery never creates repositories or
+changes remotes. Nonignored script files, READMEs and documentation are
+inventoried, including untracked examples; build/vendor directories are
+excluded.
+
+## Covered script extensions
+
+A file is treated as a script (its whole text is block-scanned, not just
+documentation code regions) when its extension is in the explicit allowlist
+`SCRIPT_EXTENSIONS` in `lmcode-sweep.mjs`:
+
+- `.lms` — the primary lmscript extension,
+- `.lm` — the legacy script spelling the compiler still imports,
+- `.dsl` — used by e.g. lmcode-csharp and the language repos' conformance
+  suites.
+
+Files with any other extension are documentation only when they are READMEs
+or Markdown/reStructuredText/AsciiDoc (or `.txt` under documentation
+directories); everything else is skipped. Skipped files are counted per
+extension in each repository's `skipped_extensions` report field, and any
+skipped file that still mentions `_dsl_`/`_lmcode_` produces a loud
+`WARNING` on stderr (and increments `skipped_marker_mentions`) so an
+uncovered script extension is never dropped silently. Markdown fenced blocks
+and shell heredocs labelled `lms`, `lmscript`, `lmcode`, `lm` or `dsl` are
+scanned as documentation code regions.
 
 ## Compiler and reproduction
 

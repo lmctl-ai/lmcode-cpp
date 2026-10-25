@@ -13,7 +13,13 @@ const stageRoot = process.env.LMCODE_SWEEP_STAGE ? path.resolve(process.env.LMCO
 const reportPath = process.env.LMCODE_SWEEP_REPORT || '';
 const compilerPath = process.env.LMCODE_SWEEP_COMPILER || '';
 const scratch = process.env.LMCODE_SWEEP_SCRATCH || '/tmp/claude-1000/scratch-lmcode';
-const skip = new Set(['lmproxy', 'lmctl-mono']);
+const skip = new Set(['lmproxy', 'lmctl-mono', 'lmdb', 'lmcode-java']);
+// Extensions that can carry a script with a `_dsl_`/`_lmcode_` raw block.
+// `.lms` is the primary spelling; `.lm` is the legacy script spelling the
+// compiler still imports ("Lead rule: .lm is not exempt"), and `.dsl` is used
+// by e.g. lmcode-csharp. Anything else is documentation or not inventoried.
+const SCRIPT_EXTENSIONS = ['.lms', '.lm', '.dsl'];
+const DOC_EXTENSIONS = ['.md', '.markdown', '.mdx', '.rst', '.adoc'];
 const decoder = new TextDecoder('utf-8', {fatal: true, ignoreBOM: true});
 const cmp = (a, b) => a < b ? -1 : a > b ? 1 : 0;
 const hash = b => createHash('sha256').update(b).digest('hex');
@@ -41,7 +47,7 @@ function listed(repo) { return [...new Set(git(repo,['ls-files','-z','--cached',
 function eligible(rel) {
   if (rel.split('/').some(p => ['.git','node_modules','third_party','build','target','dist'].includes(p))) return false;
   const base=path.basename(rel), ext=path.extname(rel).toLowerCase();
-  return ext==='.lms' || /^readme(?:\.[^.]+)?$/i.test(base) || ['.md','.markdown','.mdx','.rst','.adoc'].includes(ext) || ext==='.txt' && rel.split('/').some(p => ['doc','docs','documentation','durable-memory'].includes(p));
+  return SCRIPT_EXTENSIONS.includes(ext) || /^readme(?:\.[^.]+)?$/i.test(base) || DOC_EXTENSIONS.includes(ext) || ext==='.txt' && rel.split('/').some(p => ['doc','docs','documentation','durable-memory'].includes(p));
 }
 function lines(text) {
   const result=[]; let start=0; const re=/\r\n|\r|\n/g; let m;
@@ -101,12 +107,12 @@ function docRegions(text) {
     while(j<ls.length && !close.test(ls[j].text)) j++;
     for(let k=i;k<=Math.min(j,ls.length-1);k++) covered.add(k);
     const lang=open[3].toLowerCase();
-    if(['lms','lmscript','lmcode','', 'text'].includes(lang)) result.push(region(text,ls[i].after,j<ls.length?ls[j].start:text.length,open[1].length));
+    if(['lms','lmscript','lmcode','lm','dsl','', 'text'].includes(lang)) result.push(region(text,ls[i].after,j<ls.length?ls[j].start:text.length,open[1].length));
     else if(['sh','bash','shell','console'].includes(lang)) {
       for(let k=i+1;k<j;k++) {
         const h=/<<-?\s*(?:'([A-Za-z_]\w*)'|"([A-Za-z_]\w*)"|([A-Za-z_]\w*))/.exec(ls[k].text);
         if(!h) continue;
-        const label=h[1]||h[2]||h[3]; if(!/lms/i.test(label) && !/\.lms\b/.test(ls[k].text)) continue;
+        const label=h[1]||h[2]||h[3]; if(!/^(?:lms|lmscript|lmcode|lm|dsl)$/i.test(label) && !/\.(?:lms|lm|dsl)\b/i.test(ls[k].text)) continue;
         let e=k+1; while(e<j && ls[e].text!==label) e++;
         if(e<j) {result.push(region(text,ls[k].after,ls[e].start));k=e;}
       }
@@ -181,14 +187,33 @@ async function main() {
   if(stageRoot && !within(scratch,stageRoot)) throw Error('--stage must be under '+scratch);
   const result={mode,root,compiler:compilerPath,repositories:[],totals:{files:0,changed_files:0,examples:0,changed_examples:0,blocks:0,replacements:0,ambiguous:0,diagnostics:0}};
   for(const info of repositories) {
-    const files=listed(info.repo), rr={...info,files:[],json_dependencies:[]};
-    for(const rel of files.filter(eligible)) {
-      const file=path.join(info.repo,rel); if(!fs.existsSync(file)||!fs.lstatSync(file).isFile()) continue;
+    const files=listed(info.repo), rr={...info,files:[],json_dependencies:[],skipped_extensions:{}};
+    const skippedExts=new Map(); let skippedMarkerMentions=0;
+    for(const rel of files) {
+      const file=path.join(info.repo,rel);
+      if(!eligible(rel)) {
+        const ext=path.extname(rel).toLowerCase()||'(none)';
+        skippedExts.set(ext,(skippedExts.get(ext)||0)+1);
+        // Loud, not silent: a skipped file that still mentions a block marker may be
+        // a script under an extension the allowlist does not cover yet.
+        try {
+          const st=fs.lstatSync(file);
+          if(st.isFile()&&st.size<=1024*1024) {
+            const bytes=fs.readFileSync(file);
+            if(bytes.includes('_dsl_')||bytes.includes('_lmcode_')) {
+              skippedMarkerMentions++;
+              console.error(`WARNING: ${info.name}/${rel}: skipped (extension '${ext}' is not a covered script/documentation type) but mentions _dsl_/_lmcode_; check whether the allowlist needs it`);
+            }
+          }
+        } catch {}
+        continue;
+      }
+      if(!fs.existsSync(file)||!fs.lstatSync(file).isFile()) continue;
       let bytes,text;
       try {bytes=fs.readFileSync(file);text=decoder.decode(bytes);}catch(e){rr.files.push({path:rel,error:String(e.message),replacements:[]});continue;}
-      const isLms=path.extname(rel).toLowerCase()==='.lms', t=transform(text,isLms,Lexer);
+      const isScript=SCRIPT_EXTENSIONS.includes(path.extname(rel).toLowerCase()), t=transform(text,isScript,Lexer);
       const snippets=[];
-      if(!isLms && stageRoot) {
+      if(!isScript && stageRoot) {
         let index=0;
         for(const r of docRegions(text)) {
           const found=scan(r.text,Lexer);if(!found.replacements.length)continue;
@@ -199,8 +224,8 @@ async function main() {
           snippets.push({file:path.relative(path.join(stageRoot,info.name),target),baseline:path.relative(path.join(stageRoot,info.name),baseline),source_document:rel,source_line:lines(text).findIndex(l=>r.map[0]>=l.start&&r.map[0]<=l.end)+1});
         }
       }
-      rr.files.push({path:rel,kind:isLms?'lms':'documentation',source_sha256:hash(bytes),planned_sha256:hash(Buffer.from(t.text)),blocks:t.blocks,replacements:t.replacements,diagnostics:t.diagnostics,ambiguous:t.ambiguous,snippets});
-      result.totals.files++;result.totals.examples+=Number(isLms);result.totals.changed_files+=Number(t.replacements.length>0);result.totals.changed_examples+=Number(isLms&&t.replacements.length>0);
+      rr.files.push({path:rel,kind:isScript?'script':'documentation',source_sha256:hash(bytes),planned_sha256:hash(Buffer.from(t.text)),blocks:t.blocks,replacements:t.replacements,diagnostics:t.diagnostics,ambiguous:t.ambiguous,snippets});
+      result.totals.files++;result.totals.examples+=Number(isScript);result.totals.changed_files+=Number(t.replacements.length>0);result.totals.changed_examples+=Number(isScript&&t.replacements.length>0);
       for(const key of ['blocks','replacements','ambiguous','diagnostics']) result.totals[key]+=Array.isArray(t[key])?t[key].length:t[key];
       if(mode==='apply' && t.replacements.length) fs.writeFileSync(file,Buffer.from(t.text));
       if(stageRoot){const target=path.join(stageRoot,info.name,rel);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,Buffer.from(t.text));}
@@ -208,6 +233,11 @@ async function main() {
     const json=new Set(files.filter(p=>p.endsWith('.json')&&!p.split('/').some(n=>['node_modules','third_party','build','target','dist'].includes(n))));
     const schemaDir=path.join(info.repo,'schema');if(fs.existsSync(schemaDir)) for(const name of fs.readdirSync(schemaDir)) if(name.endsWith('.json')) json.add('schema/'+name);
     rr.json_dependencies=[...json].sort(cmp);
+    rr.skipped_extensions=Object.fromEntries([...skippedExts.entries()].sort((a,b)=>cmp(a[0],b[0])));
+    rr.skipped_marker_mentions=skippedMarkerMentions;
+    result.totals.skipped_files=(result.totals.skipped_files||0)+[...skippedExts.values()].reduce((a,b)=>a+b,0);
+    result.totals.skipped_marker_mentions=(result.totals.skipped_marker_mentions||0)+skippedMarkerMentions;
+    if(skippedMarkerMentions) console.error(`WARNING: ${info.name}: ${skippedMarkerMentions} skipped file(s) mention _dsl_/_lmcode_ markers; see skipped_extensions in the report`);
     if(stageRoot) for(const rel of rr.json_dependencies){const file=path.join(info.repo,rel);if(!fs.existsSync(file)||!fs.lstatSync(file).isFile())continue;const target=path.join(stageRoot,info.name,rel);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(file,target);}
     result.repositories.push(rr);
   }
