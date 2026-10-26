@@ -26,7 +26,7 @@ assert "StrMap.set" not in docs["signatures"]["method StrMap.set(string, string)
 assert docs["signatures"]["fn math_pow(float, float) -> float"]["errors"] == []
 assert "StrList object limit exceeded (65536)" in docs["signatures"]["fn file_lines(string) -> StrList"]["errors"]
 for signature, meta in docs["signatures"].items():
-    assert meta["area"] in {"string", "math", "collections", "file", "json", "encoding"}, signature
+    assert meta["area"] in {"string", "math", "collections", "file", "json", "encoding", "containers"}, signature
     assert meta["summary"].strip(), signature
     assert isinstance(meta["errors"], list), signature
 print(f"PASS std docs ({len(docs['signatures'])} signatures)")

@@ -631,7 +631,7 @@
       ]
     },
     "method FloatMap.keys() -> StrList": {
-      "area": "collections",
+      "area": "containers",
       "params": [],
       "summary": "Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits.",
       "errors": [
@@ -662,7 +662,7 @@
       "errors": []
     },
     "method FloatMap.values() -> FloatList": {
-      "area": "collections",
+      "area": "containers",
       "params": [],
       "summary": "Allocate an independent FloatList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits.",
       "errors": [
@@ -920,7 +920,7 @@
       ]
     },
     "method IntMap.keys() -> StrList": {
-      "area": "collections",
+      "area": "containers",
       "params": [],
       "summary": "Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits.",
       "errors": [
@@ -951,7 +951,7 @@
       "errors": []
     },
     "method IntMap.values() -> IntList": {
-      "area": "collections",
+      "area": "containers",
       "params": [],
       "summary": "Allocate an independent IntList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits.",
       "errors": [

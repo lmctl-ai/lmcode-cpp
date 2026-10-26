@@ -92,11 +92,11 @@ Canonical signatures: 181.
 | `method FloatMap.get_or(string, float) -> float` | collections | Read a value or the supplied fallback. | — |
 | `method FloatMap.has(string) -> bool` | collections | Test a byte-exact key. | — |
 | `method FloatMap.key_at(int) -> string` | collections | Read a live key in insertion order. | FloatMap.key_at: index out of range: N |
-| `method FloatMap.keys() -> StrList` | collections | Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | StrList object limit exceeded (65536) |
+| `method FloatMap.keys() -> StrList` | containers | Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | StrList object limit exceeded (65536) |
 | `method FloatMap.len() -> int` | collections | Count live keys. | — |
 | `method FloatMap.remove(string) -> bool` | collections | Remove a key; reinsertion goes last. | — |
 | `method FloatMap.set(string, float) -> FloatMap` | collections | Insert/update; overwrites retain original position; return self. | — |
-| `method FloatMap.values() -> FloatList` | collections | Allocate an independent FloatList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | FloatList object limit exceeded (65536) |
+| `method FloatMap.values() -> FloatList` | containers | Allocate an independent FloatList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | FloatList object limit exceeded (65536) |
 | `method FloatPQ.clear() -> FloatPQ` | collections | Remove all items; return self; reset PQ insertion sequence. | — |
 | `method FloatPQ.empty() -> bool` | collections | Return whether there are no items. | — |
 | `method FloatPQ.len() -> int` | collections | Return the number of items. | — |
@@ -129,11 +129,11 @@ Canonical signatures: 181.
 | `method IntMap.get_or(string, int) -> int` | collections | Read a value or the supplied fallback. | — |
 | `method IntMap.has(string) -> bool` | collections | Test a byte-exact key. | — |
 | `method IntMap.key_at(int) -> string` | collections | Read a live key in insertion order. | IntMap.key_at: index out of range: N |
-| `method IntMap.keys() -> StrList` | collections | Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | StrList object limit exceeded (65536) |
+| `method IntMap.keys() -> StrList` | containers | Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | StrList object limit exceeded (65536) |
 | `method IntMap.len() -> int` | collections | Count live keys. | — |
 | `method IntMap.remove(string) -> bool` | collections | Remove a key; reinsertion goes last. | — |
 | `method IntMap.set(string, int) -> IntMap` | collections | Insert/update; overwrites retain original position; return self. | — |
-| `method IntMap.values() -> IntList` | collections | Allocate an independent IntList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | IntList object limit exceeded (65536) |
+| `method IntMap.values() -> IntList` | containers | Allocate an independent IntList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | IntList object limit exceeded (65536) |
 | `method IntPQ.clear() -> IntPQ` | collections | Remove all items; return self; reset PQ insertion sequence. | — |
 | `method IntPQ.empty() -> bool` | collections | Return whether there are no items. | — |
 | `method IntPQ.len() -> int` | collections | Return the number of items. | — |
