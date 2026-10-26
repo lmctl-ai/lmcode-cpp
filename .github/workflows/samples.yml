@@ -1,0 +1,66 @@
+name: Cross-port sample corpus
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+  push:
+    paths:
+      - 'std/**'
+      - 'conformance/**'
+      - 'sample-suite/**'
+      - 'run-all-samples.*'
+
+permissions:
+  contents: read
+
+jobs:
+  samples:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: lmcode-cpp
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: lmctl-ai/lmcode-c-sample, path: lmcode-c-sample, persist-credentials: false }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: lmctl-ai/lmcode-cpp-sample, path: lmcode-cpp-sample, persist-credentials: false }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: lmctl-ai/lmcode-rust-sample, path: lmcode-rust-sample, persist-credentials: false }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: lmctl-ai/lmcode-go-sample, path: lmcode-go-sample, persist-credentials: false }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: lmctl-ai/lmcode-csharp-sample, path: lmcode-csharp-sample, persist-credentials: false }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: lmctl-ai/lmcode-java-sample, path: lmcode-java-sample, persist-credentials: false }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: lmctl-ai/lmcode-kotlin-sample, path: lmcode-kotlin-sample, persist-credentials: false }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with: { repository: lmctl-ai/lmcode-scala-sample, path: lmcode-scala-sample, persist-credentials: false }
+      - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with: { distribution: temurin, java-version: '21' }
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd7f7d1f2c5f8f8
+        with: { go-version: 'stable' }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: { node-version: '24' }
+      - name: Install required cross-port toolchains and pinned compiler
+        run: |
+          rustup toolchain install stable --profile minimal
+          sudo apt-get update
+          sudo apt-get install -y dotnet-sdk-8.0 kotlin scala
+          npm install --global @lmctl-ai/lmctl@0.2.420
+          lmscript --version
+      - name: Run every sample port and compare canonical/cross-port behavior
+        working-directory: lmcode-cpp
+        env:
+          SAMPLE_REPO_ROOT: ${{ github.workspace }}
+          SAMPLE_CPP_DIR: ${{ github.workspace }}/lmcode-cpp-sample
+          SAMPLE_C_DIR: ${{ github.workspace }}/lmcode-c-sample
+          SAMPLE_RUST_DIR: ${{ github.workspace }}/lmcode-rust-sample
+          SAMPLE_GO_DIR: ${{ github.workspace }}/lmcode-go-sample
+          SAMPLE_CSHARP_DIR: ${{ github.workspace }}/lmcode-csharp-sample
+          SAMPLE_JAVA_DIR: ${{ github.workspace }}/lmcode-java-sample
+          SAMPLE_KOTLIN_DIR: ${{ github.workspace }}/lmcode-kotlin-sample
+          SAMPLE_SCALA_DIR: ${{ github.workspace }}/lmcode-scala-sample
+        run: ./sample-suite/run-all-samples.sh --all
