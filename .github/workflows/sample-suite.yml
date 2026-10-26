@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: lmctl-ai/lmcode-cpp-sample
-          ref: 65209c17d2431910ee00f04a6214ae32c3720331
+          ref: 70fd5d986e22daf5d66142fc03058bd22379fbb3
           path: lmcode-cpp-sample
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020

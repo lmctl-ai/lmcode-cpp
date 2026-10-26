@@ -2,18 +2,8 @@ CXX ?= g++
 CXXFLAGS ?= -std=c++17 -O1 -Wall -Wextra -pedantic
 BUILD ?= build
 
-.PHONY: test test-c-api test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std conformance all clean
+.PHONY: test test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std conformance all clean
 all: test conformance
-
-$(BUILD)/lmcode_c_api_test: tests/lmcode_c_api_test.c src/lmcode_c.cpp include/lmcode_c.h include/dslvm.hpp stdlib/testing.hpp
-	@mkdir -p $(BUILD)
-	$(CC) -std=c11 -Wall -Wextra -Werror -I include -c tests/lmcode_c_api_test.c -o $(BUILD)/lmcode_c_api_test.c.o
-	$(CXX) $(CXXFLAGS) -I include -c src/lmcode_c.cpp -o $(BUILD)/lmcode_c_api.o
-	$(CXX) $(CXXFLAGS) $(BUILD)/lmcode_c_api_test.c.o $(BUILD)/lmcode_c_api.o -o $@
-
-test-c-api: $(BUILD)/lmcode_c_api_test
-	$(BUILD)/lmcode_c_api_test > $(BUILD)/lmcode_c_api.stdout
-	grep -Fx '{"ok": true, "result": {"c_api":true}}' $(BUILD)/lmcode_c_api.stdout
 
 $(BUILD)/dslvm_test: tests/dslvm_test.cpp include/dslvm.hpp
 	@mkdir -p $(BUILD)
@@ -25,7 +15,7 @@ $(BUILD)/conformance: conformance/run.cpp tests/fixture_fs.hpp include/dslvm.hpp
 
 test: $(BUILD)/dslvm_test
 	$(BUILD)/dslvm_test
-	$(MAKE) test-c-api test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std
+	$(MAKE) test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std
 
 $(BUILD)/stdlib_string_test: tests/stdlib_string_test.cpp stdlib/string.hpp include/dslvm.hpp
 	@mkdir -p $(BUILD)

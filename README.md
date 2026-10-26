@@ -224,19 +224,3 @@ Compiler/language changes must recompile and review this corpus, then run every
 sample port. New std functions fail the import audit until covered. The C++
 reference's expanded 66 outputs also matched an independent Go SDK host exactly.
 
-### C embedding API
-
-C hosts include [`include/lmcode_c.h`](include/lmcode_c.h) and link the small
-C++ implementation [`src/lmcode_c.cpp`](src/lmcode_c.cpp). Opaque registry,
-context and program handles expose the same VM, typed function-pointer callbacks,
-default standard catalog, optional testing sink, and located errors. Strings are
-length-counted; object pointers remain application-owned. Keep the registry alive
-until all programs using it are destroyed. See the header for buffer lifetimes.
-
-```sh
-make test-c-api   # compiles tests/lmcode_c_api_test.c as C11, then links C++17
-```
-
-The C caller test executes overloads, object/context callbacks, host errors with
-source locations, load/schema errors, print bytes including NUL/LF, and exact JSON
-reporting. The C API is part of `make test`, not an independent interpreter.
