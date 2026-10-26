@@ -2,7 +2,7 @@
   "format": 1,
   "schema": "sample.dsl.json",
   "bytecode_version": 5,
-  "schema_sha256": "060a58c9823e431512a46291444823a71fe9537dd3ee5dd7742c0c56c1b18248",
+  "schema_sha256": "9f2e94877c7138ab2699a0ebaf704eefdbf812793e936d0b04704bffd0521706",
   "compiler_minimum": "0.2.420",
   "cases": [
     {
@@ -10,7 +10,7 @@
       "source": "programs/001-literals.lms",
       "source_sha256": "ccf635607e1cdc6280a51542ee802f984a22f5bbdf41fc64e4eb17e6271e1fd5",
       "bytecode": "bytecode/001-literals.dslb",
-      "bytecode_sha256": "de50b7892b6d9419f6fd5e9750833ec63241e7121d4e8240340cbc2726b57dba",
+      "bytecode_sha256": "c37ccfd42403e35bc6b700f50bde2fbce46ee50a58b7874a113c98c689c1658a",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -23,7 +23,7 @@
       "source": "programs/002-arithmetic.lms",
       "source_sha256": "3258b44e44fab6a15b37f69884a1f9d7d540a7a47c645c205afe1b9c619a8cef",
       "bytecode": "bytecode/002-arithmetic.dslb",
-      "bytecode_sha256": "d00f6116d0855e433fc5bcc77d4ca909fc1eccf0aef93ebbf80ba8d1dd87a1ec",
+      "bytecode_sha256": "018df5ff98ba432bffd93f1cd0dfae76efd2854c7ad6b80681bc0b585b1abe2d",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -37,7 +37,7 @@
       "source": "programs/003-boolean.lms",
       "source_sha256": "5fdad5f8b72bd59f5291f69b2dbcc91ee39b497254ace7c5e91f1305d748a990",
       "bytecode": "bytecode/003-boolean.dslb",
-      "bytecode_sha256": "488ec6a81058932acfa89cd815a5530bcca00e3c4c7237c4c848aba0d9523a54",
+      "bytecode_sha256": "27dc11af2b41e2d63cd609182200846b01430a2c1ba4cc3e2089e6f36267bba0",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -50,7 +50,7 @@
       "source": "programs/004-if-else.lms",
       "source_sha256": "8e98663c51f21f121466a885280408c36482c2480658fc00bc164372d00a5389",
       "bytecode": "bytecode/004-if-else.dslb",
-      "bytecode_sha256": "94c453227d0d9e7a03d062860a55f694dac41deab493a56b4036404c54669341",
+      "bytecode_sha256": "2739a47712b2cc58125d4f1dd81143b98607eeb259f93f2f37e4f8ecfafc5419",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -63,7 +63,7 @@
       "source": "programs/005-while.lms",
       "source_sha256": "e36e66fbb0c16d11aa54da2b473e6fd864d7d82a35f5aaec44f4c45730a75217",
       "bytecode": "bytecode/005-while.dslb",
-      "bytecode_sha256": "371b237e7c6200546ecd319f36602c351d124449cd28bb101ca7d71019cb23a1",
+      "bytecode_sha256": "bb17aa316d4b92621d75544c61622d25ca8ae3cf1d124bff20eefb1478ec7680",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -75,7 +75,7 @@
       "source": "programs/006-range-for.lms",
       "source_sha256": "65a0fd2b845c217a9ca852797eb15457d92f7944d894b06749cf671b5e0db2f1",
       "bytecode": "bytecode/006-range-for.dslb",
-      "bytecode_sha256": "fceb7468abbc28a802ebb67aae97fb7f3fede0e43d16a06b89b22f3783bdd6b6",
+      "bytecode_sha256": "320f8379d4b2f493b89306ff4af9a669c33786b3d1c310730eb3d916fd2c2845",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -88,7 +88,7 @@
       "source": "programs/007-switch.lms",
       "source_sha256": "e6f660db382c91a618ca88b92db541705646b2ebe7a4c9b90f7b86fcfe668a53",
       "bytecode": "bytecode/007-switch.dslb",
-      "bytecode_sha256": "12d3237fd9b1bec7c04ed9c77ec4334ab809ce822e62bf48578452ee5ec6d6a1",
+      "bytecode_sha256": "25cffdb167d5f84da97b8ae1408e00286b35250df03d34306749d3b0ae99c15b",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -102,7 +102,7 @@
       "source": "programs/008-function.lms",
       "source_sha256": "4992162f3a741a5d7467dbc617d60333fa2436298483129a54acdc3f1f509c9d",
       "bytecode": "bytecode/008-function.dslb",
-      "bytecode_sha256": "de56b956e84a480b224815b291566eb83e1cfa6851d739a8fdff9745db5b7fd1",
+      "bytecode_sha256": "f132d23171fad386bbb0fc392108c7742fa4e35da618c3cb359e0bc18aad9261",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -115,7 +115,7 @@
       "source": "programs/009-money-overloads.lms",
       "source_sha256": "e58b02d961675e1cfdf70b2b81e944fadf305aeaf48b6e22d324f130606d7816",
       "bytecode": "bytecode/009-money-overloads.dslb",
-      "bytecode_sha256": "f6fc22e4d114e6761595b2a9d3c1fcec0cce257666fb3dbd5dfeb54ff2fa2b9c",
+      "bytecode_sha256": "328ad10508dfc96f2412c54661570274b2cc1d1315efc535dca4a438ddf9a2a7",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -130,7 +130,7 @@
       "source": "programs/010-money-methods.lms",
       "source_sha256": "0fb7101f63c28e84fd632abcfc9017780d16935caf75d898aa7f47047c12d8e9",
       "bytecode": "bytecode/010-money-methods.dslb",
-      "bytecode_sha256": "2a94b46923c0dbcb224722ab84c93b7e5f6dee4731f65dce6b1e99d516f358d5",
+      "bytecode_sha256": "79c8527988bd858d85530ee584ffcd0b4be3445f383e570d03672f7f9406d8d8",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -144,7 +144,7 @@
       "source": "programs/011-money-operators.lms",
       "source_sha256": "7f1b13530f63decaed4417777adb580f461b4732e7fba55c3316f0a4685997ff",
       "bytecode": "bytecode/011-money-operators.dslb",
-      "bytecode_sha256": "270a2af1cd322bac81427fae63c1a98c183288947423a6e709723c4b89d4e46f",
+      "bytecode_sha256": "9b04032afdcf64e50cd2435e7ca0c26d0704e225ff06a1ff6ab7ebad1c6092c8",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -160,7 +160,7 @@
       "source": "programs/012-shop-methods.lms",
       "source_sha256": "b274a403103bc32b98eda27355b2e2cb816d994dfd26dba2d6252e81a3ca3327",
       "bytecode": "bytecode/012-shop-methods.dslb",
-      "bytecode_sha256": "288fc9cbae51bab89f2fcccba4c98a4eb8a32833a6e07e17fa805887b0fb2c9b",
+      "bytecode_sha256": "cf3d1f2a7631d65b4a7e0b17e3bb8ab08227165a02c29e5c34b6a7b0647ce6fe",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -175,7 +175,7 @@
       "source": "programs/013-items-methods.lms",
       "source_sha256": "be30ab0a477df3de4d677285c3bf21a96493db68f7f5c15deb836edcf6874bf0",
       "bytecode": "bytecode/013-items-methods.dslb",
-      "bytecode_sha256": "c5a70a7289c10e41e4f85035f7c8c272b87fae12e18bf01693397371473ecf05",
+      "bytecode_sha256": "701c9ab1aab4c16eae59a9ab2849c5e8f19f2932ff7e17e820b3f2c8f506077f",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -188,7 +188,7 @@
       "source": "programs/014-ledger-methods.lms",
       "source_sha256": "bee3b643fb0bf8667169d7b569a847208fe9f430b79ce156888de4a0f596bc64",
       "bytecode": "bytecode/014-ledger-methods.dslb",
-      "bytecode_sha256": "893415732dd4dff08f73e36dbf143f06016bd1052239fd597b4cabc79e2afb5c",
+      "bytecode_sha256": "f371c491cc8ea6643d08f29ceacb12d21fe434c3f6f2f79fdf6a77bcbcfb9980",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -204,7 +204,7 @@
       "source": "programs/015-float-list.lms",
       "source_sha256": "6569d8eeacd10c7706e88ba0167d6d78b292394dcae49de7d0b1242ee4b4fd9a",
       "bytecode": "bytecode/015-float-list.dslb",
-      "bytecode_sha256": "f36c03f92b874bcb93dd9d78ff84b00dfed3da018f6ad60efa348e66ab786a24",
+      "bytecode_sha256": "7337423489538ccb65c0d5e43851f358f79c57e213406336909d4d5f4e3c8d0d",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -223,7 +223,7 @@
       "source": "programs/016-int-list.lms",
       "source_sha256": "47a6aeaaf214a15694a2a9a812e029575cde30ac8e53b670f053a99c2faeec70",
       "bytecode": "bytecode/016-int-list.dslb",
-      "bytecode_sha256": "dd8c7c8f0d1def76f49970b63d151fa1562a3773b56a57d55795a7f4585bef71",
+      "bytecode_sha256": "b64002716660c030df2033e571c7d976b4887870a3a9869e4b417f631c7f6838",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -242,7 +242,7 @@
       "source": "programs/017-str-list.lms",
       "source_sha256": "7201e784c62ca437b384a7f1f39a5f2adfc0675ca7d038da588691e69e6e7f2d",
       "bytecode": "bytecode/017-str-list.dslb",
-      "bytecode_sha256": "4b6bda3dac429a4bfcc2c1a848beabba6a4222cde1fcbfaced67e4e396984f3e",
+      "bytecode_sha256": "4ac2b5576491416e840e9d80803b51233c24e86c41e7c35805fe5ff8ae6e268e",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -262,7 +262,7 @@
       "source": "programs/018-str-map.lms",
       "source_sha256": "4d76c269e9e18641d72a3d44d244aec9d58e239ec25a8fa7f48323fd812e2764",
       "bytecode": "bytecode/018-str-map.dslb",
-      "bytecode_sha256": "18e11e775e0f00d0648ff4d602a490e1d2d5e9da75168c2409c18b2535ebcf8d",
+      "bytecode_sha256": "ef22f6954e585f1f3a2545187149d6a99b570b84b340cfe64230c01b4ec8c304",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -282,7 +282,7 @@
       "source": "programs/019-math-int.lms",
       "source_sha256": "7c5427a431ae4029926b2c48a45947de8f76f01215d4ea72f94c1d64fa7335f4",
       "bytecode": "bytecode/019-math-int.dslb",
-      "bytecode_sha256": "145dda7a47767c9cfe35746b81460740008942a6c011d3c6d42c46ccb7465890",
+      "bytecode_sha256": "d8fd64df9e766072b69f4b058fa570540705a9833ade3f8a462ab4eaa78ab950",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -301,7 +301,7 @@
       "source": "programs/020-math-float.lms",
       "source_sha256": "cf4958577b2ba28b41084bceaa96b0627305921c77224f53cb2d8125a845b9d4",
       "bytecode": "bytecode/020-math-float.dslb",
-      "bytecode_sha256": "6994296e176f7b2d7c9de21fe9a6e99e3ef02922be5586e187494a8ca2a9504d",
+      "bytecode_sha256": "92b047ab1a9dc9b1acb971e778e817cc229e37482163bda1e110ceba9e17816a",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -320,7 +320,7 @@
       "source": "programs/021-string-predicates.lms",
       "source_sha256": "635cf4d3f15dc1e4b56df90a66d3098f825e90613e05f103e7006dc8d6a97190",
       "bytecode": "bytecode/021-string-predicates.dslb",
-      "bytecode_sha256": "de9d3325482f6e500b7fce8648b1eeefd073c5b6d92ad07c1e836dc147a7cc16",
+      "bytecode_sha256": "3412d81a9bffe42d88753aef036952d1d8a14f522ec5acaf56757c26672b8624",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -338,7 +338,7 @@
       "source": "programs/022-string-transform.lms",
       "source_sha256": "7fb4f7692b49e87d870a63e70e3dcb4ce66fc59a17c60277ac9fbd6f91c233ed",
       "bytecode": "bytecode/022-string-transform.dslb",
-      "bytecode_sha256": "947e574496bebe2ce9058453d1c79f309b3604ef537c413b3b7bc5f3d04e1c1b",
+      "bytecode_sha256": "c06e8feb3ec92d8b60f9aa3cf57f07a954bfe9c60fe2806f2ad79919899018cb",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -356,7 +356,7 @@
       "source": "programs/023-string-convert.lms",
       "source_sha256": "9d1791de1547f875d743f6055f158030c1f80cb46b3cd05ab85b81be37dafcfa",
       "bytecode": "bytecode/023-string-convert.dslb",
-      "bytecode_sha256": "93eb68b83da6953c6130443286e276b777fb14e3ed682d55f8391e9ff98c0e24",
+      "bytecode_sha256": "94d68b63d9ed39807c75ab50f7a1d81c246f7920c5a02440f041b02431eedd84",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -370,7 +370,7 @@
       "source": "programs/024-file-functions.lms",
       "source_sha256": "aced92c60631aae530c20ae04e1f7c788fddf25c232b8483847299c7396b9ca5",
       "bytecode": "bytecode/024-file-functions.dslb",
-      "bytecode_sha256": "8c6a546392e503e2c3b3c98ae48d9a48536667f61f6702ec4952c3483a6158bc",
+      "bytecode_sha256": "caa9a7d67021d3c9d442e70e8b1a10cd07ff566d9d4cf78247995ca438b5106a",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -387,7 +387,7 @@
       "source": "programs/025-assert-close.lms",
       "source_sha256": "c3d2fe6bfc9d10ac2dfdb1fb4ef605f5ef3424a6bf1df1ab37033daade8c2a79",
       "bytecode": "bytecode/025-assert-close.dslb",
-      "bytecode_sha256": "919d9b3e02a68cf62241cb40ee7d53c9a20d4a7e876f5d53d9abd30b4044b75c",
+      "bytecode_sha256": "29f14e06926408a7769b7bb02bfa6bf3a039ca4337f7b33d200467342a620bcd",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -399,7 +399,7 @@
       "source": "programs/026-divzero-expected-fail.lms",
       "source_sha256": "b0604ea6d9c019b0c0b5fd203dfe750a1ad5b006990371caf2e457bec3784ef5",
       "bytecode": "bytecode/026-divzero-expected-fail.dslb",
-      "bytecode_sha256": "7cf0a04ecf22f29bb844e3e2381435b73b6ec909e5632550fe884a4b480aa286",
+      "bytecode_sha256": "4344b86acc0b6fc69c41d152abe33d4d81b920f517ed515a6c4d473d8bba201f",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -411,7 +411,7 @@
       "source": "programs/027-modzero-expected-fail.lms",
       "source_sha256": "26e061a9ebec13120e9119ed8a11a3bbbb3f79cb796067acd564db7be5f38484",
       "bytecode": "bytecode/027-modzero-expected-fail.dslb",
-      "bytecode_sha256": "d165f53986764579cc141a9d61ab1819b856996f78675a6f6a1991f516208097",
+      "bytecode_sha256": "a144342e63b77b407c49cadc96d2c56b06f6efe7fae0260e519cd37a12d2a754",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -423,7 +423,7 @@
       "source": "programs/028-assert-fail-expected-fail.lms",
       "source_sha256": "a9acf787e8547e9e4b9769e04bb43a99f979d3a029dc1f8071bac5976643351f",
       "bytecode": "bytecode/028-assert-fail-expected-fail.dslb",
-      "bytecode_sha256": "71b423bbce31137f8026301f3b3bdbb9069d5983c4939de177c3a8f5ef3596d7",
+      "bytecode_sha256": "3c32b6de32abee6932b31bc8dd227096582998166d2ef4a06278ec20b858d910",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -435,7 +435,7 @@
       "source": "programs/029-reject-expected-fail.lms",
       "source_sha256": "8e1f8532fdffd5b76d178c3d5f3c65e3d1deef4448613341cc4f65b0f0942db3",
       "bytecode": "bytecode/029-reject-expected-fail.dslb",
-      "bytecode_sha256": "2f283b612bc8d4ac3cb128b104c6134f10c769eb1860000c37f6fda22b24d3eb",
+      "bytecode_sha256": "241c72fd20ec7ded190577eccfc372d788e6c348678d1fee8fe45a1ff5669907",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -447,7 +447,7 @@
       "source": "programs/030-negative-balance-expected-fail.lms",
       "source_sha256": "32a81bcc0cbda96d5cba4ff8454b4e58ddb3dad226d82c77e740b0524020b21d",
       "bytecode": "bytecode/030-negative-balance-expected-fail.dslb",
-      "bytecode_sha256": "425699d2417d80bde47e17143ab6e953fe322fbc625007346a043864e4be8860",
+      "bytecode_sha256": "16f9b13681acf59a1629d30d70d202ce4165dd35f3c02a8d7ef47d1223340cad",
       "expected_exit": 4,
       "timeout_seconds": 30,
       "features": [
@@ -459,7 +459,7 @@
       "source": "programs/031-items-oob-expected-fail.lms",
       "source_sha256": "cf977c34205803501e819a5816dbbcf66caf10f81f53b0fd74210e14c41b7386",
       "bytecode": "bytecode/031-items-oob-expected-fail.dslb",
-      "bytecode_sha256": "1f3bce220086b93bef052a6496ea1b9ba227c198f8aadc55e2e9ab2d1ad901b4",
+      "bytecode_sha256": "17fd081c3b67162fad0cf9c2d5667b4f35959d027e873a0f838d7ff9987036bc",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -471,7 +471,7 @@
       "source": "programs/032-intlist-oob-expected-fail.lms",
       "source_sha256": "ab54c6c6f657caa8a0a94e71bda523e38cf1f62400145ea57c983f6a2a103034",
       "bytecode": "bytecode/032-intlist-oob-expected-fail.dslb",
-      "bytecode_sha256": "60d240761e05dd7c65839efa92b19001641b8217d8ef5647594b3e147147fcc2",
+      "bytecode_sha256": "95c891b542e2838e36f98b92a0bc454cb41ced1f4a5e80def795a0ef742d7b7c",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -483,7 +483,7 @@
       "source": "programs/033-map-missing-expected-fail.lms",
       "source_sha256": "cc6eb23ae3a2d985edb91bbb392af5dc250346ffebede41d4eb6966088b2dc84",
       "bytecode": "bytecode/033-map-missing-expected-fail.dslb",
-      "bytecode_sha256": "6894c872c8877d5b3b47876c812dd3f8279b476ab35b8ffc51536fde904b7b16",
+      "bytecode_sha256": "a822e82f7346fd96c7dbc7f1a12bb63d423215ee4dbd54ea2c21379c123593f5",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -495,7 +495,7 @@
       "source": "programs/034-money-conversion.lms",
       "source_sha256": "5c2d8d9cc7d6bdc868d9fe255703b6ad7b7c618ac09b065be88b96873adde7b3",
       "bytecode": "bytecode/034-money-conversion.dslb",
-      "bytecode_sha256": "b5a76217909354052fd7d795c0280ba000b2b38a66d7cb5bf156d786ff21645a",
+      "bytecode_sha256": "0afaba1cdc8d31a847a5b944b6b59151fe4ffe0c1749caef9b9db364f1cf1a2a",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -507,7 +507,7 @@
       "source": "programs/035-context-trace.lms",
       "source_sha256": "e50e91dd18078f903c3a7c1333fb3968856f97228e1c031e438367f038cd9132",
       "bytecode": "bytecode/035-context-trace.dslb",
-      "bytecode_sha256": "ff5dd978dabb16126015733f8f5dd0398b06eef94fe132eef3110deaf4301aa2",
+      "bytecode_sha256": "5e3af9bf41bfbb0633831da0e912c3d76e4387f48f672e96ad1af8d552cea57e",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -520,7 +520,7 @@
       "source": "programs/036-nested-control.lms",
       "source_sha256": "2cca9b8cfb677a35b195165c499160586f33a18f250e601ef3cede616907d009",
       "bytecode": "bytecode/036-nested-control.dslb",
-      "bytecode_sha256": "e0e5b5843105cccd6fbeabec2415f11e584a8c4f5034bb6996b02f6c421a0c86",
+      "bytecode_sha256": "48305c56177792494455b14d06ffc623749963c0a2bee93533528fd1eb01d779",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -532,7 +532,7 @@
       "source": "programs/037-map-iteration.lms",
       "source_sha256": "4c5019d7cf10b04213b9093e2f83b462b92393f35bd629d214f8c66939126d24",
       "bytecode": "bytecode/037-map-iteration.dslb",
-      "bytecode_sha256": "e0bfc4420726fe618c72dcdada759c1a8ab8203083398724df262a5155a1f8db",
+      "bytecode_sha256": "06ae39c41e063efb748bb53541dd122b619f8fe8370b4f676c91737b38338f2e",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -544,7 +544,7 @@
       "source": "programs/038-floatlist-chain.lms",
       "source_sha256": "7ddd3861b80fab53251ac46f0b0a9844c5d5d823cc2dd0b4b026fb0d7de62700",
       "bytecode": "bytecode/038-floatlist-chain.dslb",
-      "bytecode_sha256": "3bef9e967d311d096dd2dc4fac62488b7187446a6dd08a6a19b320f11d67f1a0",
+      "bytecode_sha256": "bc1e442b7864de7584c181ae48fd7deb6af8bf37e2025c4592204e8362c4f294",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -557,7 +557,7 @@
       "source": "programs/039-enum-currency.lms",
       "source_sha256": "299fcd94f112aa77c8560e5a3eac2b3bd23ec284a9c02ef7bb3c6b6dd38f1069",
       "bytecode": "bytecode/039-enum-currency.dslb",
-      "bytecode_sha256": "91b4a325dc5931eeb1c183bb11b72c08baf38419971fd2b08fc167ea4f26450a",
+      "bytecode_sha256": "2d2e3aa9f233dc7a2a4234a35df1101fa9e2d5b31b0f4ff43a9db2282e5b7043",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -569,7 +569,7 @@
       "source": "programs/040-full-trace.lms",
       "source_sha256": "5126bd36177dae9548e18d631982af2bd9f11723b2d2992d4514345f501f671e",
       "bytecode": "bytecode/040-full-trace.dslb",
-      "bytecode_sha256": "141d89cb9bfb5eb7f960a569bcb5d7f95bafb41c77f41ada8e47710be1341fa1",
+      "bytecode_sha256": "da42963966810df5fcbe80cc63ec63c5c675f2b91dcc39b6ace3a24676c1f73a",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -581,7 +581,7 @@
       "source": "programs/041-int64-wrap.lms",
       "source_sha256": "946ffc0455d388c38fea65154743949baef339b4e49f0361550baa7abaa981eb",
       "bytecode": "bytecode/041-int64-wrap.dslb",
-      "bytecode_sha256": "847a10da5eea873316befa0395ca8b9136a1eab9a92ebe3a9067e6364ec0d162",
+      "bytecode_sha256": "0e8038ea2ae7aad28e0de19f36211e1fbc8f63d13b4f08bcbfc8fe267043cacf",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -593,7 +593,7 @@
       "source": "programs/042-short-circuit.lms",
       "source_sha256": "2f1d73871721326fc48bbfe348620c4d42527fb3174ff9f9d3160bcf183324b3",
       "bytecode": "bytecode/042-short-circuit.dslb",
-      "bytecode_sha256": "d5eb415dd2f8865595566ff8a5df0f4b93660fe3bac0a0ac0d40d752da5e3e14",
+      "bytecode_sha256": "5fd69853a73dcb2f4ea43546458a8f32779584f856ad1386ade3aa3699a9267b",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -606,7 +606,7 @@
       "source": "programs/043-break-continue.lms",
       "source_sha256": "7ad765998c85081ad5285fc146cf969a7d5e340f62dfc132ec573d35e2340827",
       "bytecode": "bytecode/043-break-continue.dslb",
-      "bytecode_sha256": "c6f2acb33e90d69b6b0fd10a9067f9dbcafd44bbabbdeebdb92e9a31bb5efaff",
+      "bytecode_sha256": "53293de098e876575eb71ee945a790f1cebf9e2f8191add29bff73e526c4312c",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -619,7 +619,7 @@
       "source": "programs/044-items-foreach.lms",
       "source_sha256": "68b78a2f65be3bb03df2a6a459a880fe20f59ea80fbbae9efc0ddf40a0693f57",
       "bytecode": "bytecode/044-items-foreach.dslb",
-      "bytecode_sha256": "6f8051e168e6ffbc866ed7c4096e70b9d2f9c9abf7a5ab93d594be9b929de4ea",
+      "bytecode_sha256": "10d1b26b38f6efdd2827bba30b86dbd669e3fed1147d2aa3ad8fae3fb110f1b8",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -631,7 +631,7 @@
       "source": "programs/045-switch-string-enum.lms",
       "source_sha256": "5e475e1d008184e7823450d5e03bc16cd8a2f751b1d4a6d4fc4b8355c0c9f035",
       "bytecode": "bytecode/045-switch-string-enum.dslb",
-      "bytecode_sha256": "6865da943622e6e674914c406297d8f5c674187379fd200f9f22fa32209b1a47",
+      "bytecode_sha256": "6f80e4c0c538ba80542c9609873dbe4007ee9d919548219f9b1c21d89f898613",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -644,7 +644,7 @@
       "source": "programs/046-inner-heredoc.lms",
       "source_sha256": "55d06928591aa0cfd088ab2a5d2500e810cc8ace50d4f19b391e2662436962a6",
       "bytecode": "bytecode/046-inner-heredoc.dslb",
-      "bytecode_sha256": "73e44bc9795700c76000de6c1cae0c4dbac89513d968b9400eced8f2adf094c3",
+      "bytecode_sha256": "3d7666f5ff9d30198b310c3ec5b34b9561d772aec0a67bbd7ad59f7afd2b803c",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -658,7 +658,7 @@
       "source": "programs/047-outer-splice.lms",
       "source_sha256": "c15528ca0924ebad0b1bedb77e6e8730c732710a5455593cb8c1b454e40b17dd",
       "bytecode": "bytecode/047-outer-splice.dslb",
-      "bytecode_sha256": "d9743e0dc5fc44f69b77d0380ec35191bd1ee6a8a82a4de5142e9bf00cb31089",
+      "bytecode_sha256": "32b091bc7146061dbbb9b8e7f7b1b8b8a4efdd422a0aec3df9ac7a4fcb54d7a7",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -670,7 +670,7 @@
       "source": "programs/048-math-derived.lms",
       "source_sha256": "36d57d75216f47daa76b375f19e0d304f20518dab998768465f224bcb41cc150",
       "bytecode": "bytecode/048-math-derived.dslb",
-      "bytecode_sha256": "1c24258bb5cd791a06c82c0d8209e7196382c946ec2b0c1c4179850d9c00d86d",
+      "bytecode_sha256": "739ee6b26a41329227d2656f95e71bb7f5c3b41a5b9c8a507680c9ad7715a0f7",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -683,7 +683,7 @@
       "source": "programs/049-int-boundary.lms",
       "source_sha256": "633caa7713c0d9e54cd968aeb7c27861dfc6e496f82d76e7dbcf371014d150bd",
       "bytecode": "bytecode/049-int-boundary.dslb",
-      "bytecode_sha256": "004fd26a12b23fae3a807a168fda0392955e3bdc20afc75beb8bb8c9cac557ed",
+      "bytecode_sha256": "7ae9706cb65998b5aae55532d22562b6a919fccea017d9ea335f3c95e404267f",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -695,7 +695,7 @@
       "source": "programs/050-float-boundary.lms",
       "source_sha256": "45efdd10eae0cb33261869612292ba8fc8361284ddb82f6a5699faec6209484f",
       "bytecode": "bytecode/050-float-boundary.dslb",
-      "bytecode_sha256": "113b6409bc13b5d467e78fe19cee3770700b23e866b7f960703aaacaf1604eb3",
+      "bytecode_sha256": "ad855e91ec8b161eb4cacf4a2a030493ed120a8bc3e474fdeb425fda6c691b33",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -707,7 +707,7 @@
       "source": "programs/051-bool-boundary.lms",
       "source_sha256": "98092f60ec9bc5df84629fc8091d3bf6cb3d89509096a4003f32274405db2321",
       "bytecode": "bytecode/051-bool-boundary.dslb",
-      "bytecode_sha256": "7a000501857fbf176e347f68ea8471259568643faa82f57f35f2a0a65dd12ba2",
+      "bytecode_sha256": "0cc1b0d4c7ab980ff96be1019f1a7d09f029ed9dea10727578b639169c9a197c",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -719,7 +719,7 @@
       "source": "programs/052-byte-boundary.lms",
       "source_sha256": "1d062efde5b78ef73dedb2fea16104bdba60fd0db162aa2223760b173699540a",
       "bytecode": "bytecode/052-byte-boundary.dslb",
-      "bytecode_sha256": "e1cb6801ca8316878ba664fa98fa60996bf1245992da1e7d3c12b11f1e6ca0f4",
+      "bytecode_sha256": "696128fc85072d8154ba97b0b83d39ae2861af39b71597fdf6bebc5b0207fbc4",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -731,7 +731,7 @@
       "source": "programs/053-file-invalid-utf8.lms",
       "source_sha256": "d4b557054aabd45af622599aea356c5fd10db82738d52e7f6b344ba890f4e856",
       "bytecode": "bytecode/053-file-invalid-utf8.dslb",
-      "bytecode_sha256": "8c88a9b0eb70ad5fb44d69f680d221000028a376a1a8d6f619a83e6324309c37",
+      "bytecode_sha256": "6f8971798ff3e5bed88d455d22122c381674493a5b6506fca1248f32bb34c872",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -743,7 +743,7 @@
       "source": "programs/054-megabyte-string.lms",
       "source_sha256": "e1dd60cb5bde82d20c4664eb0c4b701597096a8ebf6a62727c0bf3989672db16",
       "bytecode": "bytecode/054-megabyte-string.dslb",
-      "bytecode_sha256": "d5c1454d2c8a19313dac941854706e3f6a571fab345f5b5ccf65fb82b5c61f46",
+      "bytecode_sha256": "60d05528112b78ac2f80a17104492eb0614729905d48e87bb7508413b6cc9373",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -755,7 +755,7 @@
       "source": "programs/055-object-handles.lms",
       "source_sha256": "59437878684a9b906d9d594c2e5dd1cd7bd11746fb4546dbf47a54eed0e160a7",
       "bytecode": "bytecode/055-object-handles.dslb",
-      "bytecode_sha256": "a6ddfdb7366af200e1608a2583705d45b32061a5dbdbcf1281fb9ff4ac164de1",
+      "bytecode_sha256": "57d6ac9e38b225722dc8dbd58059602d4c24c9dcf88d06df79a19c7e6e58716b",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -767,7 +767,7 @@
       "source": "programs/056-collection-boundary.lms",
       "source_sha256": "a28685d73a584a8c9b98fa113d51e03eb4f0dfcc885b1a935b09e74a8a6950f5",
       "bytecode": "bytecode/056-collection-boundary.dslb",
-      "bytecode_sha256": "746b02cfc1604be5b3149c5f7258a112c8701ff046893d82e9400813846d4750",
+      "bytecode_sha256": "c1bccbed9ed191288e680af6cfd0b7e225b7ffa4cd5f18e3d8d8f356533ba676",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -779,7 +779,7 @@
       "source": "programs/057-nested-inline-error.lms",
       "source_sha256": "b460fa44bd02f72359b779669f48ced1c7dfbd06a005e40ab6fc57926a6da834",
       "bytecode": "bytecode/057-nested-inline-error.dslb",
-      "bytecode_sha256": "58ce3a5bdac5ad417466e6e902f02997068015ab88f46e92c462a180359377de",
+      "bytecode_sha256": "3ff0db444e3c045bf1118998f2f8370a47d4f7434edd818ecc0fd82408ed2464",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -791,7 +791,7 @@
       "source": "programs/058-million-loop.lms",
       "source_sha256": "492afe251415b3fd37cb1e0aad6b12e286b20a447784092a5843a90455b934a0",
       "bytecode": "bytecode/058-million-loop.dslb",
-      "bytecode_sha256": "edaf2f14f4f4997786094c6decade1838fbcdbe66d75ebda02c17ea949fc10e9",
+      "bytecode_sha256": "d9ed51b8cb3ab404692924566b74548fba6d00c66dc040be25e7102ec2559592",
       "expected_exit": 0,
       "timeout_seconds": 5,
       "features": [
@@ -803,7 +803,7 @@
       "source": "programs/059-deep-inline.lms",
       "source_sha256": "46fecc8f369b2e45abccfb3d520a189c14cdd51b00461a3ed59b06ce506cc690",
       "bytecode": "bytecode/059-deep-inline.dslb",
-      "bytecode_sha256": "d3480e4b98df6a0ca719fb90ec5dcab4976d74f04102617b0355c16c9aa9e32b",
+      "bytecode_sha256": "0c5b7e9a98d54929dae2060313111c25f66732a041e057356f0f143a3e93f085",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -815,7 +815,7 @@
       "source": "programs/060-many-arguments.lms",
       "source_sha256": "b5acb64912bae64bbfd598a872229fa511b347684cba9bca3e16c9232548502b",
       "bytecode": "bytecode/060-many-arguments.dslb",
-      "bytecode_sha256": "257ff24b6de586f185c32c29f73be7d5fa82fc4cdcd0e57fb51d2a6f4eed6d53",
+      "bytecode_sha256": "4d18ce8cfa29e105a065d12227adfc031c954609b3a4426cc11d061f2679d16a",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -828,7 +828,7 @@
       "source": "programs/061-long-identifier.lms",
       "source_sha256": "5b78d9d6a08b6d55e8e75d40ba81ef8d3161bdff4197d8a2b5d0ce2cda002f6a",
       "bytecode": "bytecode/061-long-identifier.dslb",
-      "bytecode_sha256": "86a60ffc756562813a135b24373a422ed22a79bcb4871c4c545c279be0e8ea2c",
+      "bytecode_sha256": "d91c95e1ba00694f2d3d95b952a94ead177323d814925c53a0e619ed54ba4627",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -840,7 +840,7 @@
       "source": "programs/062-null-receiver.lms",
       "source_sha256": "d33cf0e5d296216d82e3bcde6cf2365ce87db46657b86c345bc1b3a7c1fd4188",
       "bytecode": "bytecode/062-null-receiver.dslb",
-      "bytecode_sha256": "91256bb85f580c1e911515cbf99e31ce0d5fdaa18881f1e6cc58b6ea3a04ede4",
+      "bytecode_sha256": "8187bddf91a3c0d299e0b543792f4915caca0f6c23a60379b36de53fbc18410c",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -852,7 +852,7 @@
       "source": "programs/063-wrong-runtime-handle.lms",
       "source_sha256": "8d2d3db6ae2ccf18c9de9f88c3d05deb8999a646d596b0e4fb85712c37555735",
       "bytecode": "bytecode/063-wrong-runtime-handle.dslb",
-      "bytecode_sha256": "8121182d73c4e11ec271408d3f50559ee1b138493a821b4e9dbd530887cdb306",
+      "bytecode_sha256": "0d867a559e5da07550e56029db3778c3bcc10cc3752eee4d3d086e4140b4b267",
       "expected_exit": 3,
       "timeout_seconds": 30,
       "features": [
@@ -860,9 +860,118 @@
       ]
     },
     {
+      "name": "101-typed-maps",
+      "source": "programs/101-typed-maps.lms",
+      "source_sha256": "0e1794979c3cafb7b3f1ffb7af23a4b41ca6515fdafdab816fe5a575d20e712b",
+      "bytecode": "bytecode/101-typed-maps.dslb",
+      "bytecode_sha256": "a35201aed8791117206e5fc289059d2ac64f63861544b480f2922e84c42822a9",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "typed maps",
+        "overwrite/reinsert order",
+        "all typed-map methods"
+      ]
+    },
+    {
+      "name": "102-int-containers",
+      "source": "programs/102-int-containers.lms",
+      "source_sha256": "64f4933ad379da9d741ceace16d18cb187ed9ca66786b0387104bc129e98c0e0",
+      "bytecode": "bytecode/102-int-containers.dslb",
+      "bytecode_sha256": "0fd068c930bd4a4d58f74279092f13fe219930699a74e49d92eb8da6823163fc",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "int stack/queue/PQ",
+        "stable priority ties",
+        "pop order",
+        "clear/empty/len"
+      ]
+    },
+    {
+      "name": "103-float-containers",
+      "source": "programs/103-float-containers.lms",
+      "source_sha256": "c0f0210b6381c043e238c650593266741431d60290172f74177c84fd31058522",
+      "bytecode": "bytecode/103-float-containers.dslb",
+      "bytecode_sha256": "3b6a22e331f4a7775ccaf87a7d69c3f9d102fc988bad042437a7f29225ba53e1",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "float stack/queue/PQ",
+        "stable priority ties",
+        "pop order",
+        "clear/empty/len"
+      ]
+    },
+    {
+      "name": "104-str-containers",
+      "source": "programs/104-str-containers.lms",
+      "source_sha256": "665026c543a4337ad1093c7bcf8c585c3286ad1f8b22db02fa4fc76213583fa3",
+      "bytecode": "bytecode/104-str-containers.dslb",
+      "bytecode_sha256": "5477b7267df3f0580196a4e222008a30bc03c7deeed4cef3f742e72a285e8d0d",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "str stack/queue/PQ",
+        "stable priority ties",
+        "pop order",
+        "clear/empty/len"
+      ]
+    },
+    {
+      "name": "105-json-navigation",
+      "source": "programs/105-json-navigation.lms",
+      "source_sha256": "ecdf025dc68a2dfce5db17fd6b83a0bbd78aa69e9396cf5ac873865138513a09",
+      "bytecode": "bytecode/105-json-navigation.dslb",
+      "bytecode_sha256": "fd08a439ac5be60f12fa5b4bc2e6c57c3e2f11c5df39fb92edfbb47c3cbb6142",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "immutable Json",
+        "all Json accessors",
+        "lossless token spelling"
+      ]
+    },
+    {
+      "name": "106-stack-empty-expected-fail",
+      "source": "programs/106-stack-empty-expected-fail.lms",
+      "source_sha256": "6f113f5710dd1b29a5a2fbeed77e3f77278f3562f2cbf4816d9a594a6cbb0d0a",
+      "bytecode": "bytecode/106-stack-empty-expected-fail.dslb",
+      "bytecode_sha256": "bf9e4a96b425931d705e961d303be4ec7d1bfb1b1c559c6c588034edee5536e8",
+      "expected_exit": 3,
+      "timeout_seconds": 30,
+      "features": [
+        "stack empty trap"
+      ]
+    },
+    {
+      "name": "107-pq-priority-expected-fail",
+      "source": "programs/107-pq-priority-expected-fail.lms",
+      "source_sha256": "87666c0e45eb10a8db5218b5c8a3d507e712b3f97e5f89cfdc71b2d492eb02e8",
+      "bytecode": "bytecode/107-pq-priority-expected-fail.dslb",
+      "bytecode_sha256": "a7b8986e09d7e3efd2c109ce76bfa3b44be206c9c4beab0742fdbf1ad4640e5b",
+      "expected_exit": 3,
+      "timeout_seconds": 30,
+      "features": [
+        "PQ nonfinite priority trap"
+      ]
+    },
+    {
+      "name": "108-json-kind-expected-fail",
+      "source": "programs/108-json-kind-expected-fail.lms",
+      "source_sha256": "420e4e84973ce7894233cfe30f6e06d17c32caa46517681e11ee44f9d7a8e98c",
+      "bytecode": "bytecode/108-json-kind-expected-fail.dslb",
+      "bytecode_sha256": "81d3f1df908ea4d2e6ae1fe0d1b29c8ac6cd424625e26637c729122cea456a0e",
+      "expected_exit": 3,
+      "timeout_seconds": 30,
+      "features": [
+        "Json kind trap"
+      ]
+    },
+    {
       "name": "090-bad-bytecode",
       "bytecode": "bytecode/090-bad-bytecode.dslb",
-      "bytecode_sha256": "0d41c3d873750b2089537e6cf322010c3ac7d57352151fcf0383b6c4cf263cc5",
+      "bytecode_sha256": "bd61a07bb17e77d5446bd291e51acf44a0360f2e1dcd31d95ecbc7d540e56fb2",
       "expected_exit": 3,
       "mutation": {
         "source": "001-literals",
@@ -875,7 +984,7 @@
     {
       "name": "091-schema-mismatch",
       "bytecode": "bytecode/091-schema-mismatch.dslb",
-      "bytecode_sha256": "dc40104954e71eb4d184f86b77c8b776c1f45ed51d920639056f7b7f07abab81",
+      "bytecode_sha256": "5b6a8303e30019f81772227535687accc546da224e8dc1ee8a2c98175fe39398",
       "expected_exit": 3,
       "mutation": {
         "source": "001-literals",
@@ -888,7 +997,7 @@
     {
       "name": "092-wrong-handle-import",
       "bytecode": "bytecode/092-wrong-handle-import.dslb",
-      "bytecode_sha256": "12ac3b1cb7be73d05182d2cfca8979cadc830609e3672e3b80def35558b418c4",
+      "bytecode_sha256": "4df505b8e90dad37e4a7b7c8631472ebace590601356a7842dec944e0185a47c",
       "expected_exit": 3,
       "mutation": {
         "source": "055-object-handles",

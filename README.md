@@ -209,9 +209,9 @@ The [generated std reference](docs/std.md) lists every built-in signature, its b
 Start at [lmcode-cpp-sample](https://github.com/lmctl-ai/lmcode-cpp-sample) for a
 small C++17 shop/ledger host and a ten-step embedding guide. Its vendored copy of
 [`sample-suite/`](sample-suite/README.md) is shared by the C, C++, Rust, Go, C#,
-Java, Kotlin and Scala samples. The canonical suite lives here: 63 programs plus
+Java, Kotlin and Scala samples. The canonical suite lives here: 71 programs plus
 three loader mutations, exact stdout/exit fixtures, CLI protocol checks and an audit
-of the original 72 std imports; v2 sample coverage is added with the new programs.
+of every one of the 171 std imports, including the v2 data and Json programs.
 
 ```sh
 # With the C++ sample checked out beside this SDK:

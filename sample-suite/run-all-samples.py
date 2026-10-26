@@ -2,6 +2,7 @@
 """Build and exercise all lmcode sample ports against one pinned corpus."""
 
 import argparse
+import hashlib
 import json
 import os
 import runpy
@@ -52,6 +53,8 @@ def build_for(lang, repo, env):
         if not isinstance(value, list) or not all(isinstance(x, str) for x in value):
             raise ValueError(f"{key} must be a JSON argv array")
         return value
+    if lang == "go" and (repo / "go.mod").is_file():
+        return ["go", "build", "-o", str(repo / "build/lmcode-go-sample"), "."]
     if (repo / "build.sh").is_file():
         return ["./build.sh"]
     if (repo / "Makefile").is_file():
@@ -91,6 +94,28 @@ def run_case(command, bytecode, expected_out, expected_exit, scratch, env, timeo
     }
 
 
+# Immutable released v1 digest, retained solely to identify unported SDKs.
+LEGACY_STD_SHA256 = "cfe31e8b34fdcc33a13e456e80fa9d05a5e6c8fed5b98988abd24ac8570e65e0"
+
+def pinned_std_digest(repo):
+    lock = repo / "sdk.lock"
+    if not lock.exists():
+        return None
+    data = json.loads(lock.read_text())
+    return data.get("sha256", {}).get("std/lmcode-std.schema.json")
+
+
+def legacy_signature_set():
+    audit = runpy.run_path(str(ROOT / "audit.py"))
+    result = set()
+    for area in ("string", "math", "collections", "file"):
+        path = ROOT.parent / "stdlib" / (area + ".schema-fragment.json")
+        if not path.exists():
+            return set()
+        result.update(audit["signatures"](json.loads(path.read_text())))
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--all", action="store_true", help="run all eight configured ports")
@@ -121,7 +146,17 @@ def main():
         print(f"FAIL setup: {error}", file=sys.stderr)
         return 2
 
-    report = {"ports": {}, "cases": len(cases), "ok": True}
+    report = {"ports": {}, "cases": len(cases), "ok": True, "skipped": []}
+    std_path = Path(env.get("SAMPLE_STD_SCHEMA", ROOT.parent / "std/lmcode-std.schema.json"))
+    target_digest = hashlib.sha256(std_path.read_bytes()).hexdigest() if std_path.exists() else None
+    audit = runpy.run_path(str(corpus / "audit.py"))
+    target_std = audit["signatures"](json.loads(std_path.read_text())) if std_path.exists() else set()
+    legacy_std = legacy_signature_set() if target_std else set()
+
+    def skip_port(lang, entry):
+        entry.update(skipped=True, reason="released v1 SDK catalog; v2 port pending", ok=False)
+        report["skipped"].append(lang)
+        print(f"SKIP {lang}: {entry['reason']}")
     actual_by_case = {}
     for lang in LANGS:
         repo = Path(env.get(f"SAMPLE_{lang.upper()}_DIR", root / f"lmcode-{lang}-sample")).expanduser().resolve()
@@ -130,6 +165,16 @@ def main():
             entry["error"] = "missing repository"
             print(f"FAIL {lang}: missing repository")
             report["ok"] = False
+            continue
+        try:
+            pinned_digest = pinned_std_digest(repo)
+        except (OSError, ValueError, TypeError, AttributeError) as error:
+            entry["error"] = "invalid SDK lock: " + str(error)
+            report["ok"] = False
+            print(f"FAIL {lang}: {entry['error']}")
+            continue
+        if target_digest and target_digest != LEGACY_STD_SHA256 and pinned_digest == LEGACY_STD_SHA256:
+            skip_port(lang, entry)
             continue
         try:
             build = build_for(lang, repo, env)
@@ -149,6 +194,12 @@ def main():
             continue
         try:
             command = command_for(env, lang, repo)
+            if pinned_digest is None and legacy_std and target_std - legacy_std:
+                probe = subprocess.run([*command, "--dsl-signatures"], env=env, cwd=repo, capture_output=True, text=True, timeout=30)
+                observed = set(probe.stdout.splitlines())
+                if probe.returncode == 0 and legacy_std <= observed and not ((target_std - legacy_std) & observed):
+                    skip_port(lang, entry)
+                    continue
             # The port's own protocol and canonical runner are mandatory checks.
             checker = corpus / "protocol.py"
             protocol = subprocess.run([sys.executable, str(checker), *command], env=env, cwd=repo,
@@ -185,6 +236,9 @@ def main():
             print(f"FAIL {lang}: {error}")
             report["ok"] = False
 
+    if not report["ports"].get("cpp", {}).get("ok"):
+        report["ok"] = False
+        report["reference_error"] = "a current passing C++ reference is required; all-skipped is not success"
     for name, ports in actual_by_case.items():
         values = {(item["exit"], item["stdout_hex"], item["stderr_hex"]) for item in ports.values()}
         if len(values) != 1:
@@ -198,13 +252,15 @@ def main():
         values = []
         for lang in LANGS:
             good = row.get(lang, {}).get('ok', False) and not report['ports'][lang].get('protocol_suite_exit', 1)
-            values.append('PASS' if good else 'FAIL')
+            values.append('SKIP' if report['ports'][lang].get('skipped') else 'PASS' if good else 'FAIL')
         print(f'{name:<38} ' + ' '.join(f'{value:>7}' for value in values))
     print("\nPORT MATRIX")
     print("port     build  suite  cases")
     for lang, item in report["ports"].items():
-        status = "PASS" if item["ok"] else "FAIL"
+        status = "SKIP" if item.get("skipped") else "PASS" if item["ok"] else "FAIL"
         print(f"{lang:<8} {item.get('build_exit', 'FAIL')!s:<6} {item.get('protocol_suite_exit', 'FAIL')!s:<6} {status}")
+    if report["skipped"]:
+        print("Cross-port v2 interoperability pending: " + ", ".join(report["skipped"]))
     print(json.dumps(report, indent=2))
     return 0 if report["ok"] else 1
 

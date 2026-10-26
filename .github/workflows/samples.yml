@@ -40,7 +40,7 @@ jobs:
         with: { repository: lmctl-ai/lmcode-scala-sample, path: lmcode-scala-sample, persist-credentials: false }
       - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
         with: { distribution: temurin, java-version: '21' }
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd7f7d1f2c5f8f8
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with: { go-version: 'stable' }
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: { node-version: '24' }
