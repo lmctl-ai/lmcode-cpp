@@ -1,0 +1,5 @@
+program = _lmcode_ schema="../sample.dsl.json";
+let c = shop.currency();
+if (c == Currency.USD) { print("USD"); } else { print("other"); }
+end _lmcode_
+savedsl(program, ARGV[0]);

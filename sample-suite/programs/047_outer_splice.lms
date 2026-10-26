@@ -1,0 +1,6 @@
+let amount = 7;
+program = _lmcode_ schema="../sample.dsl.json";
+let n = ${amount};
+print(str(n));
+end _lmcode_
+savedsl(program, ARGV[0]);

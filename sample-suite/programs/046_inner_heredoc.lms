@@ -1,0 +1,5 @@
+program = _lmcode_ schema="../sample.dsl.json";
+let text = "shop trace";
+print(text);
+end _lmcode_
+savedsl(program, ARGV[0]);
