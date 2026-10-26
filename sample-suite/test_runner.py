@@ -120,7 +120,8 @@ class RunnerTests(unittest.TestCase):
         self.assertNotEqual(self.run_suite().returncode, 0)
 
     def test_audit_rejects_added_standard_signature_without_coverage(self):
-        schema = json.loads((ROOT.parent / "std/lmcode-std.schema.json").read_text())
+        # The control is portable when the corpus is vendored into any sample.
+        schema = {"functions": {}, "types": {}}
         schema["functions"]["test_new_signature"] = [{"params": [], "returns": "void"}]
         mutated = self.tmp / "std-mutated.json"
         mutated.write_text(json.dumps(schema))
