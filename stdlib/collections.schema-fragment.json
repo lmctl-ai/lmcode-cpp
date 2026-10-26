@@ -242,6 +242,18 @@
             "params": [],
             "returns": "StrMap"
           }
+        ],
+        "keys": [
+          {
+            "params": [],
+            "returns": "StrList"
+          }
+        ],
+        "values": [
+          {
+            "params": [],
+            "returns": "StrList"
+          }
         ]
       }
     }

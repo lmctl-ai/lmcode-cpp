@@ -1,8 +1,10 @@
-# Built-in lmcode std v2
+# Built-in lmcode std v3
 
-Canonical signatures: 171.
+Canonical signatures: 181.
 
 **Bytes:** All strings are raw bytes; lengths and offsets are byte-based, NUL and invalid UTF-8 are preserved.
+
+**Encoding:** Hex is lowercase on encode and accepts ASCII mixed-case digits on decode. Base64 is canonical padded RFC 4648 section 4, rejecting whitespace, URL-safe alphabet, invalid padding and nonzero pad bits. Strings are raw bytes.
 
 **Errors:** Catalog failures use RUN_HOST; file failures use FUNCTION: PATH: OS reason.
 
@@ -14,7 +16,9 @@ Canonical signatures: 171.
 
 **Priority:** PQ is min-first with insertion-order ties; signed zero priorities tie. Nonfinite priorities and next sequence 2^63-1 fail without mutation; clear resets sequence to zero.
 
-**Registration:** Default registries install 171 built-ins; testing print/assertions remain explicit host registrations.
+**Registration:** Default registries install 181 built-ins; testing print/assertions remain explicit host registrations.
+
+**Snapshots:** Map keys()/values() each allocate one independent list snapshot in insertion order; mutation never aliases map storage. Float payload bits are preserved.
 
 | Signature | Area | Semantics | Errors |
 | --- | --- | --- | --- |
@@ -50,9 +54,13 @@ Canonical signatures: 171.
 | `fn math_round(int) -> int` | math | Identity for int; binary64 nearest integer with halfway cases away from zero. | — |
 | `fn math_sqrt(float) -> float` | math | Binary64 square root for float. | — |
 | `fn math_sqrt(int) -> int` | math | Exact floor integer square root; the argument must be nonnegative. | math_sqrt: integer argument must be nonnegative |
+| `fn str_base64_decode(string) -> string` | encoding | Decode canonical padded RFC 4648 Base64; reject whitespace, URL-safe symbols, invalid padding and nonzero pad bits. Empty input is legal. | str_base64_decode: invalid encoding |
+| `fn str_base64_encode(string) -> string` | encoding | Encode bytes as canonical padded RFC 4648 Base64 without line breaks. Empty input is legal. | str_base64_encode: size overflow |
 | `fn str_contains(string, string) -> bool` | string | Byte substring search; an empty needle matches. | — |
 | `fn str_ends_with(string, string) -> bool` | string | Byte suffix comparison; an empty suffix matches. | — |
 | `fn str_find(string, string) -> int` | string | Return the first byte offset or -1; an empty needle returns 0. | — |
+| `fn str_hex_decode(string) -> string` | encoding | Decode an even number of ASCII 0-9/a-f/A-F digits; reject separators, prefixes and whitespace. Empty input is legal. | str_hex_decode: invalid encoding |
+| `fn str_hex_encode(string) -> string` | encoding | Encode bytes as lowercase ASCII hex. Empty input is legal. | str_hex_encode: size overflow |
 | `fn str_is_float(string) -> bool` | string | Accept a complete signed decimal with optional decimal point and exponent, including representable subnormals. Reject whitespace, hex, NaN/infinity, overflow and underflow to zero. | — |
 | `fn str_is_int(string) -> bool` | string | Report whether the complete signed decimal token fits int64. | — |
 | `fn str_len(string) -> int` | string | Return the raw byte length, including NUL and invalid UTF-8 bytes. | — |
@@ -84,9 +92,11 @@ Canonical signatures: 171.
 | `method FloatMap.get_or(string, float) -> float` | collections | Read a value or the supplied fallback. | — |
 | `method FloatMap.has(string) -> bool` | collections | Test a byte-exact key. | — |
 | `method FloatMap.key_at(int) -> string` | collections | Read a live key in insertion order. | FloatMap.key_at: index out of range: N |
+| `method FloatMap.keys() -> StrList` | containers | Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | StrList object limit exceeded (65536) |
 | `method FloatMap.len() -> int` | collections | Count live keys. | — |
 | `method FloatMap.remove(string) -> bool` | collections | Remove a key; reinsertion goes last. | — |
 | `method FloatMap.set(string, float) -> FloatMap` | collections | Insert/update; overwrites retain original position; return self. | — |
+| `method FloatMap.values() -> FloatList` | containers | Allocate an independent FloatList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | FloatList object limit exceeded (65536) |
 | `method FloatPQ.clear() -> FloatPQ` | collections | Remove all items; return self; reset PQ insertion sequence. | — |
 | `method FloatPQ.empty() -> bool` | collections | Return whether there are no items. | — |
 | `method FloatPQ.len() -> int` | collections | Return the number of items. | — |
@@ -119,9 +129,11 @@ Canonical signatures: 171.
 | `method IntMap.get_or(string, int) -> int` | collections | Read a value or the supplied fallback. | — |
 | `method IntMap.has(string) -> bool` | collections | Test a byte-exact key. | — |
 | `method IntMap.key_at(int) -> string` | collections | Read a live key in insertion order. | IntMap.key_at: index out of range: N |
+| `method IntMap.keys() -> StrList` | containers | Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | StrList object limit exceeded (65536) |
 | `method IntMap.len() -> int` | collections | Count live keys. | — |
 | `method IntMap.remove(string) -> bool` | collections | Remove a key; reinsertion goes last. | — |
 | `method IntMap.set(string, int) -> IntMap` | collections | Insert/update; overwrites retain original position; return self. | — |
+| `method IntMap.values() -> IntList` | containers | Allocate an independent IntList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | IntList object limit exceeded (65536) |
 | `method IntPQ.clear() -> IntPQ` | collections | Remove all items; return self; reset PQ insertion sequence. | — |
 | `method IntPQ.empty() -> bool` | collections | Return whether there are no items. | — |
 | `method IntPQ.len() -> int` | collections | Return the number of items. | — |
@@ -166,9 +178,11 @@ Canonical signatures: 171.
 | `method StrMap.get_or(string, string) -> string` | collections | Return a byte-key value or the fallback. | — |
 | `method StrMap.has(string) -> bool` | collections | Test byte-key presence. | — |
 | `method StrMap.key_at(int) -> string` | collections | Return the insertion-order key at a zero-based index. | StrMap.key_at: index out of range: i |
+| `method StrMap.keys() -> StrList` | collections | Allocate an independent StrList snapshot of keys in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | StrList object limit exceeded (65536) |
 | `method StrMap.len() -> int` | collections | Return insertion-order entry count. | — |
 | `method StrMap.remove(string) -> bool` | collections | Remove a key and report whether it existed. | — |
 | `method StrMap.set(string, string) -> StrMap` | collections | Insert or replace a value while preserving an existing key position; removal tombstones compact on key_at. | StrMap.set: index out of range: i |
+| `method StrMap.values() -> StrList` | collections | Allocate an independent StrList snapshot of values in insertion order; later map/list mutations do not alias. Preserve raw bytes and float payload bits. | StrList object limit exceeded (65536) |
 | `method StrPQ.clear() -> StrPQ` | collections | Remove all items; return self; reset PQ insertion sequence. | — |
 | `method StrPQ.empty() -> bool` | collections | Return whether there are no items. | — |
 | `method StrPQ.len() -> int` | collections | Return the number of items. | — |
