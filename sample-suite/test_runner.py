@@ -21,6 +21,7 @@ from pathlib import Path
 import runpy
 import sys
 
+sys.stdout.reconfigure(newline="\n")
 root = Path(os.environ["FAKE_SUITE"])
 mode = os.environ.get("FAKE_MODE", "ok")
 args = sys.argv[1:]
