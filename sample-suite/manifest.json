@@ -1156,6 +1156,47 @@
       ]
     },
     {
+      "name": "311-byte-codec-boundaries",
+      "source": "programs/311-byte-codec-boundaries.lms",
+      "source_sha256": "f7b733ae6ac9888c323de8075b2d1ed7e7bfcbcc7e5120eb5e94358b0ae83ace",
+      "bytecode": "bytecode/311-byte-codec-boundaries.dslb",
+      "bytecode_sha256": "2070d8acf15a087ebb983e63a54bff7df296722f5205956f2137a0128245572a",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "v3 strict byte codecs",
+        "NUL invalid UTF8",
+        "RFC4648 padding"
+      ]
+    },
+    {
+      "name": "312-map-snapshot-mutation",
+      "source": "programs/312-map-snapshot-mutation.lms",
+      "source_sha256": "2db2732dd32dbb2e3b6aeb265eb36108f4c9289a2457d044c130c1351d8f3f7c",
+      "bytecode": "bytecode/312-map-snapshot-mutation.dslb",
+      "bytecode_sha256": "10a7335f55d64059d9d4f97e26bf1bbc2104e8c6c2f07de908e433a8605c656e",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "v3 six map snapshots",
+        "mutation isolation",
+        "insertion order"
+      ]
+    },
+    {
+      "name": "313-codec-pad-bits-expected-fail",
+      "source": "programs/313-codec-pad-bits-expected-fail.lms",
+      "source_sha256": "1908093c78f9c8468d1b68a54b8ae784a8c2590f445a8fa17f9c98e53ab61093",
+      "bytecode": "bytecode/313-codec-pad-bits-expected-fail.dslb",
+      "bytecode_sha256": "93cd032ae87277b87a9bdc237265511ca571ca8f4c42780c021af89ff5bf2959",
+      "expected_exit": 3,
+      "timeout_seconds": 30,
+      "features": [
+        "v3 exact decoder error",
+        "nonzero pad bits"
+      ]
+    },
+    {
       "name": "090-bad-bytecode",
       "bytecode": "bytecode/090-bad-bytecode.dslb",
       "bytecode_sha256": "6ea0da14a1b22c77f50273b8cb94864f8773473b33585e25d67545f23f37fb84",

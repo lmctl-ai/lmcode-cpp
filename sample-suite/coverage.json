@@ -379,6 +379,20 @@
     ],
     "305-hex-invalid-expected-fail.lms": [
       "strict hex prefix rejection"
+    ],
+    "311-byte-codec-boundaries.lms": [
+      "v3 strict byte codecs",
+      "NUL invalid UTF8",
+      "RFC4648 padding"
+    ],
+    "312-map-snapshot-mutation.lms": [
+      "v3 six map snapshots",
+      "mutation isolation",
+      "insertion order"
+    ],
+    "313-codec-pad-bits-expected-fail.lms": [
+      "v3 exact decoder error",
+      "nonzero pad bits"
     ]
   },
   "canonical_signatures": [
@@ -628,7 +642,8 @@
     "065-price-invalid-float.lms",
     "066-record-null-money.lms",
     "304-base64-invalid-expected-fail.lms",
-    "305-hex-invalid-expected-fail.lms"
+    "305-hex-invalid-expected-fail.lms",
+    "313-codec-pad-bits-expected-fail.lms"
   ],
   "exit_codes": {
     "030-negative-balance-expected-fail.lms": 4

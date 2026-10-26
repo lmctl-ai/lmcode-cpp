@@ -126,13 +126,10 @@ def pinned_std_digest(repo):
 
 def legacy_signature_set():
     audit = runpy.run_path(str(ROOT / "audit.py"))
-    result = set()
-    for area in ("string", "math", "collections", "file"):
-        path = ROOT.parent / "stdlib" / (area + ".schema-fragment.json")
-        if not path.exists():
-            return set()
-        result.update(audit["signatures"](json.loads(path.read_text())))
-    return {signature for signature in result if not signature.startswith(("method StrMap.keys(", "method StrMap.values("))}
+    data = (ROOT / "legacy-std-v1.schema.json").read_bytes()
+    if hashlib.sha256(data).hexdigest() != LEGACY_STD_SHA256:
+        raise ValueError("legacy std fixture digest mismatch")
+    return audit["signatures"](json.loads(data))
 
 
 def selected_ports(value):
@@ -184,7 +181,7 @@ def main():
     legacy_std = legacy_signature_set() if target_std else set()
 
     def pending_port(lang, entry):
-        entry.update(pending=True, reason="released v1 SDK catalog; current std port pending", ok=False)
+        entry.update(pending=True, reason="released v1 SDK catalog; v2 port pending", ok=False)
         report["pending"].append(lang)
         report["ok"] = False
         print(f"FAIL {lang}: {entry['reason']}")
@@ -289,7 +286,7 @@ def main():
         status = "FAIL" if item.get("pending") else "PASS" if item["ok"] else "FAIL"
         print(f"{lang:<8} {item.get('build_exit', 'FAIL')!s:<6} {item.get('protocol_suite_exit', 'FAIL')!s:<6} {status}")
     if report["pending"]:
-        print("Cross-port current-catalog interoperability pending: " + ", ".join(report["pending"]))
+        print("Cross-port v2 interoperability pending: " + ", ".join(report["pending"]))
     print(json.dumps(report, indent=2))
     return 0 if report["ok"] else 1
 
