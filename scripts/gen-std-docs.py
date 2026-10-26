@@ -28,11 +28,11 @@ def load_document(schema_path=SCHEMA, metadata_path=METADATA):
     for signature, params in expected.items():
         entry = actual[signature]
         if entry.get("params") != params or not entry.get("area") or not entry.get("summary", "").strip() or not isinstance(entry.get("errors"), list): raise ValueError(f"invalid metadata entry for {signature}")
-    return {"schema": "std/lmcode-std.schema.json", "version": 1, "notes": metadata.get("notes", {}), "signatures": actual}
+    return {"schema": "std/lmcode-std.schema.json", "version": metadata["version"], "notes": metadata.get("notes", {}), "signatures": actual}
 
 def render(doc):
     def cell(text): return str(text).replace("|", "\\|").replace("\n", "<br>")
-    lines = ["# Built-in lmcode std v1", "", f"Canonical signatures: {len(doc['signatures'])}.", ""]
+    lines = [f"# Built-in lmcode std v{doc['version']}", "", f"Canonical signatures: {len(doc['signatures'])}.", ""]
     for name, note in sorted(doc.get("notes", {}).items()):
         lines.extend([f"**{name.capitalize()}:** {note}", ""])
     lines.extend(["| Signature | Area | Semantics | Errors |", "| --- | --- | --- | --- |"])

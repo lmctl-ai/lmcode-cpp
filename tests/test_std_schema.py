@@ -25,15 +25,16 @@ class StdSchemaTests(unittest.TestCase):
         self.assertIn("context domain: Domain", merge.signature_strings(host))
 
     def test_canonical_metadata_and_count(self):
-        self.assertEqual(CANONICAL["name"], "lmcode_std_v1")
+        self.assertEqual(CANONICAL["name"], "lmcode_std_v2")
         self.assertEqual(set(CANONICAL), {"dsl.schema", "name", "types", "functions"})
-        self.assertEqual(len(merge.canonical_signatures(CANONICAL)), 72)
+        self.assertEqual(len(merge.canonical_signatures(CANONICAL)), 171)
 
     def test_canonical_digest_lock(self):
         import hashlib
         lock = dict(line.split("=", 1) for line in (ROOT / "std.lock").read_text().splitlines())
+        self.assertEqual((ROOT / "std.lock").read_bytes(), (ROOT / "std/std.lock").read_bytes())
         self.assertEqual(lock["schema"], "std/lmcode-std.schema.json")
-        self.assertEqual(lock["version"], "1")
+        self.assertEqual(lock["version"], "2")
         self.assertEqual(lock["sha256"], hashlib.sha256((ROOT / lock["schema"]).read_bytes()).hexdigest())
 
     def test_testing_stays_in_host_schema(self):
@@ -87,7 +88,7 @@ class StdSchemaTests(unittest.TestCase):
 
     def test_fragments_are_subsets_of_canonical(self):
         fragment_signatures = set()
-        for name in ("string", "math", "collections", "file"):
+        for name in ("string", "math", "collections", "file", "containers", "json"):
             path = ROOT / "stdlib" / (name + ".schema-fragment.json")
             fragment = json.loads(path.read_text())
             fragment_signatures.update(merge.signature_strings(fragment))
