@@ -176,7 +176,6 @@ def main():
             continue
         if target_digest and target_digest != LEGACY_STD_SHA256 and pinned_digest == LEGACY_STD_SHA256:
             pending_port(lang, entry)
-            continue
         try:
             build = build_for(lang, repo, env)
             entry["build"] = shlex.join(build)
@@ -200,7 +199,6 @@ def main():
                 observed = set(probe.stdout.splitlines())
                 if probe.returncode == 0 and legacy_std <= observed and not ((target_std - legacy_std) & observed):
                     pending_port(lang, entry)
-                    continue
             # The port's own protocol and canonical runner are mandatory checks.
             checker = corpus / "protocol.py"
             protocol = subprocess.run([sys.executable, str(checker), *command], env=env, cwd=repo,
