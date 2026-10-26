@@ -88,7 +88,7 @@ class StdSchemaTests(unittest.TestCase):
 
     def test_fragments_are_subsets_of_canonical(self):
         fragment_signatures = set()
-        for name in ("string", "math", "collections", "file"):
+        for name in ("string", "math", "collections", "file", "containers", "json"):
             path = ROOT / "stdlib" / (name + ".schema-fragment.json")
             fragment = json.loads(path.read_text())
             fragment_signatures.update(merge.signature_strings(fragment))
