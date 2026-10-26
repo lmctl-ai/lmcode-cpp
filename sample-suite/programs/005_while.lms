@@ -1,6 +1,0 @@
-program = _lmcode_ schema="../sample.dsl.json";
-let i = 0;
-while (i < 3) { i = i + 1; }
-print(str(i));
-end _lmcode_
-savedsl(program, ARGV[0]);

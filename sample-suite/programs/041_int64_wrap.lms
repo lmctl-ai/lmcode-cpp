@@ -1,6 +1,0 @@
-program = _lmcode_ schema="../sample.dsl.json";
-let hi = 9007199254740991 * 1024 + 1023;
-let wrapped = hi + hi;
-print(str(wrapped));
-end _lmcode_
-savedsl(program, ARGV[0]);

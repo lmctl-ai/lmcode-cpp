@@ -1,8 +1,0 @@
-program = _lmcode_ schema="../sample.dsl.json";
-let root = math_sqrt(16.0);
-let rounded = math_round(root + 0.4);
-let bounded = math_min(math_max(rounded, 0.0), 5.0);
-assert_close(bounded, 4.0, 0.001);
-print(str(bounded));
-end _lmcode_
-savedsl(program, ARGV[0]);

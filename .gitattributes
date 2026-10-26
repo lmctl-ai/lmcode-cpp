@@ -7,3 +7,7 @@ conformance/stdlib-vectors/*.expect text eol=lf
 
 # Canonical standard surface is hashed byte-for-byte by every SDK.
 std/*.json text eol=lf
+
+# Portable sample corpus and exact stdout are byte-for-byte fixtures.
+sample-suite/** text eol=lf
+sample-suite/bytecode/*.dslb binary

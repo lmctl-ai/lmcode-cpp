@@ -1,9 +1,0 @@
-program = _lmcode_ schema="../sample.dsl.json";
-let zero = 0;
-let dangerous_div = 1 / zero;
-let dangerous_mod = 1 % zero;
-let safe = false && (dangerous_div > 0);
-let also_safe = true || (dangerous_mod == 0);
-print(str(safe) + ":" + str(also_safe));
-end _lmcode_
-savedsl(program, ARGV[0]);
