@@ -7,7 +7,8 @@
     ],
     "002-arithmetic.lms": [
       "arithmetic",
-      "int operators"
+      "int operators",
+      "fee(int)"
     ],
     "003-boolean.lms": [
       "boolean",

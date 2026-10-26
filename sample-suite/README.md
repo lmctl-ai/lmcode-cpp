@@ -48,7 +48,7 @@ first compiler-emitted program, never hand-authored executable bytecode.
 | Program | Feature / called APIs |
 |---|---|
 | [001-literals](programs/001-literals.lms) | literals; print(string) |
-| [002-arithmetic](programs/002-arithmetic.lms) | arithmetic; int operators |
+| [002-arithmetic](programs/002-arithmetic.lms) | arithmetic; int operators; fee(int) |
 | [003-boolean](programs/003-boolean.lms) | boolean; comparisons |
 | [004-if-else](programs/004-if-else.lms) | if; else |
 | [005-while](programs/005-while.lms) | while |

@@ -28,7 +28,7 @@ def check(command):
             raise ValueError('protocol wrote stderr: ' + result.stderr.decode(errors='replace'))
         return result
     version = call('--version')
-    if version.returncode or not re.fullmatch(rb'lmcode-[a-z]+-sample 0\.1\.0\n', version.stdout):
+    if version.returncode or not re.fullmatch(rb'lmcode-[a-z]+-sample [0-9]+\.[0-9]+\.[0-9]+\n', version.stdout):
         raise ValueError('invalid --version protocol')
     for args in [('--dsl-schema',), ('--dsl-schema', '--json')]:
         result = call(*args)

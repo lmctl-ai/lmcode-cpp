@@ -2,6 +2,7 @@
 """Fail when a std signature is added but not called by the shared bytecode corpus."""
 import argparse
 import json
+import runpy
 from pathlib import Path
 import struct
 ROOT = Path(__file__).resolve().parent
@@ -45,7 +46,13 @@ def main():
     missing = required - actual
     if missing:
         raise SystemExit('UNEXERCISED STANDARD SIGNATURES:\n' + '\n'.join(sorted(missing)))
+    schema = json.loads((ROOT / 'sample.dsl.json').read_text())
+    declared = runpy.run_path(str(ROOT / 'protocol.py'))['declared_signatures'](schema).decode().splitlines()
+    host = {signature for signature in declared if not signature.startswith('context ')} - required
+    if host - actual:
+        raise SystemExit('UNEXERCISED HOST SIGNATURES:\n' + '\n'.join(sorted(host - actual)))
     print(f'PASS: all {len(required)} standard signatures are imported by the corpus')
+    print(f'PASS: all {len(host)} host signatures are imported by the corpus')
 
 if __name__ == '__main__':
     main()

@@ -8,9 +8,9 @@
     {
       "name": "001-literals",
       "source": "programs/001-literals.lms",
-      "source_sha256": "0dfbcd9a532b296255c073d20f3ec6767578d4ff0c513c358b084a91d6981997",
+      "source_sha256": "ccf635607e1cdc6280a51542ee802f984a22f5bbdf41fc64e4eb17e6271e1fd5",
       "bytecode": "bytecode/001-literals.dslb",
-      "bytecode_sha256": "bc4643a39bbb782aa348c1be9817cb61d6a4116c1d4cf2adfd1b9d51cb618b95",
+      "bytecode_sha256": "83ba5b14f5ba50484bfa3b56321e151e058c775ba84a7e29283af6585ada8b50",
       "expected_exit": 0,
       "features": [
         "literals",
@@ -20,13 +20,14 @@
     {
       "name": "002-arithmetic",
       "source": "programs/002-arithmetic.lms",
-      "source_sha256": "02497b66b755d4768ef567d770a0932487454f618b2b720337b9becf6943e853",
+      "source_sha256": "3258b44e44fab6a15b37f69884a1f9d7d540a7a47c645c205afe1b9c619a8cef",
       "bytecode": "bytecode/002-arithmetic.dslb",
-      "bytecode_sha256": "1dc54bbb0ae946cc39a5a3fb4ca27568f6b79a64456361fe1958a7eb25303cb5",
+      "bytecode_sha256": "461c7b49796117674f7ede18573a0a130dcdaba69f0d6cdc2b9ab4474c7a0c23",
       "expected_exit": 0,
       "features": [
         "arithmetic",
-        "int operators"
+        "int operators",
+        "fee(int)"
       ]
     },
     {
@@ -104,9 +105,9 @@
     {
       "name": "009-money-overloads",
       "source": "programs/009-money-overloads.lms",
-      "source_sha256": "4e919a21313289e313397bafaeba0edd667448e2c18b030b960a67b35a7e0dd1",
+      "source_sha256": "e58b02d961675e1cfdf70b2b81e944fadf305aeaf48b6e22d324f130606d7816",
       "bytecode": "bytecode/009-money-overloads.dslb",
-      "bytecode_sha256": "f0e2ed71dd00512716c8038888a74c3d8815471a0f56529d4dbfdf4ec29a1c58",
+      "bytecode_sha256": "a5df82d82b79db118e0e5784560afd52ddb0c519a0c4740a47db934d73f444da",
       "expected_exit": 0,
       "features": [
         "money(int)",
@@ -632,7 +633,7 @@
     {
       "name": "090-bad-bytecode",
       "bytecode": "bytecode/090-bad-bytecode.dslb",
-      "bytecode_sha256": "2c2771c66b07c139b3b71569f18dfd9007e0d82b9afa6b7d9a249262c0a0e0dc",
+      "bytecode_sha256": "1f37b3723ab99e5488c44551c6f3b437ca357d8200eccf848b7674a5be219f9b",
       "expected_exit": 3,
       "mutation": {
         "source": "001-literals",
@@ -645,7 +646,7 @@
     {
       "name": "091-schema-mismatch",
       "bytecode": "bytecode/091-schema-mismatch.dslb",
-      "bytecode_sha256": "b407201e14e35190f310f7a32af75d4a3be55bdc477270556fedeb6fbab91910",
+      "bytecode_sha256": "9fa44489d2d31eabe3ce3dd1a24dfa33b2b0bdb55db2f29e0e52b6c2430fa874",
       "expected_exit": 3,
       "mutation": {
         "source": "001-literals",

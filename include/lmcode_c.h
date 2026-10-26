@@ -5,7 +5,8 @@
  * context handles must outlive programs/runs that use them. Callback argument
  * buffers are borrowed only during the callback; callback-returned strings and
  * type names must remain valid until the callback returns because the adapter
- * copies them at that boundary. Object pointers are borrowed for the run. */
+ * copies them at that boundary. Never return stack-local buffers. Object
+ * pointers are borrowed for the run. */
 #include <stddef.h>
 #include <stdint.h>
 
