@@ -209,8 +209,8 @@ The [generated std reference](docs/std.md) lists every built-in signature, its b
 Start at [lmcode-cpp-sample](https://github.com/lmctl-ai/lmcode-cpp-sample) for a
 small C++17 shop/ledger host and a ten-step embedding guide. Its vendored copy of
 [`sample-suite/`](sample-suite/README.md) is shared by the C, C++, Rust, Go, C#,
-Java, Kotlin and Scala samples. The canonical suite lives here: 48 programs plus
-two loader mutations, exact stdout/exit fixtures, CLI protocol checks and an audit
+Java, Kotlin and Scala samples. The canonical suite lives here: 63 programs plus
+three loader mutations, exact stdout/exit fixtures, CLI protocol checks and an audit
 that every one of the 72 std signatures occurs in actual bytecode imports.
 
 ```sh
@@ -222,7 +222,7 @@ make sample-suite
 
 Compiler/language changes must recompile and review this corpus, then run every
 sample port. New std functions fail the import audit until covered. The C++
-reference's initial 50 outputs also matched an independent Go SDK host exactly.
+reference's expanded 66 outputs also matched an independent Go SDK host exactly.
 
 ### C embedding API
 

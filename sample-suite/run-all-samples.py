@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import runpy
 from pathlib import Path
 import shlex
 import subprocess
@@ -71,13 +72,14 @@ def execute(argv, cwd, log, env):
     return code, round(time.monotonic() - started, 2)
 
 
-def run_case(command, bytecode, expected_out, expected_exit, scratch, env, timeout=30):
+def run_case(command, bytecode, expected_out, expected_exit, scratch, env, timeout=30, cwd=None):
+    started = time.monotonic()
     child_env = dict(env, SAMPLE_TMP=str(scratch))
     try:
-        result = subprocess.run([*command, "--dsl", str(bytecode)], env=child_env,
+        result = subprocess.run([*command, "--dsl", str(bytecode)], env=child_env, cwd=cwd,
                                 capture_output=True, timeout=timeout)
     except subprocess.TimeoutExpired as error:
-        return {"exit": 124, "stdout": error.stdout or b"", "stderr": b"timeout",
+        return {"exit": 124, "stdout": error.stdout or b"", "stderr": b"timeout", "seconds": round(time.monotonic()-started, 4),
                 "expected_exit": expected_exit, "expected_stdout": expected_out}
     return {
         "exit": result.returncode,
@@ -85,6 +87,7 @@ def run_case(command, bytecode, expected_out, expected_exit, scratch, env, timeo
         "stderr": result.stderr,
         "expected_exit": expected_exit,
         "expected_stdout": expected_out,
+        "seconds": round(time.monotonic()-started, 4),
     }
 
 
@@ -102,8 +105,11 @@ def main():
         root = Path(env.get("SAMPLE_REPO_ROOT", Path.home() / "repos" / "dsl"))
         state = Path(env.get("SAMPLE_STATE", Path.home() / ".local/state/lmctl/sample-matrix"))
         state.mkdir(parents=True, exist_ok=True)
-        corpus = Path(env.get("SAMPLE_CORPUS", ROOT))
+        corpus = Path(env.get("SAMPLE_CORPUS", ROOT)).expanduser().resolve()
         manifest = json.loads((corpus / "manifest.json").read_text())
+        hooks = runpy.run_path(str(corpus / "run-suite.py"))
+        hooks['check_files'](manifest)
+        hooks['check_compiler']()
         cases = []
         for item in manifest["cases"]:
             cases.append((item["name"], item, corpus / item["bytecode"],
@@ -118,7 +124,7 @@ def main():
     report = {"ports": {}, "cases": len(cases), "ok": True}
     actual_by_case = {}
     for lang in LANGS:
-        repo = Path(env.get(f"SAMPLE_{lang.upper()}_DIR", root / f"lmcode-{lang}-sample"))
+        repo = Path(env.get(f"SAMPLE_{lang.upper()}_DIR", root / f"lmcode-{lang}-sample")).expanduser().resolve()
         entry = report["ports"][lang] = {"repo": str(repo), "build": None, "cases": [], "ok": False}
         if not repo.is_dir():
             entry["error"] = "missing repository"
@@ -144,8 +150,8 @@ def main():
         try:
             command = command_for(env, lang, repo)
             # The port's own protocol and canonical runner are mandatory checks.
-            checker = corpus / "run-suite.py" if lang == LANGS[0] else corpus / "protocol.py"
-            protocol = subprocess.run([sys.executable, str(checker), *command], env=env,
+            checker = corpus / "protocol.py"
+            protocol = subprocess.run([sys.executable, str(checker), *command], env=env, cwd=repo,
                                        capture_output=True, text=True, timeout=120)
             entry["protocol_suite_exit"] = protocol.returncode
             if protocol.returncode:
@@ -154,11 +160,12 @@ def main():
                 report["ok"] = False
             for name, item, bytecode, expected_out, expected_exit in cases:
                 with tempfile.TemporaryDirectory(prefix=f"sample-{lang}-") as scratch:
+                    hooks['prepare_tmp'](scratch)
                     for fixture, content in item.get("fixtures", {}).items():
                         path = Path(scratch) / fixture
                         path.parent.mkdir(parents=True, exist_ok=True)
                         path.write_bytes(bytes.fromhex(content))
-                    observed = run_case(command, bytecode, expected_out, expected_exit, scratch, env, int(item.get("timeout_seconds", 30)))
+                    observed = run_case(command, bytecode, expected_out, expected_exit, scratch, env, int(item.get("timeout_seconds", 30)), cwd=repo)
                 raw_stdout = observed["stdout"]
                 raw_stderr = observed["stderr"]
                 observed.update({"name": name, "stdout": raw_stdout.decode(errors="replace"),
@@ -184,6 +191,15 @@ def main():
             report["ok"] = False
             report.setdefault("cross_mismatches", []).append(name)
     (state / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+    print("\nPROGRAM x SAMPLE MATRIX")
+    print(f'{"program":<38} ' + ' '.join(f'{lang:>7}' for lang in LANGS))
+    for name, _, _, _, _ in cases:
+        row = actual_by_case.get(name, {})
+        values = []
+        for lang in LANGS:
+            good = row.get(lang, {}).get('ok', False) and not report['ports'][lang].get('protocol_suite_exit', 1)
+            values.append('PASS' if good else 'FAIL')
+        print(f'{name:<38} ' + ' '.join(f'{value:>7}' for value in values))
     print("\nPORT MATRIX")
     print("port     build  suite  cases")
     for lang, item in report["ports"].items():

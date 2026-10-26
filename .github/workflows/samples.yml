@@ -48,7 +48,15 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           sudo apt-get update
-          sudo apt-get install -y dotnet-sdk-8.0 kotlin scala
+          sudo apt-get install -y dotnet-sdk-8.0
+          curl -fL --retry 3 https://github.com/JetBrains/kotlin/releases/download/v2.2.21/kotlin-compiler-2.2.21.zip -o "$RUNNER_TEMP/kotlin.zip"
+          echo "a623871f1cd9c938946948b70ef9170879f0758043885bbd30c32f024e511714  $RUNNER_TEMP/kotlin.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/kotlin.zip" -d "$RUNNER_TEMP/kotlin"
+          curl -fL --retry 3 https://github.com/scala/scala3/releases/download/3.3.6/scala3-3.3.6.tar.gz -o "$RUNNER_TEMP/scala.tar.gz"
+          echo "7267524240ee289976fed1b8bc08c0045d5d290d3faee07c6b7137a4252b5b97  $RUNNER_TEMP/scala.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/scala.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/kotlin/kotlinc/bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/scala3-3.3.6/bin" >> "$GITHUB_PATH"
           npm install --global @lmctl-ai/lmctl@0.2.420
           lmscript --version
       - name: Run every sample port and compare canonical/cross-port behavior

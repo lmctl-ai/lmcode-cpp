@@ -108,6 +108,7 @@ int main() {
   { Asm a; a.local("int"); a.pushInt(21).fn(TWICE, 1).u8(STORE_LOCAL).u16(0).ctx("t", "Trace").u8(LOAD_LOCAL).u16(0).method(T_INT, 1).halt(); expect_trace("host function and locals", h, a.file(SCHEMA), {"int 42"}); }
   { Asm a; a.pushBool(true).u8(JUMP_IF_FALSE).i32(21).ctx("t", "Trace").pushInt(1).method(T_INT, 1).u8(JUMP).i32(16).ctx("t", "Trace").pushInt(2).method(T_INT, 1).halt(); expect_trace("forward jumps select a branch", h, a.file(SCHEMA), {"int 1"}); }
   { Asm a; a.ctx("t", "Trace").ctx("root", "Thing").method(THING_ID, 0).method(T_INT, 1).ctx("t", "Trace").pushFloat(2.5).u8(F2S).method(T_STR, 1).ctx("t", "Trace").pushInt(7).pushInt(2).u8(DIV_I).u8(I2F).pushFloat(0.5).u8(ADD_F).u8(F2S).method(T_STR, 1).ctx("t", "Trace").pushInt(3).pushInt(3).u8(EQ).u8(B2S).method(T_STR, 1).halt(); expect_trace("context object, floats, conversions, equality", h, a.file(SCHEMA), {"int 0", "str 2.5", "str 3.5", "str true"}); }
+  { Asm a; a.ctx("t", "Trace").pushFloat(std::numeric_limits<double>::quiet_NaN()).u8(F2S).method(T_STR, 1).ctx("t", "Trace").pushFloat(-std::numeric_limits<double>::quiet_NaN()).u8(F2S).method(T_STR, 1).halt(); expect_trace("NaN text ignores sign/payload", h, a.file(SCHEMA), {"str nan", "str nan"}); }
   // MATH: all IDs, source-order operands, integer edge semantics, and
   // signed-zero selection for float min/max.
   { Asm a;
