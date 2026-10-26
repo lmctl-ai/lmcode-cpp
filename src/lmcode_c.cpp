@@ -275,6 +275,13 @@ int lmcode_registry_register_testing(lmcode_registry *r,
   clear_error(error);
   if (!r)
     return bad_argument(error);
+  if (r->print_stream) {
+    r->code = "LOAD_UNBOUND";
+    r->message = "registry: testing functions are registered twice";
+    if (error)
+      *error = {r->code.c_str(), r->message.c_str(), 0, 0, 0, 0};
+    return 1;
+  }
   try {
     r->print_buf = std::make_unique<c_print_buf>();
     r->print_buf->callback = cb;

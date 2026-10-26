@@ -214,6 +214,9 @@ int main(void) {
   assert(lmcode_registry_context(testing, "t", "Trace", &error) == 0);
   assert(lmcode_registry_register_testing(testing, print_bytes, &sink,
                                           &error) == 0);
+  assert(lmcode_registry_register_testing(testing, print_bytes, &sink,
+                                          &error) != 0);
+  assert(error.code && strcmp(error.code, "LOAD_UNBOUND") == 0);
   assert(lmcode_registry_function(testing, "bytes", (const char *[]){"string"},
                                   1, "string", bytes, 0, &error) == 0);
   assert(lmcode_registry_function(testing, "printed", 0, 0, "string", printed,
