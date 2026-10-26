@@ -17,6 +17,9 @@ TEST_RUNNER = ROOT / "sample-suite" / "test_runner.py"
 spec = importlib.util.spec_from_file_location("sample_runner_fixture", TEST_RUNNER)
 fixture_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture_module)
+runner_spec = importlib.util.spec_from_file_location("sample_matrix_runner", ROOT / "sample-suite" / "run-all-samples.py")
+runner = importlib.util.module_from_spec(runner_spec)
+runner_spec.loader.exec_module(runner)
 
 
 class MatrixTests(unittest.TestCase):
@@ -129,6 +132,41 @@ class MatrixTests(unittest.TestCase):
         (self.corpus / "manifest.json").write_text(json.dumps(manifest))
         result = self.run_matrix()
         self.assertNotEqual(result.returncode, 0)
+
+    def test_native_port_build_and_command_defaults_are_selected(self):
+        cases = {
+            "rust": ("Cargo.toml", "cargo"),
+            "csharp": ("lmcode.csproj", "dotnet"),
+            "kotlin": ("pom.xml", "mvn"),
+            "scala": ("build.sbt", "sbt"),
+        }
+        for lang, (marker, tool) in cases.items():
+            repo = self.tmp / f"native-{lang}"
+            repo.mkdir()
+            (repo / marker).write_text("fixture")
+            build = runner.build_for(lang, repo, {})
+            command = runner.command_for({}, lang, repo)
+            self.assertEqual(build[0], tool, lang)
+            self.assertTrue(command, lang)
+
+    def test_explicit_native_build_and_command_argv_override_defaults(self):
+        repo = self.tmp / "override-rust"
+        repo.mkdir()
+        env = {
+            "SAMPLE_RUST_BUILD": json.dumps(["custom", "build", "--release"]),
+            "SAMPLE_RUST_COMMAND": json.dumps(["custom host", "--profile", "release"]),
+        }
+        self.assertEqual(runner.build_for("rust", repo, env), ["custom", "build", "--release"])
+        self.assertEqual(runner.command_for(env, "rust", repo), ["custom host", "--profile", "release"])
+
+    def test_legacy_sdk_catalog_is_pending_and_never_green(self):
+        rust = self.repos / "lmcode-rust-sample"
+        (rust / "sdk.lock").write_text(json.dumps({"sha256": {"std/lmcode-std.schema.json": runner.LEGACY_STD_SHA256}}))
+        result = self.run_matrix()
+        self.assertNotEqual(result.returncode, 0)
+        report = json.loads((self.state / "report.json").read_text())
+        self.assertTrue(report["ports"]["rust"]["pending"])
+        self.assertIn("rust", report["pending"])
 
 
 if __name__ == "__main__":
