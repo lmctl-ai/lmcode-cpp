@@ -82,6 +82,13 @@ size_t lmcode_registry_signature_count(const lmcode_registry *);
 const char *lmcode_registry_signature(const lmcode_registry *, size_t index);
 int lmcode_registry_register_testing(lmcode_registry *, lmcode_print_callback,
                                      void *user, lmcode_error *error);
+int lmcode_registry_call_function(lmcode_registry *, const char *signature,
+                                  const lmcode_value *args, size_t count,
+                                  lmcode_value *result, lmcode_error *error);
+int lmcode_registry_call_method(lmcode_registry *, const char *signature,
+                                void *self, const lmcode_value *args,
+                                size_t count, lmcode_value *result,
+                                lmcode_error *error);
 
 lmcode_context *lmcode_context_create(void);
 void lmcode_context_destroy(lmcode_context *);

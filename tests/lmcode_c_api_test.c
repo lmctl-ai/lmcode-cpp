@@ -142,6 +142,16 @@ int main(void) {
   lmcode_error error = {0};
   lmcode_registry *registry = lmcode_registry_create();
   assert(registry);
+  lmcode_value collection = {0}, value = {0};
+  assert(lmcode_registry_call_function(registry, "fn int_list() -> IntList", 0, 0, &collection, &error) == 0);
+  assert(collection.kind == LMCODE_OBJECT && collection.type_length == 7);
+  value.kind = LMCODE_INT; value.i = 42;
+  assert(lmcode_registry_call_method(registry, "method IntList.add(int) -> IntList", collection.object, &value, 1, &collection, &error) == 0);
+  lmcode_value index = {0}; index.kind = LMCODE_INT; index.i = 0;
+  assert(lmcode_registry_call_method(registry, "method IntList.at(int) -> int", collection.object, &index, 1, &value, &error) == 0 && value.i == 42);
+  assert(lmcode_registry_call_function(registry, "fn str_map() -> StrMap", 0, 0, &collection, &error) == 0);
+  lmcode_value map_args[2] = {{LMCODE_STRING,0,0,0,"key",3,0,0,0},{LMCODE_STRING,0,0,0,"value",5,0,0,0}};
+  assert(lmcode_registry_call_method(registry, "method StrMap.set(string, string) -> StrMap", collection.object, map_args, 2, &collection, &error) == 0);
   const char *params[] = {"int", "int"};
   assert(lmcode_registry_function(registry, "add", params, 2, "int", add, 0,
                                   &error) == 0);

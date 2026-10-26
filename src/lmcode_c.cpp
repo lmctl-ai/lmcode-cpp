@@ -27,7 +27,7 @@ struct c_print_buf : std::streambuf {
 struct lmcode_registry {
   dslvm::Registry value;
   mutable std::vector<std::string> signatures;
-  std::string code, message, file;
+  std::string code, message, file, result_data, result_type;
   std::unique_ptr<c_print_buf> print_buf;
   std::unique_ptr<std::ostream> print_stream;
   lmcode_registry(dslvm::StdMode mode) : value(mode) {}
@@ -120,6 +120,13 @@ static lmcode_value from_cpp(const dslvm::Value &v) {
   out.object = v.obj;
   out.type = v.type.data();
   out.type_length = v.type.size();
+  return out;
+}
+static lmcode_value owned_value(lmcode_registry *r, const dslvm::Value &v) {
+  lmcode_value out = from_cpp(v);
+  r->result_data = v.s; r->result_type = v.type;
+  if (v.kind == dslvm::Value::STR) { out.data = r->result_data.data(); out.length = r->result_data.size(); }
+  if (v.kind == dslvm::Value::OBJ) { out.type = r->result_type.data(); out.type_length = r->result_type.size(); }
   return out;
 }
 static lmcode_error callback_error(std::string &code, std::string &message,
@@ -300,6 +307,40 @@ int lmcode_registry_register_testing(lmcode_registry *r,
   } catch (...) {
     return unknown_error(error);
   }
+}
+int lmcode_registry_call_function(lmcode_registry *r, const char *signature,
+                                  const lmcode_value *values, size_t count,
+                                  lmcode_value *result, lmcode_error *error) {
+  clear_error(error);
+  if (!r || !signature || (count && !values) || !result)
+    return bad_argument(error);
+  try {
+    const dslvm::FunctionEntry *entry = r->value.function_by_signature(signature);
+    if (!entry) { r->code="LOAD_UNBOUND"; r->message="unknown function signature"; if(error)*error={r->code.c_str(),r->message.c_str(),0,0,0,0}; return 1; }
+    dslvm::Args args; args.reserve(count);
+    for (size_t i=0; i<count; ++i) args.push_back(to_cpp(values[i]));
+    *result = owned_value(r, entry->fn(args));
+    return 0;
+  } catch (const dslvm::Error &e) { return fill(error, r, e); }
+  catch (const std::exception &e) { r->code="RUN_HOST"; r->message=e.what(); if(error)*error={r->code.c_str(),r->message.c_str(),0,0,0,0}; return 1; }
+  catch (...) { return unknown_error(error); }
+}
+int lmcode_registry_call_method(lmcode_registry *r, const char *signature,
+                                void *self, const lmcode_value *values, size_t count,
+                                lmcode_value *result, lmcode_error *error) {
+  clear_error(error);
+  if (!r || !signature || (count && !values) || !result)
+    return bad_argument(error);
+  try {
+    const dslvm::MethodEntry *entry = r->value.method_by_signature(signature);
+    if (!entry) { r->code="LOAD_UNBOUND"; r->message="unknown method signature"; if(error)*error={r->code.c_str(),r->message.c_str(),0,0,0,0}; return 1; }
+    dslvm::Args args; args.reserve(count);
+    for (size_t i=0; i<count; ++i) args.push_back(to_cpp(values[i]));
+    *result = owned_value(r, entry->fn(self, args));
+    return 0;
+  } catch (const dslvm::Error &e) { return fill(error, r, e); }
+  catch (const std::exception &e) { r->code="RUN_HOST"; r->message=e.what(); if(error)*error={r->code.c_str(),r->message.c_str(),0,0,0,0}; return 1; }
+  catch (...) { return unknown_error(error); }
 }
 
 lmcode_context *lmcode_context_create(void) {
