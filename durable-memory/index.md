@@ -26,6 +26,7 @@ scripts/matrix.sh                     # Cross-SDK verification across cpp, rust,
 | [08-host-adoption-inventory.md](08-host-adoption-inventory.md) | Host adoption inventory for _lmcode_ block syntax and std migration (data: [08-host-adoption-inventory.json](08-host-adoption-inventory.json)) |
 | [09-compiler-readiness-results.md](09-compiler-readiness-results.md) | Host-by-host compiler readiness results and baseline status (data: [09-compiler-readiness-results.json](09-compiler-readiness-results.json)) |
 | [10-std-migration-validation.md](10-std-migration-validation.md) | Standard library host migration validation plan and oracle verification |
+| [tools/README.md](tools/README.md) | The sweep, the rename-audit driver and the site-migration scripts |
 
 ## Adding a conformance vector or function
 
