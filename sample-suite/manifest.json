@@ -1005,6 +1005,93 @@
       ]
     },
     {
+      "name": "201-word-literals",
+      "source": "programs/201-word-literals.lms",
+      "source_sha256": "38ee1154da2f6b4f4ebf81b08b9f18c6b6299dc3710ea0d12f070c38cd208d82",
+      "bytecode": "bytecode/201-word-literals.dslb",
+      "bytecode_sha256": "ca88c7e03680d39c7dc4f27a7da3750613b1788d383d1c0d3ad475f032860f89",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "qw literal",
+        "Unicode words",
+        "comments and newlines",
+        "empty StrList"
+      ],
+      "compiler_features": [
+        "lmcode-literals-v1"
+      ]
+    },
+    {
+      "name": "202-number-literals",
+      "source": "programs/202-number-literals.lms",
+      "source_sha256": "d4e257aa0c3210b85178f1f9aa03db2806e5063324c139fa70e56bfba896cb0c",
+      "bytecode": "bytecode/202-number-literals.dslb",
+      "bytecode_sha256": "eaf9f1fb06c65cf272db412335dea69a12356ef5f6f64f71b3c6bad2e7e579a4",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "qi int64 bounds",
+        "qf exponents and float coercion",
+        "typed empty lists"
+      ],
+      "compiler_features": [
+        "lmcode-literals-v1"
+      ]
+    },
+    {
+      "name": "203-map-literals",
+      "source": "programs/203-map-literals.lms",
+      "source_sha256": "6f2a2bd6a3adf0892a161d97b4bc5197525c61a5fb21af5e3599537478db9ad2",
+      "bytecode": "bytecode/203-map-literals.dslb",
+      "bytecode_sha256": "643fadd611ab99bb03f92a9a190cc6d9d4fbade5188a671dc19154e8ce3dd0b5",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "typed map literals",
+        "left-to-right single evaluation",
+        "duplicate key insertion order",
+        "modulo compatibility"
+      ],
+      "compiler_features": [
+        "lmcode-literals-v1"
+      ]
+    },
+    {
+      "name": "204-json-literal",
+      "source": "programs/204-json-literal.lms",
+      "source_sha256": "97beaa63987c6e302e60069b22e9d800ce014c1863966eee6182fcc9a30846f3",
+      "bytecode": "bytecode/204-json-literal.dslb",
+      "bytecode_sha256": "6a6871c7004eb1be21c3f48fb3eb6dc63ebf7a929267bde9d63b3937e486723c",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "JSONC heredoc literal",
+        "lossless int64",
+        "preserved escapes",
+        "raw outer-splice text"
+      ],
+      "compiler_features": [
+        "lmcode-literals-v1"
+      ]
+    },
+    {
+      "name": "205-literal-bindings",
+      "source": "programs/205-literal-bindings.lms",
+      "source_sha256": "d0acaa6099d322d52ef4ee5e20c2abcfe8bea219e3001ca9b1882177387bf338",
+      "bytecode": "bytecode/205-literal-bindings.dslb",
+      "bytecode_sha256": "e34d77f87b4b879d7aa7b07216d18c106f53b769cbafdaab73a518e633cdcfbb",
+      "expected_exit": 0,
+      "timeout_seconds": 30,
+      "features": [
+        "contextual literal names",
+        "function and parameter compatibility"
+      ],
+      "compiler_features": [
+        "lmcode-literals-v1"
+      ]
+    },
+    {
       "name": "090-bad-bytecode",
       "bytecode": "bytecode/090-bad-bytecode.dslb",
       "bytecode_sha256": "bd61a07bb17e77d5446bd291e51acf44a0360f2e1dcd31d95ecbc7d540e56fb2",

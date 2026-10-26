@@ -116,13 +116,24 @@ def legacy_signature_set():
     return result
 
 
+def selected_ports(value):
+    selected = tuple(value.split(","))
+    if "cpp" not in selected or len(set(selected)) != len(selected) or set(selected) - set(LANGS):
+        raise ValueError("ports must be unique known names and include cpp")
+    return selected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--all", action="store_true", help="run all eight configured ports")
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--all", action="store_true", help="run all eight configured ports")
+    selection.add_argument("--ports", help="explicit comma-separated subset; must include cpp reference")
     parser.add_argument("--env-file", type=Path, default=None)
     args = parser.parse_args()
-    if not args.all:
-        parser.error("--all is required")
+    try:
+        selected = LANGS if args.all else selected_ports(args.ports)
+    except ValueError as error:
+        parser.error(str(error))
 
     try:
         file_env = load_env_file(args.env_file or (Path(os.environ["SAMPLE_ENV_FILE"]) if os.environ.get("SAMPLE_ENV_FILE") else None))
@@ -146,7 +157,7 @@ def main():
         print(f"FAIL setup: {error}", file=sys.stderr)
         return 2
 
-    report = {"ports": {}, "cases": len(cases), "ok": True, "pending": []}
+    report = {"ports": {}, "cases": len(cases), "ok": True, "pending": [], "excluded": [lang for lang in LANGS if lang not in selected]}
     std_path = Path(env.get("SAMPLE_STD_SCHEMA", ROOT.parent / "std/lmcode-std.schema.json"))
     target_digest = hashlib.sha256(std_path.read_bytes()).hexdigest() if std_path.exists() else None
     audit = runpy.run_path(str(corpus / "audit.py"))
@@ -159,7 +170,7 @@ def main():
         report["ok"] = False
         print(f"FAIL {lang}: {entry['reason']}")
     actual_by_case = {}
-    for lang in LANGS:
+    for lang in selected:
         repo = Path(env.get(f"SAMPLE_{lang.upper()}_DIR", root / f"lmcode-{lang}-sample")).expanduser().resolve()
         entry = report["ports"][lang] = {"repo": str(repo), "build": None, "cases": [], "ok": False}
         if not repo.is_dir():
@@ -245,11 +256,11 @@ def main():
             report.setdefault("cross_mismatches", []).append(name)
     (state / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     print("\nPROGRAM x SAMPLE MATRIX")
-    print(f'{"program":<38} ' + ' '.join(f'{lang:>7}' for lang in LANGS))
+    print(f'{"program":<38} ' + ' '.join(f'{lang:>7}' for lang in selected))
     for name, _, _, _, _ in cases:
         row = actual_by_case.get(name, {})
         values = []
-        for lang in LANGS:
+        for lang in selected:
             good = row.get(lang, {}).get('ok', False) and not report['ports'][lang].get('protocol_suite_exit', 1)
             values.append('FAIL' if report['ports'][lang].get('pending') else 'PASS' if good else 'FAIL')
         print(f'{name:<38} ' + ' '.join(f'{value:>7}' for value in values))

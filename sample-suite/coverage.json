@@ -333,6 +333,33 @@
     ],
     "066-record-null-money.lms": [
       "null argument callback error"
+    ],
+    "201-word-literals.lms": [
+      "qw literal",
+      "Unicode words",
+      "comments and newlines",
+      "empty StrList"
+    ],
+    "202-number-literals.lms": [
+      "qi int64 bounds",
+      "qf exponents and float coercion",
+      "typed empty lists"
+    ],
+    "203-map-literals.lms": [
+      "typed map literals",
+      "left-to-right single evaluation",
+      "duplicate key insertion order",
+      "modulo compatibility"
+    ],
+    "204-json-literal.lms": [
+      "JSONC heredoc literal",
+      "lossless int64",
+      "preserved escapes",
+      "raw outer-splice text"
+    ],
+    "205-literal-bindings.lms": [
+      "contextual literal names",
+      "function and parameter compatibility"
     ]
   },
   "canonical_signatures": [
@@ -460,5 +487,22 @@
   },
   "timeouts": {
     "058-million-loop.lms": 5
+  },
+  "compiler_features": {
+    "201-word-literals.lms": [
+      "lmcode-literals-v1"
+    ],
+    "202-number-literals.lms": [
+      "lmcode-literals-v1"
+    ],
+    "203-map-literals.lms": [
+      "lmcode-literals-v1"
+    ],
+    "204-json-literal.lms": [
+      "lmcode-literals-v1"
+    ],
+    "205-literal-bindings.lms": [
+      "lmcode-literals-v1"
+    ]
   }
 }
