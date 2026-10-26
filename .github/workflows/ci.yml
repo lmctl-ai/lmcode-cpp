@@ -2,11 +2,6 @@ name: ci
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths-ignore: ["durable-memory/**"]
-  pull_request:
-    paths-ignore: ["durable-memory/**"]
 
 permissions:
   contents: read

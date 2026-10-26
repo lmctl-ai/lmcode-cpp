@@ -2,14 +2,6 @@ name: Cross-port sample corpus
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '17 3 * * 1'
-  push:
-    paths:
-      - 'std/**'
-      - 'conformance/**'
-      - 'sample-suite/**'
-      - '.github/workflows/samples.yml'
 
 permissions:
   contents: read

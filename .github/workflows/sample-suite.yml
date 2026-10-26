@@ -1,10 +1,5 @@
 name: Shared sample corpus
 on:
-  push:
-    branches: [main]
-    paths-ignore: ['durable-memory/**']
-  pull_request:
-    paths-ignore: ['durable-memory/**']
   workflow_dispatch:
     inputs:
       compiler:
