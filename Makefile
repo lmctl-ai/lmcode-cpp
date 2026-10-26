@@ -12,7 +12,8 @@ $(BUILD)/lmcode_c_api_test: tests/lmcode_c_api_test.c src/lmcode_c.cpp include/l
 	$(CXX) $(CXXFLAGS) $(BUILD)/lmcode_c_api_test.c.o $(BUILD)/lmcode_c_api.o -o $@
 
 test-c-api: $(BUILD)/lmcode_c_api_test
-	$(BUILD)/lmcode_c_api_test
+	$(BUILD)/lmcode_c_api_test > $(BUILD)/lmcode_c_api.stdout
+	grep -Fx '{"ok": true, "result": {"c_api":true}}' $(BUILD)/lmcode_c_api.stdout
 
 $(BUILD)/dslvm_test: tests/dslvm_test.cpp include/dslvm.hpp
 	@mkdir -p $(BUILD)

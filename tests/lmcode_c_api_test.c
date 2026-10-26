@@ -104,5 +104,5 @@ int main(void) {
   assert(lmcode_program_run(program, context, &error) == 0 && saw_hex == 1);
   lmcode_program_destroy(program); free(bytecode); free(schema_bytes); lmcode_registry_destroy(testing);
   lmcode_context_destroy(context); lmcode_registry_destroy(registry);
-  return 0;
+  return lmcode_report_ok_json("{\"c_api\":true}");
 }
