@@ -178,3 +178,9 @@ rewrites the canonical manifest; it is not a complete compiler validation.
 `run-all-samples.sh --ports cpp,c,rust,go,csharp` selects an explicit subset when
 other owners' repositories must not be accessed. Excluded ports are listed in
 the report and are never counted as passes; `--all` retains the full matrix.
+
+`check-recompile.py` checks source/bytecode hashes before reproducing the corpus.
+A verified 72-signature v1 compiler reports literal-feature cases as SKIP while
+reproducing all compatible cases. A v2 or otherwise unknown compiler failure is
+an error; `LMCODE_REQUIRE_LITERAL_COMPILER=1` also makes v1 gaps fatal. Runtime
+execution always covers the entire corpus, regardless of compiler capabilities.
