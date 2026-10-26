@@ -24,7 +24,7 @@ $(BUILD)/conformance: conformance/run.cpp tests/fixture_fs.hpp include/dslvm.hpp
 
 test: $(BUILD)/dslvm_test
 	$(BUILD)/dslvm_test
-	$(MAKE) test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std
+	$(MAKE) test-c-api test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std
 
 $(BUILD)/stdlib_string_test: tests/stdlib_string_test.cpp stdlib/string.hpp include/dslvm.hpp
 	@mkdir -p $(BUILD)

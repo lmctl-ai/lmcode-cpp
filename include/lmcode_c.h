@@ -1,9 +1,11 @@
 #ifndef LMCODE_C_H
 #define LMCODE_C_H
 
-/* C ABI for lmcode-cpp's header-only DSL VM. Handles and callback arguments are
- * borrowed during a call; strings returned by callbacks are copied immediately.
- * Object pointers are opaque application pointers and must outlive the run. */
+/* C ABI for lmcode-cpp's header-only DSL VM. Handles are opaque. Registry and
+ * context handles must outlive programs/runs that use them. Callback argument
+ * buffers are borrowed only during the callback; callback-returned strings and
+ * type names must remain valid until the callback returns because the adapter
+ * copies them at that boundary. Object pointers are borrowed for the run. */
 #include <stddef.h>
 #include <stdint.h>
 
@@ -38,10 +40,13 @@ typedef struct lmcode_error {
 } lmcode_error;
 
 /* Return zero on success. On failure, out_error is filled with borrowed text
- * valid until the next call on the same handle. Callbacks return zero and fill
+ * valid until the next call on the same handle (signature text is valid until
+ * the next signature query or registry mutation). Callbacks return zero and fill
  * result, or nonzero and fill error (message/code are copied immediately). */
 typedef int (*lmcode_function_callback)(void *user, const lmcode_value *args, size_t count, lmcode_value *result, lmcode_error *error);
 typedef int (*lmcode_method_callback)(void *user, void *self, const lmcode_value *args, size_t count, lmcode_value *result, lmcode_error *error);
+/* Testing print receives every byte written by print(), including newlines and
+ * embedded NUL bytes. The data pointer is borrowed only for this call. */
 typedef void (*lmcode_print_callback)(void *user, const char *data, size_t length);
 
 lmcode_registry *lmcode_registry_create(void);
@@ -57,9 +62,9 @@ int lmcode_registry_register_testing(lmcode_registry *, lmcode_print_callback, v
 lmcode_context *lmcode_context_create(void);
 void lmcode_context_destroy(lmcode_context *);
 int lmcode_context_set(lmcode_context *, const char *name, void *object, lmcode_error *error);
-void lmcode_context_set_file(lmcode_context *, const char *file);
-void lmcode_context_set_dry(lmcode_context *, int dry);
-void lmcode_context_set_step_budget(lmcode_context *, uint64_t budget);
+int lmcode_context_set_file(lmcode_context *, const char *file, lmcode_error *error);
+int lmcode_context_set_dry(lmcode_context *, int dry, lmcode_error *error);
+int lmcode_context_set_step_budget(lmcode_context *, uint64_t budget, lmcode_error *error);
 
 int lmcode_program_load(const void *bytecode, size_t bytecode_length, const void *schema, size_t schema_length, const lmcode_registry *, lmcode_program **out, lmcode_error *error);
 int lmcode_program_run(const lmcode_program *, lmcode_context *, lmcode_error *error);
