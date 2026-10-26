@@ -135,19 +135,34 @@ class MatrixTests(unittest.TestCase):
 
     def test_native_port_build_and_command_defaults_are_selected(self):
         cases = {
-            "rust": ("Cargo.toml", "cargo"),
-            "csharp": ("lmcode.csproj", "dotnet"),
-            "kotlin": ("pom.xml", "mvn"),
-            "scala": ("build.sbt", "sbt"),
+            "rust": "Cargo.toml",
+            "csharp": "src/LmCode.Sample.csproj",
+            "kotlin": "pom.xml",
+            "scala": "build.sbt",
         }
-        for lang, (marker, tool) in cases.items():
+        for lang, marker in cases.items():
             repo = self.tmp / f"native-{lang}"
             repo.mkdir()
-            (repo / marker).write_text("fixture")
+            marker_path = repo / marker
+            marker_path.parent.mkdir(parents=True, exist_ok=True)
+            marker_path.write_text("fixture")
+            if lang == "scala":
+                (repo / "target").mkdir()
+                (repo / "target/runtime-classpath.txt").write_text("target/classes:target/dependency/*\n")
             build = runner.build_for(lang, repo, {})
             command = runner.command_for({}, lang, repo)
-            self.assertEqual(build[0], tool, lang)
-            self.assertTrue(command, lang)
+            if lang == "rust":
+                self.assertEqual(build, ["cargo", "build", "--release", "--locked"])
+                self.assertEqual(command, [str(repo / "target/release/lmcode-rust-sample")])
+            elif lang == "csharp":
+                self.assertEqual(build, ["dotnet", "build", "src/LmCode.Sample.csproj", "--configuration", "Release", "--nologo"])
+                self.assertEqual(command, ["dotnet", str(repo / "src/bin/Release/net8.0/lmcode-csharp-sample.dll")])
+            elif lang == "kotlin":
+                self.assertEqual(build, ["mvn", "--batch-mode", "package", "-DskipTests"])
+                self.assertEqual(command, ["java", "-jar", str(repo / "target/lmcode-kotlin-sample.jar")])
+            else:
+                self.assertEqual(build, ["sbt", "-batch", "compile", "writeRuntimeClasspath"])
+                self.assertEqual(command, ["java", "-cp", "target/classes:target/dependency/*", "shop.Main"])
 
     def test_explicit_native_build_and_command_argv_override_defaults(self):
         repo = self.tmp / "override-rust"
