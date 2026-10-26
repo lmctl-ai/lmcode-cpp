@@ -63,7 +63,7 @@ def main():
         manifest = dict(format=1, schema='sample.dsl.json', bytecode_version=5,
                         schema_sha256=hashlib.sha256((ROOT / 'sample.dsl.json').read_bytes()).hexdigest(),
                         compiler_minimum='0.2.420', cases=cases)
-        manifest['fixtures'] = {'invalid.bin': 'ff00c328800a', 'nul.bin': '610062', 'chunk.bin': '7800c3a9'}
+        manifest['fixtures'] = {'invalid.bin': 'ff00c328800a', 'zero-bytes.bin': '610062', 'chunk.bin': '7800c3a9'}
         (ROOT / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', newline='\n')
     print(f'Compiled {len(cases)} sample cases')
 

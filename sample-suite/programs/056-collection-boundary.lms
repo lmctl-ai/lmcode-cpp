@@ -1,5 +1,5 @@
 program = _lmcode_ schema="../sample.dsl.json";
-let raw = file_read(sample_tmp() + "/nul.bin") + "é";
+let raw = file_read(sample_tmp() + "/zero-bytes.bin") + "é";
 let original_s = str_list().add(raw);
 let s = host_str_list(original_s);
 print(str(original_s.len()) + ":" + str(s.len()));
