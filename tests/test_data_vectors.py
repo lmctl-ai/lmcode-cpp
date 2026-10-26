@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Require positive-path bytecode coverage for every v2 catalog signature."""
+"""Require positive-path bytecode coverage for every post-v1 catalog signature."""
 import json
 from pathlib import Path
 import runpy
@@ -12,7 +12,7 @@ for area in ['string','math','collections','file']:
 manifest = json.loads((ROOT/'conformance/stdlib-vectors/manifest.json').read_text())
 covered = set()
 for case in manifest['vectors']:
-    if case['name'].startswith('data-') and 'trace' in case.get('expect',{}):
+    if case['name'].startswith(('data-', 'v3-')) and 'trace' in case.get('expect',{}):
         covered |= api['imports'](ROOT/'conformance/stdlib-vectors'/case['bytecode'])
 missing = (canonical-legacy)-covered
 assert not missing, f'new signatures without successful execution coverage: {sorted(missing)}'

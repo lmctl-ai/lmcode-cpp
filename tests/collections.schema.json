@@ -1,7 +1,6 @@
 {
   "dsl.schema": 2,
-  "name": "collections_catalog_test",
-  "context": {},
+  "name": "lmcode_std_collections_v3",
   "types": {
     "StrList": {
       "methods": {
@@ -244,6 +243,18 @@
           {
             "params": [],
             "returns": "StrMap"
+          }
+        ],
+        "keys": [
+          {
+            "params": [],
+            "returns": "StrList"
+          }
+        ],
+        "values": [
+          {
+            "params": [],
+            "returns": "StrList"
           }
         ]
       }

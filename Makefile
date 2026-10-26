@@ -36,6 +36,7 @@ conformance: $(BUILD)/conformance
 	$(BUILD)/conformance conformance/vectors
 	$(BUILD)/conformance conformance/stdlib-vectors
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_data_vectors.py
+	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_v3_vectors.py
 
 clean:
 	rm -rf $(BUILD)
@@ -123,3 +124,23 @@ test-data-stdlib: $(BUILD)/stdlib_containers_test $(BUILD)/stdlib_json_test
 	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_json_test)" json
 
 test: test-data-stdlib
+
+$(BUILD)/stdlib_encoding_test: tests/stdlib_encoding_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+$(BUILD)/stdlib_encoding_header.o: tests/stdlib_encoding_header.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -Werror -I include -c -o $@ $<
+
+$(BUILD)/stdlib_snapshots_test: tests/stdlib_snapshots_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+.PHONY: test-v3-stdlib
+test-v3-stdlib: $(BUILD)/stdlib_encoding_test $(BUILD)/stdlib_encoding_header.o $(BUILD)/stdlib_snapshots_test
+	$(BUILD)/stdlib_encoding_test
+	$(BUILD)/stdlib_snapshots_test
+	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_encoding_test)" encoding
+
+test: test-v3-stdlib

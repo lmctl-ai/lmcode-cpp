@@ -82,6 +82,6 @@ int main(int argc, char** argv) {
   refused([&] { arena.make_float_list(); }, "FloatList object limit exceeded (65536)");
   refused([&] { arena.make_str_map(); }, "StrMap object limit exceeded (65536)");
   arena.reset(); check(arena.size() == 0 && arena.make_str_list()->items.empty());
-  check(r.signatures().size() == 35);
+  check(r.signatures().size() == 37);
   std::cout << "stdlib collections: " << checks << " checks passed\n";
 }

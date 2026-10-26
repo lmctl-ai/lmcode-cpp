@@ -133,6 +133,18 @@
             "params": [],
             "returns": "FloatMap"
           }
+        ],
+        "keys": [
+          {
+            "params": [],
+            "returns": "StrList"
+          }
+        ],
+        "values": [
+          {
+            "params": [],
+            "returns": "FloatList"
+          }
         ]
       }
     },
@@ -341,6 +353,18 @@
           {
             "params": [],
             "returns": "IntMap"
+          }
+        ],
+        "keys": [
+          {
+            "params": [],
+            "returns": "StrList"
+          }
+        ],
+        "values": [
+          {
+            "params": [],
+            "returns": "IntList"
           }
         ]
       }

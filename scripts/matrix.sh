@@ -123,6 +123,6 @@ for row in "${rows[@]}"; do
   read -r sdk tests_result core_result stdlib_result <<< "$row"
   printf '%-10s | %-6s | %-6s | %-6s\n' "$sdk" "$tests_result" "$core_result" "$stdlib_result"
 done
-if (( skipped )); then printf '\n%d SDK stdlib stage(s) SKIPPED: cross-SDK v2 parity remains pending.\n' "$skipped"; fi
+if (( skipped )); then printf '\n%d SDK stdlib stage(s) SKIPPED: cross-SDK current-catalog parity remains pending.\n' "$skipped"; fi
 printf '\nLogs: %s\n' "$log_dir"
 exit "$failed"

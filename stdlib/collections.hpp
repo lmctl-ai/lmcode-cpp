@@ -204,6 +204,18 @@ inline Registry& register_collections(Registry& r, Collections& arena) {
     const size_t pos = found->second; map.index.erase(found); map.remove_rank(pos); --map.active; return Value::boolean(true);
   });
   r.method("StrMap", "clear", {}, "StrMap", [](void* p, Args&) { auto& map = *static_cast<StrMap*>(p); map.items.clear(); map.index.clear(); map.active = 0; map.fenwick.clear(); return Value::object("StrMap", p); });
+  r.method("StrMap", "keys", {}, "StrList", [&arena](void* p, Args&) {
+    const auto& map = *static_cast<StrMap*>(p);
+    std::vector<std::string> values; values.reserve(map.active);
+    for (size_t i = 0; i < map.items.size(); ++i) if (map.live(i)) values.push_back(map.items[i].first);
+    return Value::object("StrList", arena.make_str_list(std::move(values)));
+  });
+  r.method("StrMap", "values", {}, "StrList", [&arena](void* p, Args&) {
+    const auto& map = *static_cast<StrMap*>(p);
+    std::vector<std::string> values; values.reserve(map.active);
+    for (size_t i = 0; i < map.items.size(); ++i) if (map.live(i)) values.push_back(map.items[i].second);
+    return Value::object("StrList", arena.make_str_list(std::move(values)));
+  });
   return r;
 }
 } // namespace dslvm::stdlib

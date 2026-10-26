@@ -54,6 +54,6 @@ printf 'sha256=v1\n' > "$root/lmcode-go/std.lock"
 : > "$scratch/calls"
 "$matrix" "$root" > "$scratch/lagging" 2> "$scratch/progress"
 grep -Eq '^go +\| PASS +\| PASS +\| SKIP' "$scratch/lagging"
-grep -Fq 'cross-SDK v2 parity remains pending' "$scratch/lagging"
+grep -Fq 'cross-SDK current-catalog parity remains pending' "$scratch/lagging"
 [[ $(wc -l < "$scratch/calls") == 12 ]]
 printf 'PASS catalog epoch skip is explicit and does not run incompatible vectors\n'

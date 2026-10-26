@@ -9,6 +9,7 @@
 #include "file.hpp"
 #include "containers.hpp"
 #include "json.hpp"
+#include "encoding.hpp"
 #undef DSLVM_STD_BUILDING
 
 namespace dslvm {
@@ -31,6 +32,7 @@ inline Registry& register_std(Registry& registry) {
   candidate.std_runtime_ = std::make_shared<stdlib::StdRuntime>();
   const auto before = candidate.signatures();
   stdlib::register_string(candidate);
+  stdlib::register_encoding(candidate);
   stdlib::register_math(candidate);
   stdlib::register_collections(candidate, candidate.std_runtime_->collections);
   stdlib::register_file(candidate, candidate.std_runtime_->collections);

@@ -18,6 +18,7 @@ Registry &register_containers(Registry &, Collections &);
 #include <deque>
 #include <limits>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -111,6 +112,32 @@ inline void map(Registry &r, const std::string &t, const std::string &et) {
   r.method(t, "clear", {}, t, [t](void *p, Args &) {
     static_cast<M *>(p)->clear();
     return Value::object(t, p);
+  });
+}
+template <class T>
+inline void map_snapshots(Registry &r, const std::string &t, Collections &a) {
+  using M = TypedMap<T>;
+  r.method(t, "keys", {}, "StrList", [&a](void *p, Args &) {
+    auto &m = *static_cast<M *>(p);
+    std::vector<std::string> values; values.reserve(m.items.size());
+    for (const auto &item : m.items) values.push_back(item.first);
+    return Value::object("StrList", a.make_str_list(std::move(values)));
+  });
+  r.method(t, "values", {}, std::is_same_v<T, std::string> ? "StrList" : (std::is_same_v<T, int64_t> ? "IntList" : "FloatList"), [&a](void *p, Args &) {
+    auto &m = *static_cast<M *>(p);
+    if constexpr (std::is_same_v<T, std::string>) {
+      std::vector<std::string> values; values.reserve(m.items.size());
+      for (const auto &item : m.items) values.push_back(item.second);
+      return Value::object("StrList", a.make_str_list(std::move(values)));
+    } else if constexpr (std::is_same_v<T, int64_t>) {
+      std::vector<int64_t> values; values.reserve(m.items.size());
+      for (const auto &item : m.items) values.push_back(item.second);
+      return Value::object("IntList", a.make_int_list(std::move(values)));
+    } else {
+      std::vector<double> values; values.reserve(m.items.size());
+      for (const auto &item : m.items) values.push_back(item.second);
+      return Value::object("FloatList", a.make_float_list(std::move(values)));
+    }
   });
 }
 template <class T>
@@ -240,6 +267,8 @@ inline void pq(Registry &r, const std::string &t, const std::string &et) {
 inline Registry &register_containers(Registry &r, Collections &a) {
   detail::map<int64_t>(r, "IntMap", "int");
   detail::map<double>(r, "FloatMap", "float");
+  detail::map_snapshots<int64_t>(r, "IntMap", a);
+  detail::map_snapshots<double>(r, "FloatMap", a);
   detail::stack<int64_t>(r, "IntStack", "int");
   detail::stack<double>(r, "FloatStack", "float");
   detail::stack<std::string>(r, "StrStack", "string");
