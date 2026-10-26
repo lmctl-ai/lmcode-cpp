@@ -108,3 +108,10 @@ $(BUILD)/stdlib_file_header.o: tests/stdlib_file_header.cpp include/dslvm.hpp $(
 test-file-stdlib: $(BUILD)/stdlib_file_test $(BUILD)/stdlib_file_header.o
 	python3 -c 'import subprocess,sys; subprocess.run([sys.argv[1]], check=True, timeout=60)' "$(abspath $(BUILD)/stdlib_file_test)"
 	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_file_test)" file
+
+# Reference host is a separate public project; CI checks out a pinned revision.
+REFERENCE_HOST ?= ../lmcode-cpp-sample
+.PHONY: sample-suite
+sample-suite:
+	$(MAKE) -C "$(REFERENCE_HOST)" SDK="$(abspath .)" SUITE="$(abspath sample-suite)" BUILD="$(abspath $(BUILD)/sample-reference)" test
+	python3 -B sample-suite/test_runner.py

@@ -1,0 +1,50 @@
+name: Shared sample corpus
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['durable-memory/**']
+  pull_request:
+    paths-ignore: ['durable-memory/**']
+  workflow_dispatch:
+    inputs:
+      compiler:
+        description: Published compiler version or latest
+        default: '0.2.420'
+        type: string
+  repository_dispatch:
+    types: [lmcode-language-changed]
+permissions:
+  contents: read
+jobs:
+  sample:
+    runs-on: ubuntu-24.04
+    env:
+      LMSCRIPT_VERSION: ${{ inputs.compiler || github.event.client_payload.compiler || '0.2.420' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: lmcode-cpp
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: lmctl-ai/lmcode-cpp-sample
+          ref: e010dfdbcfbf6b61d233afcf330af0e88181650f
+          path: lmcode-cpp-sample
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm install --global "@lmctl-ai/lmctl@$LMSCRIPT_VERSION"
+      - name: Run current SDK and canonical corpus against the pinned reference host
+        run: make -C lmcode-cpp sample-suite
+      - name: Recompile source wrappers with the selected language compiler
+        run: |
+          python3 -B lmcode-cpp/sample-suite/compile.py --output "$RUNNER_TEMP/fresh-bytecode"
+          python3 - "$RUNNER_TEMP/fresh-bytecode" <<'PY'
+          import pathlib,sys
+          original=pathlib.Path('lmcode-cpp/sample-suite/bytecode')
+          fresh=pathlib.Path(sys.argv[1])
+          assert {p.name for p in original.glob('*.dslb')}=={p.name for p in fresh.glob('*.dslb')}
+          for p in original.glob('*.dslb'):
+              assert p.read_bytes()==(fresh/p.name).read_bytes(), 'compiler drift: '+p.name
+          PY

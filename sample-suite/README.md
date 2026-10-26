@@ -97,3 +97,21 @@ first compiler-emitted program, never hand-authored executable bytecode.
 | [048-math-derived](programs/048-math-derived.lms) | all 18 MATH opcodes; int/float widening |
 | [090-bad-bytecode](bytecode/090-bad-bytecode.dslb) | loader bad-bytecode |
 | [091-schema-mismatch](bytecode/091-schema-mismatch.dslb) | loader schema-mismatch |
+
+## CI entry points
+
+SDK pushes/PRs run `.github/workflows/sample-suite.yml` against a pinned reference
+host source, the **current** SDK/header and this canonical corpus. That makes a
+new standard signature without a corpus import a CI failure. The reference
+sample also runs its vendored snapshot natively on Linux/macOS/Windows.
+After a compiler/language change, its release pipeline can send the
+`lmcode-language-changed` repository_dispatch event with `compiler` in the payload;
+or the language owner runs:
+
+```sh
+gh workflow run sample-suite.yml -R lmctl-ai/lmcode-cpp -f compiler=latest
+```
+
+The job recompiles sources and rejects bytecode drift for explicit review; it
+never silently regenerates oracle files. Each additional sample should run the
+same `run-suite.sh` in its own CI and sync the reviewed suite lock on updates.

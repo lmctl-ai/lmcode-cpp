@@ -203,3 +203,40 @@ Every `dslvm::Registry` now includes the 72-signature standard by default. `Regi
 `stdlib/file.hpp` supplies built-in `file_read`, `file_write`, `file_append`, `file_exists`, and `file_lines`: raw bytes, native paths, no newline translation. LF splitting preserves CR and a trailing empty field; failures report function, original path and OS reason.
 
 The [generated std reference](docs/std.md) lists every built-in signature, its byte semantics, and errors.
+
+## Complete teaching host and shared integration corpus
+
+Start at [lmcode-cpp-sample](https://github.com/lmctl-ai/lmcode-cpp-sample) for a
+small C++17 shop/ledger host and a ten-step embedding guide. Its vendored copy of
+[`sample-suite/`](sample-suite/README.md) is shared by the C, C++, Rust, Go, C#,
+Java, Kotlin and Scala samples. The canonical suite lives here: 48 programs plus
+two loader mutations, exact stdout/exit fixtures, CLI protocol checks and an audit
+that every one of the 72 std signatures occurs in actual bytecode imports.
+
+```sh
+# With the C++ sample checked out beside this SDK:
+make sample-suite
+# Or run any host implementation against these exact bytes:
+./sample-suite/run-suite.sh /path/to/host
+```
+
+Compiler/language changes must recompile and review this corpus, then run every
+sample port. New std functions fail the import audit until covered. The C++
+reference's initial 50 outputs also matched an independent Go SDK host exactly.
+
+### C embedding API
+
+C hosts include [`include/lmcode_c.h`](include/lmcode_c.h) and link the small
+C++ implementation [`src/lmcode_c.cpp`](src/lmcode_c.cpp). Opaque registry,
+context and program handles expose the same VM, typed function-pointer callbacks,
+default standard catalog, optional testing sink, and located errors. Strings are
+length-counted; object pointers remain application-owned. Keep the registry alive
+until all programs using it are destroyed. See the header for buffer lifetimes.
+
+```sh
+make test-c-api   # compiles tests/lmcode_c_api_test.c as C11, then links C++17
+```
+
+The C caller test executes overloads, object/context callbacks, host errors with
+source locations, load/schema errors, print bytes including NUL/LF, and exact JSON
+reporting. The C API is part of `make test`, not an independent interpreter.
