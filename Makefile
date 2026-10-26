@@ -45,6 +45,7 @@ conformance: $(BUILD)/conformance
 	PYTHONDONTWRITEBYTECODE=1 python3 scripts/gen-std-corpus.py --check
 	$(BUILD)/conformance conformance/vectors
 	$(BUILD)/conformance conformance/stdlib-vectors
+	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_data_vectors.py
 
 clean:
 	rm -rf $(BUILD)
@@ -115,3 +116,20 @@ REFERENCE_HOST ?= ../lmcode-cpp-sample
 sample-suite:
 	$(MAKE) -C "$(REFERENCE_HOST)" SDK="$(abspath .)" SUITE="$(abspath sample-suite)" BUILD="$(abspath $(BUILD)/sample-reference)" test
 	python3 -B sample-suite/test_runner.py
+
+$(BUILD)/stdlib_containers_test: tests/stdlib_containers_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+$(BUILD)/stdlib_json_test: tests/stdlib_json_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+.PHONY: test-data-stdlib
+test-data-stdlib: $(BUILD)/stdlib_containers_test $(BUILD)/stdlib_json_test
+	$(BUILD)/stdlib_containers_test
+	$(BUILD)/stdlib_json_test
+	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_containers_test)" containers
+	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_json_test)" json
+
+test: test-data-stdlib

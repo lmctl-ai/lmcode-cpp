@@ -46,3 +46,14 @@ fi
 grep -Eq '^go +\| FAIL +\| FAIL +\| FAIL' "$scratch/missing"
 [[ $(grep -c 'PASS.*PASS.*PASS' "$scratch/missing") == 3 ]]
 printf 'PASS 3 matrix orchestration cases (success, failing command, missing checkout; paths with spaces)\n'
+
+# A catalog epoch mismatch is reported as pending, never a green stdlib stage.
+unset LMCODE_GO
+for sdk in cpp rust go csharp; do printf 'sha256=v2\n' > "$root/lmcode-$sdk/std.lock"; done
+printf 'sha256=v1\n' > "$root/lmcode-go/std.lock"
+: > "$scratch/calls"
+"$matrix" "$root" > "$scratch/lagging" 2> "$scratch/progress"
+grep -Eq '^go +\| PASS +\| PASS +\| SKIP' "$scratch/lagging"
+grep -Fq 'cross-SDK v2 parity remains pending' "$scratch/lagging"
+[[ $(wc -l < "$scratch/calls") == 12 ]]
+printf 'PASS catalog epoch skip is explicit and does not run incompatible vectors\n'

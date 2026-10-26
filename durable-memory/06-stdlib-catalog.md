@@ -245,3 +245,11 @@ Compaction before insertion when physical slots exceed `2 * live + 1024`
 bounds retained history; the all-live Fenwick index rebuild is O(n). Native
 C++/Rust adapters use map `set` and `entries` rather than editing `.items`.
 Go `Entries` returns a snapshot; C# `Entries` remains a live read-only view.
+
+
+## Version 2 document/container catalog
+
+The canonical v2 fragment has 171 signatures: the original 72 plus 99 for IntMap/FloatMap, nine Int/Float/Str Stack/Queue/PQ types, and immutable Json. `containers.hpp` and `json.hpp` are installed by default through `std.hpp`; optional testing stays separate. `std/std.lock` is the canonical digest lock, with byte-identical root `std.lock` retained for existing sync clients.
+New objects use the same registry-owned 65,536-object/run arena. Json roots count once, navigation borrows nodes, and keys allocates a StrList; failed parsing does not consume a slot. Float parsing uses a private C numeric locale; compact JSON preserves raw key/value string and numeric token spellings. UTF-8 errors identify the start of the malformed byte sequence.
+Stacks/queues iterate in non-consuming pop order through len/at. PQs use a stable min heap, treat signed-zero priorities as equal, and reject nonfinite priorities or exhausted insertion sequence without mutation; clear resets the sequence. Typed maps preserve insertion order on overwrite and append on reinsertion.
+The literal/data contract is in lmctl-mono requirements/design `lmcode-literals.md` (d15a0ab1, amended 2acccdb2). Shared v2 vectors declare the complete catalog explicitly, so lmscript 0.2.420 can compile their literal-free calls before its bundle changes. Matrix stdlib stages whose SDK digest differs are explicitly SKIP, never v2 PASS; their legacy unit/core stages still run. Runtime ports and sample-host SDK pin updates are required before cross-SDK v2 interoperability can be claimed.

@@ -86,14 +86,22 @@ struct StrMap {
 // Stable addresses for the whole run. Keep this arena and its registry alive
 // while any handle is in use. Reset only between runs, after all handles expire.
 struct Collections {
+  std::vector<std::shared_ptr<void>> objects;
   std::deque<StrList> str_lists;
   std::deque<IntList> int_lists;
   std::deque<FloatList> float_lists;
   std::deque<StrMap> str_maps;
-  size_t size() const { return str_lists.size() + int_lists.size() + float_lists.size() + str_maps.size(); }
-  void reset() { str_lists.clear(); int_lists.clear(); float_lists.clear(); str_maps.clear(); }
+  size_t size() const { return objects.size() + str_lists.size() + int_lists.size() + float_lists.size() + str_maps.size(); }
+  void reset() { objects.clear(); str_lists.clear(); int_lists.clear(); float_lists.clear(); str_maps.clear(); }
   void reserve_object(const char* type) const {
     if (size() >= 65536) throw Error(std::string(type) + " object limit exceeded (65536)");
+  }
+  template<class T, class... Args> T* make_object(const char* type, Args&&... args) {
+    reserve_object(type);
+    auto value = std::make_shared<T>(std::forward<Args>(args)...);
+    auto* pointer = value.get();
+    objects.push_back(std::move(value));
+    return pointer;
   }
   StrList* make_str_list(std::vector<std::string> values = {}) { reserve_object("StrList"); str_lists.push_back({std::move(values)}); return &str_lists.back(); }
   IntList* make_int_list(std::vector<int64_t> values = {}) { reserve_object("IntList"); int_lists.push_back({std::move(values)}); return &int_lists.back(); }
