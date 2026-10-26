@@ -324,6 +324,15 @@
     ],
     "108-json-kind-expected-fail.lms": [
       "Json kind trap"
+    ],
+    "064-money-invalid-float.lms": [
+      "nonfinite Money factory error"
+    ],
+    "065-price-invalid-float.lms": [
+      "nonfinite overloaded price error"
+    ],
+    "066-record-null-money.lms": [
+      "null argument callback error"
     ]
   },
   "canonical_signatures": [
@@ -441,7 +450,10 @@
     "063-wrong-runtime-handle.lms",
     "106-stack-empty-expected-fail.lms",
     "107-pq-priority-expected-fail.lms",
-    "108-json-kind-expected-fail.lms"
+    "108-json-kind-expected-fail.lms",
+    "064-money-invalid-float.lms",
+    "065-price-invalid-float.lms",
+    "066-record-null-money.lms"
   ],
   "exit_codes": {
     "030-negative-balance-expected-fail.lms": 4

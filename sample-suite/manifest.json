@@ -741,9 +741,9 @@
     {
       "name": "054-megabyte-string",
       "source": "programs/054-megabyte-string.lms",
-      "source_sha256": "e1dd60cb5bde82d20c4664eb0c4b701597096a8ebf6a62727c0bf3989672db16",
+      "source_sha256": "a2f0cba932c62b0ca344edcd62acbb2d8ecb09ac8c6f360622cadb348ce19715",
       "bytecode": "bytecode/054-megabyte-string.dslb",
-      "bytecode_sha256": "60d05528112b78ac2f80a17104492eb0614729905d48e87bb7508413b6cc9373",
+      "bytecode_sha256": "848455a21196c9c4a185ed80ec85279194d68f18e36374c120ee4455a13a53da",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -765,9 +765,9 @@
     {
       "name": "056-collection-boundary",
       "source": "programs/056-collection-boundary.lms",
-      "source_sha256": "a28685d73a584a8c9b98fa113d51e03eb4f0dfcc885b1a935b09e74a8a6950f5",
+      "source_sha256": "8a0d2fa5f75562a9625640e6ce75fe810b8017c1ecfb0b3168cef4be15f0638d",
       "bytecode": "bytecode/056-collection-boundary.dslb",
-      "bytecode_sha256": "c1bccbed9ed191288e680af6cfd0b7e225b7ffa4cd5f18e3d8d8f356533ba676",
+      "bytecode_sha256": "04dd01c9a5b2a75dd25464dd74d974d1caac9bd3c47a65ee09059761d6f7d1ed",
       "expected_exit": 0,
       "timeout_seconds": 30,
       "features": [
@@ -857,6 +857,42 @@
       "timeout_seconds": 30,
       "features": [
         "dynamic wrong handle type runtime failure"
+      ]
+    },
+    {
+      "name": "064-money-invalid-float",
+      "source": "programs/064-money-invalid-float.lms",
+      "source_sha256": "8ff7cc2297c376469da9f850e5ccda93fa996dd524fb42944a9e56f2601b1a0a",
+      "bytecode": "bytecode/064-money-invalid-float.dslb",
+      "bytecode_sha256": "2cc0eb7c290e24118e2fe9e4c1abb2f4fc8d94c98d1d8a14da304f9d5dc77a5e",
+      "expected_exit": 3,
+      "timeout_seconds": 30,
+      "features": [
+        "nonfinite Money factory error"
+      ]
+    },
+    {
+      "name": "065-price-invalid-float",
+      "source": "programs/065-price-invalid-float.lms",
+      "source_sha256": "9087d745a02c0ea141a62ef2e3738ad90d23d9a418c3eae809ff282030240618",
+      "bytecode": "bytecode/065-price-invalid-float.dslb",
+      "bytecode_sha256": "6b55c3ad641a88de5a91f9c526433c29774874795fea38b9ba1a4d12078e6243",
+      "expected_exit": 3,
+      "timeout_seconds": 30,
+      "features": [
+        "nonfinite overloaded price error"
+      ]
+    },
+    {
+      "name": "066-record-null-money",
+      "source": "programs/066-record-null-money.lms",
+      "source_sha256": "be63ba4c3b4f5ae2ca32311c30c52262e7d00ae10d341b4fa83704d6e9623343",
+      "bytecode": "bytecode/066-record-null-money.dslb",
+      "bytecode_sha256": "1b01a909ac6f67efa3453030ac5be12fe6a80b9b75fd83a656219b9934c1f4b6",
+      "expected_exit": 3,
+      "timeout_seconds": 30,
+      "features": [
+        "null argument callback error"
       ]
     },
     {

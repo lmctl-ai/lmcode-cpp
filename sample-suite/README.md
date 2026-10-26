@@ -31,7 +31,7 @@ traces. Call arguments are an argv array, not a shell string. Each case has a
    The manifest independently declares expected exits: recording cannot bless an
    unexpected crash/error as success. Normal tests never regenerate expectations.
 5. Run the corpus on at least one other SDK before accepting the oracle.
-   Initial validation: C++ and Go matched all 66 cases exactly.
+   Initial validation: C++ and Go matched all 77 cases exactly.
 6. Commit sources, bytecode, manifest and expectations together. Sync the pinned
    suite into every sample and run every port's CI. `audit.py` parses actual
    bytecode import tables and fails if any canonical std signature is uncovered.

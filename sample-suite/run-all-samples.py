@@ -146,17 +146,18 @@ def main():
         print(f"FAIL setup: {error}", file=sys.stderr)
         return 2
 
-    report = {"ports": {}, "cases": len(cases), "ok": True, "skipped": []}
+    report = {"ports": {}, "cases": len(cases), "ok": True, "pending": []}
     std_path = Path(env.get("SAMPLE_STD_SCHEMA", ROOT.parent / "std/lmcode-std.schema.json"))
     target_digest = hashlib.sha256(std_path.read_bytes()).hexdigest() if std_path.exists() else None
     audit = runpy.run_path(str(corpus / "audit.py"))
     target_std = audit["signatures"](json.loads(std_path.read_text())) if std_path.exists() else set()
     legacy_std = legacy_signature_set() if target_std else set()
 
-    def skip_port(lang, entry):
-        entry.update(skipped=True, reason="released v1 SDK catalog; v2 port pending", ok=False)
-        report["skipped"].append(lang)
-        print(f"SKIP {lang}: {entry['reason']}")
+    def pending_port(lang, entry):
+        entry.update(pending=True, reason="released v1 SDK catalog; v2 port pending", ok=False)
+        report["pending"].append(lang)
+        report["ok"] = False
+        print(f"FAIL {lang}: {entry['reason']}")
     actual_by_case = {}
     for lang in LANGS:
         repo = Path(env.get(f"SAMPLE_{lang.upper()}_DIR", root / f"lmcode-{lang}-sample")).expanduser().resolve()
@@ -174,7 +175,7 @@ def main():
             print(f"FAIL {lang}: {entry['error']}")
             continue
         if target_digest and target_digest != LEGACY_STD_SHA256 and pinned_digest == LEGACY_STD_SHA256:
-            skip_port(lang, entry)
+            pending_port(lang, entry)
             continue
         try:
             build = build_for(lang, repo, env)
@@ -198,7 +199,7 @@ def main():
                 probe = subprocess.run([*command, "--dsl-signatures"], env=env, cwd=repo, capture_output=True, text=True, timeout=30)
                 observed = set(probe.stdout.splitlines())
                 if probe.returncode == 0 and legacy_std <= observed and not ((target_std - legacy_std) & observed):
-                    skip_port(lang, entry)
+                    pending_port(lang, entry)
                     continue
             # The port's own protocol and canonical runner are mandatory checks.
             checker = corpus / "protocol.py"
@@ -252,15 +253,15 @@ def main():
         values = []
         for lang in LANGS:
             good = row.get(lang, {}).get('ok', False) and not report['ports'][lang].get('protocol_suite_exit', 1)
-            values.append('SKIP' if report['ports'][lang].get('skipped') else 'PASS' if good else 'FAIL')
+            values.append('FAIL' if report['ports'][lang].get('pending') else 'PASS' if good else 'FAIL')
         print(f'{name:<38} ' + ' '.join(f'{value:>7}' for value in values))
     print("\nPORT MATRIX")
     print("port     build  suite  cases")
     for lang, item in report["ports"].items():
-        status = "SKIP" if item.get("skipped") else "PASS" if item["ok"] else "FAIL"
+        status = "FAIL" if item.get("pending") else "PASS" if item["ok"] else "FAIL"
         print(f"{lang:<8} {item.get('build_exit', 'FAIL')!s:<6} {item.get('protocol_suite_exit', 'FAIL')!s:<6} {status}")
-    if report["skipped"]:
-        print("Cross-port v2 interoperability pending: " + ", ".join(report["skipped"]))
+    if report["pending"]:
+        print("Cross-port v2 interoperability pending: " + ", ".join(report["pending"]))
     print(json.dumps(report, indent=2))
     return 0 if report["ok"] else 1
 

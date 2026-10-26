@@ -12,10 +12,10 @@ let original_f = float_list().add(-0.0).add(2.5);
 let f = host_float_list(original_f);
 print(str(original_f.len()) + ":" + str(f.len()));
 print(str(f.at(0)) + ":" + str(f.at(1)) + ":" + str(f.at(2)));
-let original_m = str_map().set("a", raw);
+let original_m = str_map().set("ledger-key", raw);
 let m = host_str_map(original_m);
 print(str(original_m.len()) + ":" + str(m.len()));
-print(host_hex(m.get("a")) + ":" + m.get("host"));
+print(host_hex(m.get("ledger-key")) + ":" + m.get("host"));
 print(m.key_at(0) + ":" + m.key_at(1));
 end _lmcode_
 savedsl(program, ARGV[0]);
