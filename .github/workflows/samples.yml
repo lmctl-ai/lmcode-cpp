@@ -9,7 +9,7 @@ on:
       - 'std/**'
       - 'conformance/**'
       - 'sample-suite/**'
-      - 'run-all-samples.*'
+      - 'sample-suite/run-all-samples.*'
 
 permissions:
   contents: read
