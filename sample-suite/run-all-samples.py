@@ -132,7 +132,7 @@ def legacy_signature_set():
         if not path.exists():
             return set()
         result.update(audit["signatures"](json.loads(path.read_text())))
-    return result
+    return {signature for signature in result if not signature.startswith(("method StrMap.keys(", "method StrMap.values("))}
 
 
 def selected_ports(value):
@@ -184,7 +184,7 @@ def main():
     legacy_std = legacy_signature_set() if target_std else set()
 
     def pending_port(lang, entry):
-        entry.update(pending=True, reason="released v1 SDK catalog; v2 port pending", ok=False)
+        entry.update(pending=True, reason="released v1 SDK catalog; current std port pending", ok=False)
         report["pending"].append(lang)
         report["ok"] = False
         print(f"FAIL {lang}: {entry['reason']}")
@@ -289,7 +289,7 @@ def main():
         status = "FAIL" if item.get("pending") else "PASS" if item["ok"] else "FAIL"
         print(f"{lang:<8} {item.get('build_exit', 'FAIL')!s:<6} {item.get('protocol_suite_exit', 'FAIL')!s:<6} {status}")
     if report["pending"]:
-        print("Cross-port v2 interoperability pending: " + ", ".join(report["pending"]))
+        print("Cross-port current-catalog interoperability pending: " + ", ".join(report["pending"]))
     print(json.dumps(report, indent=2))
     return 0 if report["ok"] else 1
 

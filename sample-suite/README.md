@@ -188,3 +188,5 @@ A verified 72-signature v1 compiler reports literal-feature cases as SKIP while
 reproducing all compatible cases. A v2 or otherwise unknown compiler failure is
 an error; `LMCODE_REQUIRE_LITERAL_COMPILER=1` also makes v1 gaps fatal. Runtime
 execution always covers the entire corpus, regardless of compiler capabilities.
+
+Std v3 adds programs 301–305: strict byte codecs, all six map snapshots, independent mutation and exact decoder errors. The current C++ reference passes 87 cases (84 programs and three loader mutations); v3 support in the other seven ports remains pending.
