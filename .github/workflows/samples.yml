@@ -9,7 +9,7 @@ on:
       - 'std/**'
       - 'conformance/**'
       - 'sample-suite/**'
-      - 'sample-suite/run-all-samples.*'
+      - '.github/workflows/samples.yml'
 
 permissions:
   contents: read
@@ -17,6 +17,8 @@ permissions:
 jobs:
   samples:
     runs-on: ubuntu-24.04
+    env:
+      SAMPLE_REPO_ROOT: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -44,31 +46,21 @@ jobs:
         with: { go-version: 'stable' }
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: { node-version: '24' }
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1
       - name: Install required cross-port toolchains and pinned compiler
         run: |
           rustup toolchain install stable --profile minimal
           sudo apt-get update
-          sudo apt-get install -y dotnet-sdk-8.0
-          curl -fL --retry 3 https://github.com/JetBrains/kotlin/releases/download/v2.2.21/kotlin-compiler-2.2.21.zip -o "$RUNNER_TEMP/kotlin.zip"
-          echo "a623871f1cd9c938946948b70ef9170879f0758043885bbd30c32f024e511714  $RUNNER_TEMP/kotlin.zip" | sha256sum -c -
-          unzip -q "$RUNNER_TEMP/kotlin.zip" -d "$RUNNER_TEMP/kotlin"
-          curl -fL --retry 3 https://github.com/scala/scala3/releases/download/3.3.6/scala3-3.3.6.tar.gz -o "$RUNNER_TEMP/scala.tar.gz"
-          echo "7267524240ee289976fed1b8bc08c0045d5d290d3faee07c6b7137a4252b5b97  $RUNNER_TEMP/scala.tar.gz" | sha256sum -c -
-          tar -xzf "$RUNNER_TEMP/scala.tar.gz" -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/kotlin/kotlinc/bin" >> "$GITHUB_PATH"
-          echo "$RUNNER_TEMP/scala3-3.3.6/bin" >> "$GITHUB_PATH"
-          npm install --global @lmctl-ai/lmctl@0.2.420
+          sudo apt-get install -y dotnet-sdk-8.0 maven
+          npm install --global @lmctl-ai/lmctl@0.2.426
           lmscript --version
-      - name: Run every sample port and compare canonical/cross-port behavior
+      - name: Matrix orchestration regression tests
         working-directory: lmcode-cpp
-        env:
-          SAMPLE_REPO_ROOT: ${{ github.workspace }}
-          SAMPLE_CPP_DIR: ${{ github.workspace }}/lmcode-cpp-sample
-          SAMPLE_C_DIR: ${{ github.workspace }}/lmcode-c-sample
-          SAMPLE_RUST_DIR: ${{ github.workspace }}/lmcode-rust-sample
-          SAMPLE_GO_DIR: ${{ github.workspace }}/lmcode-go-sample
-          SAMPLE_CSHARP_DIR: ${{ github.workspace }}/lmcode-csharp-sample
-          SAMPLE_JAVA_DIR: ${{ github.workspace }}/lmcode-java-sample
-          SAMPLE_KOTLIN_DIR: ${{ github.workspace }}/lmcode-kotlin-sample
-          SAMPLE_SCALA_DIR: ${{ github.workspace }}/lmcode-scala-sample
+        run: python3 -B tests/test_run_all_samples.py
+      - name: Verify caught-up ports against the complete corpus
+        working-directory: lmcode-cpp
+        run: ./sample-suite/run-all-samples.sh --ports c,cpp,rust,go,csharp,java
+      - name: Report every sample port and compare actual output bytes
+        if: always()
+        working-directory: lmcode-cpp
         run: ./sample-suite/run-all-samples.sh --all
