@@ -6,7 +6,7 @@ by pinned hash (see "Consuming it").
 
 ## Status
 
-Experimental. The current runtime reads bytecode version 5 only; older and newer versions are refused. Use a matching
+Experimental. The current runtime reads bytecode version 6 only; older and newer versions are refused. Use a matching
 `lmscript` compiler from the published `@lmctl-ai/lmctl` npm package. The published compiler requires Node.js >=24.15.0.
 
 ## Build
@@ -28,7 +28,7 @@ SHA-256 binding).
 | **Bytecode Conformance Suite** | **Unit Tests & Invariants** |
 | --- | --- |
 | <img src="docs/images/conformance.png" width="440" alt="Bytecode Conformance Suite"> | <img src="docs/images/unit-tests.png" width="440" alt="Unit Tests & Invariants"> |
-| All 51 core bytecode vectors pass across opcodes, types, error paths, and control flow.<br>`make conformance` | 103 unit tests verifying VM type invariants, line tables, and registry semantics.<br>`make test` |
+| All 61 core bytecode vectors pass across opcodes, types, rule entries, error paths, and control flow.<br>`make conformance` | 115 unit tests verifying VM type invariants, line tables, and registry semantics.<br>`make test` |
 
 | **Standard Library Conformance** | **Same Bytecode, Four Runtimes** |
 | --- | --- |
@@ -76,10 +76,29 @@ those fields; a zero column means the line is known and only `line` is emitted. 
 
 ## Versioning rule
 
-`dslvm::VERSION` is the bytecode format version this SDK reads. The SDK version equals that number (currently 5) and the
+`dslvm::VERSION` is the bytecode format version this SDK reads. The SDK version equals that number (currently 6) and the
 loader refuses every other version: there is no backward compatibility. When the compiler's format changes, the compiler,
-this header and every host move together. Version 5 includes structured `while` and `range` loops, lexical `break` and
-`continue`, integer and floating-point math, typed imports, and line tables.
+this header and every host move together. Version 6 adds the rule entry table to version 5's structured `while` and `range`
+loops, lexical `break` and `continue`, integer and floating-point math, typed imports, and line tables.
+
+## Rule entries (v6)
+
+An annotated rule (`@KIND fn r(...) -> R implements I`) compiles to an entry in the file's entries section: a
+self-contained mini-program (own locals, `max_stack`, code ending with HALT, own line table) sharing the file's constant,
+import and context pools. Parameters are the unhidden locals `0..nparams-1`, stored by the host before the call; a
+non-void rule's result is the single value on the operand stack at HALT. The loader verifies each entry exactly like the
+body, plus one rule: the stack depth at HALT is 0 for a `-> void` interface and 1 otherwise.
+
+```cpp
+struct Entry { std::string name, annotation, iface, returns; std::vector<std::string> params; };  // Program::Entry
+const std::vector<Program::Entry>& entries = program.entries();        // source order
+dslvm::Value v = program.call(i, ctx, reg, {dslvm::Value::integer(41)}); // runs entry i with args in its parameter slots
+```
+
+`call()` shares one interpreter with `run()` (dry mode, RunStats, std run scope and located errors behave the same),
+returns `Value::none()` for a void interface, and treats a wrong argument count or out-of-range index as a host
+programming error (`RUN_HOST`, naming the entry). Argument kinds are not checked (the host built them from its own
+schema). `run()` is unchanged and executes only the body.
 
 ## What load() guarantees
 
@@ -97,7 +116,7 @@ Integer arithmetic is 64-bit two's complement and wraps; division and remainder 
 ## Test
 
     make test           # native runtime and optional string catalog tests
-    make conformance    # 51 core runtime vectors and 77 standard catalog vectors
+    make conformance    # 61 core runtime vectors and 267 standard catalog vectors
     make test-string-stdlib # stdlib/string.hpp unit cases and schema/registry/compiler signature parity
 
 ## Standard library catalog
@@ -185,7 +204,7 @@ This project, including `include/dslvm.hpp` and the optional `stdlib/` catalog, 
 
 ## Sibling runtimes
 
-The same bytecode v5 and the same conformance vectors are implemented by [lmcode-cpp](https://github.com/lmctl-ai/lmcode-cpp),
+The same bytecode v6 and the same conformance vectors are implemented by [lmcode-cpp](https://github.com/lmctl-ai/lmcode-cpp),
 [lmcode-rust](https://github.com/lmctl-ai/lmcode-rust), [lmcode-go](https://github.com/lmctl-ai/lmcode-go) and
 [lmcode-csharp](https://github.com/lmctl-ai/lmcode-csharp). Each is a library that turns an AOT executable into an lmscript host.
 

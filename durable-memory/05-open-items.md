@@ -9,4 +9,6 @@
    067-rule-methods, and the compile-errors/rule-method-mismatch diagnostic pin. Bytecode stays DSLB v5, but the schema-hash
    change invalidated every pinned `.dslb`; the corpus was recompiled with the lmctl-mono rule-methods compiler. Source
    reproduction needs that compiler via `LMSCRIPT_BIN` until an npm release contains the feature, and the updated suite must
-   still be synced (suite.lock) into all eight sample ports with each port's CI rerun.
+   still be synced (suite.lock) into all eight sample ports with each port's CI rerun. Superseded 2026-10-28 by the
+   v6 rule entry table ([12](12-dslb-v6-rule-entries.md)): annotated rules now compile to entries and the whole
+   corpus is v6.

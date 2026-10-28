@@ -1,13 +1,13 @@
 # lmcode-cpp durable memory
 
-This repository contains the canonical, header-only C++ runtime (`cpp/dslvm.hpp`), native tests, standard library catalog modules, and language-neutral conformance fixtures for lmscript bytecode (format version 5).
+This repository contains the canonical, header-only C++ runtime (`cpp/dslvm.hpp`), native tests, standard library catalog modules, and language-neutral conformance fixtures for lmscript bytecode (format version 6).
 Repository: https://github.com/lmctl-ai/lmcode-cpp.
 
 ## 60-second takeover
 
 ```sh
 make test                             # Unit tests, assembler checks, string catalog tests
-make conformance                      # Run language-neutral conformance vectors (51/51)
+make conformance                      # Run language-neutral conformance vectors (61 core + 267 stdlib)
 scripts/matrix.sh                     # Cross-SDK verification across cpp, rust, go, csharp
 ```
 
@@ -27,12 +27,13 @@ scripts/matrix.sh                     # Cross-SDK verification across cpp, rust,
 | [09-compiler-readiness-results.md](09-compiler-readiness-results.md) | Host-by-host compiler readiness results and baseline status (data: [09-compiler-readiness-results.json](09-compiler-readiness-results.json)) |
 | [10-std-migration-validation.md](10-std-migration-validation.md) | Standard library host migration validation plan and oracle verification |
 | [tools/README.md](tools/README.md) | The sweep, the rename-audit driver and the site-migration scripts |
+| [12-dslb-v6-rule-entries.md](12-dslb-v6-rule-entries.md) | DSLB v6 rule entry table: format, loader/verifier rules, entries()/call() API, sample-suite dispatch |
 
 ## Adding a conformance vector or function
 
 ### Adding a conformance vector
 1. Create a vector folder under `conformance/vectors/<suite>/<name>/`.
-2. Provide source file, compiled bytecode v5, expected stdout/trace, and `manifest.json`.
+2. Provide source file, compiled bytecode v6, expected stdout/trace, and `manifest.json`.
 3. Run `make conformance` to ensure the vector passes in the C++ test runner.
 4. Run `scripts/matrix.sh` to verify cross-SDK conformance across Go, Rust, and C#.
 
