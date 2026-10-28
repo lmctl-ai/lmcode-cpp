@@ -7,7 +7,7 @@ Repository: https://github.com/lmctl-ai/lmcode-cpp.
 
 ```sh
 make test                             # Unit tests, assembler checks, string catalog tests
-make conformance                      # Run language-neutral conformance vectors (61 core + 267 stdlib)
+make conformance                      # Run language-neutral conformance vectors (70 core + 267 stdlib)
 scripts/matrix.sh                     # Cross-SDK verification across cpp, rust, go, csharp
 ```
 
