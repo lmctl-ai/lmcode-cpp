@@ -50,8 +50,10 @@ skipped=0
 std_compatible() {
   local directory=$1
   [[ ! -f "$cpp_dir/std.lock" ]] && return 0 # synthetic/legacy matrix fixtures
-  [[ -f "$directory/std.lock" ]] || return 1
-  [[ $(sed -n 's/^sha256=//p' "$directory/std.lock" | tr -d '\r') == $(sed -n 's/^sha256=//p' "$cpp_dir/std.lock" | tr -d '\r') ]]
+  local lock="$directory/std.lock"
+  [[ -f "$lock" ]] || lock="$directory/std/std.lock"
+  [[ -f "$lock" ]] || return 1
+  [[ $(sed -n 's/^sha256=//p' "$lock" | tr -d '\r') == $(sed -n 's/^sha256=//p' "$cpp_dir/std.lock" | tr -d '\r') ]]
 }
 
 stdlib_stage() {

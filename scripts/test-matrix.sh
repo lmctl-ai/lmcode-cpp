@@ -57,3 +57,28 @@ grep -Eq '^go +\| PASS +\| PASS +\| SKIP' "$scratch/lagging"
 grep -Fq 'cross-SDK current-catalog parity remains pending' "$scratch/lagging"
 [[ $(wc -l < "$scratch/calls") == 12 ]]
 printf 'PASS catalog epoch skip is explicit and does not run incompatible vectors\n'
+
+# C# keeps the same canonical digest in std/std.lock rather than SDK-root std.lock.
+printf 'sha256=v2\n' > "$root/lmcode-go/std.lock"
+mkdir -p "$root/lmcode-csharp/std"
+mv "$root/lmcode-csharp/std.lock" "$root/lmcode-csharp/std/std.lock"
+: > "$scratch/calls"
+"$matrix" "$root" > "$scratch/nested" 2> "$scratch/progress"
+if ! grep -Eq '^csharp +\| PASS +\| PASS +\| PASS' "$scratch/nested"; then
+  echo 'FAIL matching nested std/std.lock was skipped' >&2; exit 1
+fi
+[[ $(wc -l < "$scratch/calls") == 13 ]]
+printf 'sha256=v1\n' > "$root/lmcode-csharp/std/std.lock"
+: > "$scratch/calls"
+"$matrix" "$root" > "$scratch/nested-mismatch" 2> "$scratch/progress"
+grep -Eq '^csharp +\| PASS +\| PASS +\| SKIP' "$scratch/nested-mismatch"
+[[ $(wc -l < "$scratch/calls") == 12 ]]
+rm "$root/lmcode-csharp/std/std.lock"
+"$matrix" "$root" > "$scratch/no-lock" 2> "$scratch/progress"
+grep -Eq '^csharp +\| PASS +\| PASS +\| SKIP' "$scratch/no-lock"
+# Existing root lock remains authoritative if both layouts are present.
+printf 'sha256=v1\n' > "$root/lmcode-csharp/std.lock"
+printf 'sha256=v2\n' > "$root/lmcode-csharp/std/std.lock"
+"$matrix" "$root" > "$scratch/root-precedence" 2> "$scratch/progress"
+grep -Eq '^csharp +\| PASS +\| PASS +\| SKIP' "$scratch/root-precedence"
+printf 'PASS nested lock match, mismatch, absence and root-lock precedence\n'
