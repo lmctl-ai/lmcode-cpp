@@ -186,11 +186,15 @@ static std::vector<dslvm::Value> parse_call_args(const std::string& json, const 
       if (objtype != "Thing") fail("unknown object type " + objtype);
       args.push_back(Value::object("Thing", stub.make(id)));
     } else if (json[p] == '"') {
+      if (type == "int" || type == "float" || type == "bool" || type == "Thing") fail("string argument does not match parameter type " + type);
       args.push_back(Value::string(parse_string()));
-    } else if (json.compare(p, 4, "true") == 0) { p += 4; args.push_back(Value::boolean(true)); }
-    else if (json.compare(p, 5, "false") == 0) { p += 5; args.push_back(Value::boolean(false)); }
-    else {
+    } else if (json.compare(p, 4, "true") == 0 || json.compare(p, 5, "false") == 0) {
+      if (type != "bool") fail("bool argument does not match parameter type " + type);
+      const bool v = json.compare(p, 4, "true") == 0; p += v ? 4 : 5; args.push_back(Value::boolean(v));
+    } else {
       const std::string num = parse_number();
+      if (type != "int" && type != "float") fail("number argument does not match parameter type " + type);
+      if (type == "int" && num.find_first_of(".eE") != std::string::npos) fail("int argument must be integral: " + num);
       args.push_back(type == "float" ? Value::real(std::stod(num)) : Value::integer(std::stoll(num)));
     }
     ws();

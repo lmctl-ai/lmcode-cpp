@@ -1,6 +1,6 @@
 # Gotchas and limits
 
-- The loader accepts bytecode version 5 only. Regenerate older fixtures with a compiler that emits version 5.
+- The loader accepts bytecode version 6 only. Regenerate older fixtures with a compiler that emits version 6.
 - `LOOP_BACK` must match its structural while-loop markers. Arbitrary backward edges are rejected. Range loops use their own
   paired instructions; break and continue are constrained to their lexical loop.
 - There is no loop budget or VM resource cap. A nonterminating program can run indefinitely. Hosts may apply process-level

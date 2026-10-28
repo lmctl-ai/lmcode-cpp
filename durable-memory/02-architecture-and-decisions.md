@@ -11,7 +11,7 @@ standard host result protocol.
 Version 5 uses a big-endian fixed-width container with a schema SHA-256, tagged string constants, canonical function and method
 imports, context declarations, typed local metadata, a compiler-measured maximum stack reservation, instructions, and an
 optional source line table. Integers are signed 64-bit two's-complement values; floating-point values are IEEE-754 binary64.
-The loader accepts version 5 only.
+The loader accepts version 6 only (v5 files are refused; R49 rule entries).
 
 ## Decisions
 

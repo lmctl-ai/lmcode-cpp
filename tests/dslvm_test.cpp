@@ -231,6 +231,12 @@ int main() {
   { Asm a; a.u8(PUSH_BOOL).u8(2).halt(); expect_error("bad bool operand", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "PUSH_BOOL operand must be 0 or 1"); }
   { Asm a; a.local("int", 2); a.halt(); expect_error("bad hidden flag", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "hidden flag must be 0 or 1"); }
   { Asm a; a.line(5, 1, 1).line(2, 2, 1); a.pushInt(1).u8(POP).halt(); expect_error("unsorted line table", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "line table is not sorted"); }
+  // WP11 fixes: a hidden local is compiler-owned in every region; entry names are unique.
+  { Asm a; a.local("int", 1).pushInt(0).u8(STORE_LOCAL).u16(0).halt(); expect_error("STORE_LOCAL to a hidden non-loop local", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "writes compiler-owned loop local 0"); }
+  { Asm a; a.halt(); Asm inc; inc.u8(LOAD_LOCAL).u16(0).halt();
+    a.entry({"increment", "step", "interface Step(int) -> int", 1, {{"int", 0}}, 1, inc.code, {}});
+    a.entry({"increment", "pair", "interface Step(int) -> int", 1, {{"int", 0}}, 1, inc.code, {}});
+    expect_error("duplicate entry name", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "duplicate entry name 'increment'"); }
   { Asm a; a.line(99, 1, 1); a.halt(); expect_error("line entry beyond the code", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "beyond the code"); }
   // Run-time checks (a correct compiler never produces these; the VM stays defensive). Overflow is not one of them.
   { Asm a; a.pushInt(1).pushInt(0).u8(DIV_I).halt(); expect_error("int division by zero", [&] { h.run(a.file(SCHEMA)); }, "int division by zero"); }

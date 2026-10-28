@@ -504,6 +504,7 @@ class Program {
     for (uint16_t i = 0; i < nentries; ++i) {
       EntryRegion e;
       e.meta.name = cidx(r.u32(), "entry name");
+      for (const auto& prev : p.entry_meta_) if (prev.name == e.meta.name) throw Error("LOAD_BAD_BYTECODE", "duplicate entry name '" + e.meta.name + "'");
       e.meta.annotation = cidx(r.u32(), "entry annotation");
       e.meta.iface = cidx(r.u32(), "entry interface");
       // The interface text is canonical `interface I(T1, T2) -> R`; type names never contain commas or parens.
@@ -996,6 +997,7 @@ class Program {
       Reader q(code); q.seek(i.pc + 1); uint16_t slot = q.u16();
       for (auto& l : loops) if (slot == l.second.counter || slot == l.second.end)
         throw Error("LOAD_BAD_BYTECODE", "STORE_LOCAL at offset " + std::to_string(i.pc) + " writes a read-only range slot " + std::to_string(slot));
+      if (locals[slot].hidden) throw Error("LOAD_BAD_BYTECODE", "STORE_LOCAL at offset " + std::to_string(i.pc) + " writes compiler-owned loop local " + std::to_string(slot));
     }
     for (auto& i : insns) if (i.op == FOR_RANGE) {
       uint16_t counter = uint16_t(uint8_t(code[i.pc + 1]) << 8 | uint8_t(code[i.pc + 2]));
