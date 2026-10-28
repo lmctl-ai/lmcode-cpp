@@ -272,6 +272,30 @@
       "via": "thing"
     }
   ],
+  "interfaces": {
+    "Step": {
+      "params": [
+        {
+          "name": "x",
+          "type": "int"
+        }
+      ],
+      "returns": "int"
+    },
+    "Visit": {
+      "params": [
+        {
+          "name": "t",
+          "type": "Thing"
+        }
+      ],
+      "returns": "void"
+    },
+    "Flag": {
+      "params": [],
+      "returns": "bool"
+    }
+  },
   "context": {
     "t": "Trace",
     "root": "Thing",

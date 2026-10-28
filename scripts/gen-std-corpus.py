@@ -169,7 +169,7 @@ def generate(directory,seeds,rounds,check=False,compile_bytecode=False):
         entry={'name':name,'covers':'seeded standard byte/property corpus','schema':'fuzz.schema.json','source':name+'.dsl','bytecode':name+'.dslb','mutated':False,'expect':{'trace':expect[1:]} if expect[0]=='trace' else {'runtime_error_exact':{'code':expect[1],'message':expect[2]}}}
         entries.append(entry)
     manifest_path=directory/'manifest.json'
-    manifest=json.loads(manifest_path.read_text()) if manifest_path.exists() else {'format':'dsl-conformance/2','bytecode_version':5,'schema':'fuzz.schema.json','host':{'description':'Canonical std plus bytes(hex), Trace int/float/bool/hex and a per-vector test_temp_dir fixture.'},'vectors':[]}
+    manifest=json.loads(manifest_path.read_text()) if manifest_path.exists() else {'format':'dsl-conformance/2','bytecode_version':6,'schema':'fuzz.schema.json','host':{'description':'Canonical std plus bytes(hex), Trace int/float/bool/hex and a per-vector test_temp_dir fixture.'},'vectors':[]}
     manifest['vectors']=sorted([v for v in manifest['vectors'] if not v['name'].startswith('fuzz-')]+entries, key=lambda v:v['name'])
     files['manifest.json']=json.dumps(manifest,indent=2)+'\n'
     for name,content in files.items():

@@ -138,6 +138,86 @@ static bool trace_line_matches(const std::string& actual, const std::string& exp
   return std::abs(actual_value - expected_value) <= tolerance;
 }
 
+// dsl-conformance/3: a call vector's line 2 is "ENTRY ARGS-JSON". Args are a JSON array read against the entry's
+// declared parameter types: numbers become int or float, strings and bools stay as they are, and {"type":"Thing","id":N}
+// uses the fixture Thing (id N, name "thing-N").
+static std::vector<dslvm::Value> parse_call_args(const std::string& json, const dslvm::Program::Entry& entry, Stub& stub) {
+  using dslvm::Value;
+  size_t p = 0;
+  auto fail = [&](const std::string& m) -> void { throw dslvm::Error("RUN_HOST", "conformance: bad call args: " + m + " in " + json); };
+  auto ws = [&] { while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p; };
+  auto parse_string = [&]() -> std::string {
+    if (p >= json.size() || json[p] != '"') fail("expected a string");
+    ++p; std::string out;
+    while (p < json.size() && json[p] != '"') {
+      if (json[p] == '\\' && p + 1 < json.size()) { char c = json[++p]; out += c == 'n' ? '\n' : c == 't' ? '\t' : c == 'r' ? '\r' : c; ++p; }
+      else out += json[p++];
+    }
+    if (p >= json.size()) fail("unterminated string");
+    ++p; return out;
+  };
+  auto parse_number = [&]() -> std::string {
+    const size_t start = p;
+    while (p < json.size() && (isdigit(json[p]) || json[p] == '-' || json[p] == '+' || json[p] == '.' || json[p] == 'e' || json[p] == 'E')) ++p;
+    if (start == p) fail("expected a number");
+    return json.substr(start, p - start);
+  };
+  ws(); if (p >= json.size() || json[p] != '[') fail("expected [");
+  ++p; ws();
+  std::vector<Value> args;
+  while (p < json.size() && json[p] != ']') {
+    if (args.size() >= entry.params.size()) fail("more arguments than the entry takes");
+    const std::string& type = entry.params[args.size()];
+    if (json[p] == '{') {
+      ++p; ws();
+      const std::string key = parse_string(); ws();
+      if (p >= json.size() || json[p] != ':') fail("expected :");
+      ++p; ws();
+      const std::string objtype = parse_string(); ws();
+      if (p >= json.size() || json[p] != ',') fail("expected ,");
+      ++p; ws();
+      const std::string key2 = parse_string(); ws();
+      if (p >= json.size() || json[p] != ':') fail("expected :");
+      ++p; ws();
+      const int64_t id = std::stoll(parse_number()); ws();
+      if (p >= json.size() || json[p] != '}') fail("expected }");
+      ++p;
+      if (key != "type" || key2 != "id" || objtype != type) fail("object argument does not match the parameter type");
+      if (objtype != "Thing") fail("unknown object type " + objtype);
+      args.push_back(Value::object("Thing", stub.make(id)));
+    } else if (json[p] == '"') {
+      args.push_back(Value::string(parse_string()));
+    } else if (json.compare(p, 4, "true") == 0) { p += 4; args.push_back(Value::boolean(true)); }
+    else if (json.compare(p, 5, "false") == 0) { p += 5; args.push_back(Value::boolean(false)); }
+    else {
+      const std::string num = parse_number();
+      args.push_back(type == "float" ? Value::real(std::stod(num)) : Value::integer(std::stoll(num)));
+    }
+    ws();
+    if (p < json.size() && json[p] == ',') { ++p; ws(); }
+  }
+  if (p >= json.size()) fail("unterminated array");
+  ++p; ws();
+  if (p != json.size()) fail("trailing text after ]");
+  return args;
+}
+
+// The "result ..." line of a call vector: "result int N|float X|string S|bool true|false|void".
+static bool result_matches(const std::string& line, const dslvm::Value& v) {
+  using dslvm::Value;
+  if (line.compare(0, 7, "result ") != 0) return false;
+  const std::string spec = line.substr(7);
+  if (spec == "void") return v.kind == Value::VOID;
+  const size_t sp = spec.find(' ');
+  if (sp == std::string::npos) return false;
+  const std::string type = spec.substr(0, sp), text = spec.substr(sp + 1);
+  if (type == "int") return v.kind == Value::INT && std::to_string(v.i) == text;
+  if (type == "float") return v.kind == Value::FLOAT && Stub::fmt(v.f) == text;
+  if (type == "string") return v.kind == Value::STR && v.s == text;
+  if (type == "bool") return v.kind == Value::BOOL && (v.b ? "true" : "false") == text;
+  return false;
+}
+
 int main(int argc, char** argv) {
   if (argc != 2) { std::cerr << "usage: conformance VECTOR_DIR\n"; return 2; }
   // Keep the approximate matcher itself covered: tolerance accepts a close
@@ -175,8 +255,26 @@ int main(int argc, char** argv) {
       }
       if (stub.temp_dir.empty()) { std::cerr << name << ": cannot create fresh temp directory: " << temp_error.message() << "\n"; return 2; }
     }
-    std::string result, error, error_code, bare_error; bool loaded = false, ran = false, error_has_location = false, error_has_column = false; uint32_t error_line = 0; uint16_t error_column = 0;
-    try { dslvm::Program p = dslvm::Program::load(bytes, schema, stub.reg); loaded = true; dslvm::Context c; c.set("t", &stub.trace); c.set("root", &stub.root); c.set("v", &stub.variable); c.set("xs", &stub.xs); p.run(c, stub.reg); ran = true; }
+    std::string result, error, error_code, bare_error; bool loaded = false, ran = false, called = false, error_has_location = false, error_has_column = false; uint32_t error_line = 0; uint16_t error_column = 0;
+    dslvm::Value call_result;
+    const bool is_call = kind == "call" || kind == "call_error" || kind == "call_error_at";
+    std::unique_ptr<dslvm::Program> program;
+    try {
+      program = std::make_unique<dslvm::Program>(dslvm::Program::load(bytes, schema, stub.reg));
+      loaded = true;
+      dslvm::Context c; c.set("t", &stub.trace); c.set("root", &stub.root); c.set("v", &stub.variable); c.set("xs", &stub.xs);
+      if (kind != "entries") { program->run(c, stub.reg); ran = true; }  // call kinds run the body once, then the entry
+      if (is_call) {
+        const std::string& selector = lines.at(0);
+        const size_t sp = selector.find(' ');
+        const std::string entry_name = selector.substr(0, sp);
+        size_t entry_index = program->entries().size();
+        for (size_t i = 0; i < program->entries().size(); ++i) if (program->entries()[i].name == entry_name) { entry_index = i; break; }
+        if (entry_index == program->entries().size()) throw dslvm::Error("RUN_HOST", "conformance: entry '" + entry_name + "' not found");
+        call_result = program->call(entry_index, c, stub.reg, parse_call_args(sp == std::string::npos ? "[]" : selector.substr(sp + 1), program->entries()[entry_index], stub));
+        called = true;
+      }
+    }
     catch (const dslvm::Error& e) { error = e.what(); bare_error = error;
       if (e.has_location) {
         std::string prefix = "dsl line " + std::to_string(e.line) + (e.has_column ? ":" + std::to_string(e.column) : "") + ": ";
@@ -206,10 +304,28 @@ int main(int argc, char** argv) {
       uint32_t line = lines.size() > 1 ? uint32_t(std::stoul(lines[1])) : 0; uint16_t column = lines.size() > 2 ? uint16_t(std::stoul(lines[2])) : 0;
       ok = loaded && !ran && lines.size() >= 4 && error_code == lines[0] && ((line == 0 && !error_has_location) || (line != 0 && error_has_location && error_line == line)) && ((column == 0 && !error_has_column) || (column != 0 && error_has_column && error_column == column)) && error.find(lines[3]) != std::string::npos;
     }
+    else if (kind == "entries") {
+      std::vector<std::string> actual;
+      if (loaded) for (const auto& e : program->entries()) actual.push_back(e.name + " " + e.annotation + " " + e.iface);
+      ok = loaded && actual == lines;
+    }
+    else if (kind == "call") {
+      ok = loaded && ran && called && lines.size() >= 2 && result_matches(lines[1], call_result) && stub.trace.size() == lines.size() - 2;
+      if (ok) for (size_t i = 2; i < lines.size(); ++i) if (!trace_line_matches(stub.trace[i - 2], lines[i])) { ok = false; break; }
+    }
+    else if (kind == "call_error") ok = loaded && !called && lines.size() == 3 && error_code == lines[1] && error.find(lines[2]) != std::string::npos;
+    else if (kind == "call_error_at") {
+      uint32_t line = lines.size() > 2 ? uint32_t(std::stoul(lines[2])) : 0; uint16_t column = lines.size() > 3 ? uint16_t(std::stoul(lines[3])) : 0;
+      ok = loaded && !called && lines.size() >= 5 && error_code == lines[1] && ((line == 0 && !error_has_location) || (line != 0 && error_has_location && error_line == line)) && ((column == 0 && !error_has_column) || (column != 0 && error_has_column && error_column == column)) && error.find(lines[4]) != std::string::npos;
+    }
     else if (kind == "load_error") ok = !loaded && error.find(lines.at(0)) != std::string::npos;
     else { std::cerr << name << ": unknown expectation kind '" << kind << "'\n"; return 2; }
     if (ok) std::cout << "ok - " << name << " (" << kind << ")\n";
-    else { failed++; std::cout << "FAIL - " << name << " (" << kind << ")\n"; if (!error.empty()) std::cout << "    error: " << error << "\n"; for (auto& t : stub.trace) std::cout << "    got:  " << t << "\n"; for (auto& l : lines) std::cout << "    want: " << l << "\n"; }
+    else { failed++; std::cout << "FAIL - " << name << " (" << kind << ")\n"; if (!error.empty()) std::cout << "    error: " << error << "\n";
+      if (kind == "entries" && loaded) for (const auto& e : program->entries()) std::cout << "    got:  " << e.name << " " << e.annotation << " " << e.iface << "\n";
+      if (kind == "call" && called) std::cout << "    result: " << (call_result.kind == dslvm::Value::VOID ? "void" : call_result.kind == dslvm::Value::INT ? "int " + std::to_string(call_result.i) : call_result.kind == dslvm::Value::STR ? "string " + call_result.s : call_result.kind_name()) << "\n";
+      for (auto& t : stub.trace) std::cout << "    got:  " << t << "\n";
+      for (auto& l : lines) std::cout << "    want: " << l << "\n"; }
     if (!temp_cleanup.clean()) { if (ok) ++failed; std::cerr << "FAIL - " << name << ": temporary directory cleanup failed\n"; }
   }
   std::cout << (failed ? "FAIL " : "PASS ") << (names.size() - failed) << "/" << names.size() << " vectors\n";
