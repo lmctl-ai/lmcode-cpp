@@ -506,6 +506,27 @@ class Program {
       e.meta.name = cidx(r.u32(), "entry name");
       e.meta.annotation = cidx(r.u32(), "entry annotation");
       e.meta.iface = cidx(r.u32(), "entry interface");
+      // The interface text is canonical `interface I(T1, T2) -> R`; type names never contain commas or parens.
+      size_t lpar = e.meta.iface.find('(');
+      size_t rpar = lpar == std::string::npos ? std::string::npos : e.meta.iface.find(')', lpar + 1);
+      size_t arrow = e.meta.iface.rfind("->");
+      std::vector<std::string> iparams;
+      std::string ret;
+      if (lpar != std::string::npos && rpar != std::string::npos && arrow != std::string::npos && arrow > rpar) {
+        std::string inner = e.meta.iface.substr(lpar + 1, rpar - lpar - 1);
+        for (size_t b = 0, e2; b <= inner.size(); b = e2 + 1) {
+          e2 = inner.find(',', b);
+          std::string part = inner.substr(b, e2 == std::string::npos ? e2 : e2 - b);
+          size_t fb = part.find_first_not_of(' '), lb = part.find_last_not_of(' ');
+          if (fb != std::string::npos) iparams.push_back(part.substr(fb, lb - fb + 1));
+          if (e2 == std::string::npos) break;
+        }
+        ret = e.meta.iface.substr(arrow + 2);
+        size_t fb = ret.find_first_not_of(' '), lb = ret.find_last_not_of(' ');
+        ret = fb == std::string::npos ? "" : ret.substr(fb, lb - fb + 1);
+      }
+      if (ret.empty()) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "': interface '" + e.meta.iface + "' is not an interface signature");
+      e.meta.returns = ret;
       e.nparams = r.u16();
       uint16_t enlocals = r.u16();
       if (e.nparams > enlocals) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "': nparams " + std::to_string(e.nparams) + " exceeds nlocals " + std::to_string(enlocals));
@@ -513,29 +534,28 @@ class Program {
         Local l; l.type = cidx(r.u32(), "entry local type");
         uint8_t hidden = r.u8();
         if (hidden > 1) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "': local " + std::to_string(j) + " hidden flag must be 0 or 1");
-        if (hidden && j < e.nparams) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "': parameter slot " + std::to_string(j) + " is hidden");
         l.hidden = hidden == 1;
         if (j < e.nparams) e.meta.params.push_back(l.type);
         e.locals.push_back(std::move(l));
+      }
+      if (e.nparams != iparams.size()) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "' declares " + std::to_string(e.nparams) + " parameter(s); " + e.meta.iface + " has " + std::to_string(iparams.size()));
+      for (uint16_t j = 0; j < e.nparams; ++j) {
+        if (e.locals[j].type != iparams[j]) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "' parameter " + std::to_string(j + 1) + " has type " + e.locals[j].type + "; the interface expects " + iparams[j]);
+        if (e.locals[j].hidden) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "' parameter " + std::to_string(j + 1) + " is hidden");
       }
       e.max_stack = r.u16();
       uint32_t ecode_len = r.u32();
       e.code = r.bytes(ecode_len);
       uint32_t enlines = r.u32();
       for (uint32_t j = 0; j < enlines; ++j) { Line l; l.pc = r.u32(); l.line = r.u32(); l.column = r.u16(); if (j && l.pc < e.lines[j - 1].pc) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "': line table is not sorted by pc at entry " + std::to_string(j)); e.lines.push_back(l); }
-      size_t arrow = e.meta.iface.rfind("->");
-      std::string ret = arrow == std::string::npos ? "" : e.meta.iface.substr(arrow + 2);
-      size_t fb = ret.find_first_not_of(' '), lb = ret.find_last_not_of(' ');
-      e.meta.returns = fb == std::string::npos ? "" : ret.substr(fb, lb - fb + 1);
-      if (e.meta.returns.empty()) throw Error("LOAD_BAD_BYTECODE", "entry '" + e.meta.name + "': interface '" + e.meta.iface + "' is not an interface signature");
       p.entry_meta_.push_back(e.meta);
       p.entries_.push_back(std::move(e));
     }
     if (!r.done()) throw Error("LOAD_BAD_BYTECODE", "bytecode has " + std::to_string(bytecode.size() - r.pos()) + " trailing byte(s) after the entries");
-    p.verify_region(p.code_, p.locals_, p.lines_, p.loops_, -1, "");
+    p.verify_region(p.code_, p.locals_, p.lines_, p.loops_, -1);
     for (auto& e : p.entries_) {
       try {
-        p.verify_region(e.code, e.locals, e.lines, e.loops, e.meta.returns == "void" ? 0 : 1, e.meta.returns);
+        p.verify_region(e.code, e.locals, e.lines, e.loops, e.meta.returns == "void" ? 0 : 1);
       } catch (Error& err) {
         throw Error(err.code, "entry '" + e.meta.name + "': " + err.message);
       }
@@ -558,7 +578,7 @@ class Program {
   Value call(size_t entry, const Context& ctx, const Registry& reg, std::vector<Value> args, RunStats* stats = nullptr) const {
     if (entry >= entries_.size()) throw Error("RUN_HOST", "call entry index " + std::to_string(entry) + " out of range (" + std::to_string(entries_.size()) + " entries)");
     const EntryRegion& e = entries_[entry];
-    if (args.size() != e.nparams) throw Error("RUN_HOST", "call entry '" + e.meta.name + "' expects " + std::to_string(e.nparams) + " argument(s), got " + std::to_string(args.size()));
+    if (args.size() != e.nparams) throw Error("RUN_HOST", "call entry '" + e.meta.name + "' expects " + std::to_string(e.nparams) + " argument(s); found " + std::to_string(args.size()));
     if (ctx.dry() && ctx.truncated_) return Value::none();
     std::vector<Value> locals(e.locals.size());
     for (size_t i = 0; i < args.size(); ++i) locals[i] = std::move(args[i]);
@@ -849,7 +869,7 @@ class Program {
   // Imports and context are already bound. halt_depth >= 0 additionally requires every reachable HALT to leave exactly
   // that many values (entries: 0 for a void interface, 1 otherwise) and disables the no-loop early return in verify_stack.
   void verify_region(const std::string& code, const std::vector<Local>& locals, const std::vector<Line>& lines,
-                     std::map<size_t, Loop>& loops, int halt_depth, const std::string& halt_returns) {
+                     std::map<size_t, Loop>& loops, int halt_depth) {
     struct Open { uint8_t op; size_t pc, next, exit; uint16_t counter, end; bool tested; size_t parent; size_t test = 0; };
     struct LoopRegion { size_t exit, parent, test; uint8_t op; uint16_t counter, end; };
     std::vector<VerifiedInstr> insns; std::vector<Open> open; std::vector<std::pair<size_t, int64_t>> ordinary;
@@ -992,11 +1012,11 @@ class Program {
       if (loop == regions.end() || loop->second.op != WHILE_BEGIN || loop->second.exit != size_t(j.second) || to->owner != loop->second.parent)
         throw Error("LOAD_BAD_BYTECODE", "WHILE_TEST at offset " + std::to_string(j.first) + " exits to an invalid loop region");
     }
-    verify_stack(insns, code, halt_depth, halt_returns);
+    verify_stack(insns, code, halt_depth);
     for (auto& l : lines) if (l.pc >= code.size()) throw Error("LOAD_BAD_BYTECODE", "line table entry points at pc " + std::to_string(l.pc) + ", beyond the code");
   }
 
-  void verify_stack(const std::vector<VerifiedInstr>& insns, const std::string& code, int halt_depth, const std::string& halt_returns) const {
+  void verify_stack(const std::vector<VerifiedInstr>& insns, const std::string& code, int halt_depth) const {
     if (halt_depth < 0 && std::none_of(insns.begin(), insns.end(), [](const VerifiedInstr& i) { return i.op == FOR_RANGE || i.op == WHILE_BEGIN; })) return;
     std::map<size_t, size_t> at;
     for (size_t i = 0; i < insns.size(); ++i) at[insns[i].pc] = i;
@@ -1069,7 +1089,7 @@ class Program {
     if (halt_depth >= 0) {
       for (size_t ix = 0; ix < insns.size(); ++ix) {
         if (insns[ix].op == HALT && incoming[ix] >= 0 && incoming[ix] != halt_depth)
-          throw Error("LOAD_BAD_BYTECODE", "HALT leaves " + std::to_string(incoming[ix]) + " values, interface returns " + halt_returns);
+          throw Error("LOAD_BAD_BYTECODE", "HALT leaves " + std::to_string(incoming[ix]) + " values");
       }
     }
   }

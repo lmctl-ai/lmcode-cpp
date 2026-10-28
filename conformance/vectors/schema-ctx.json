@@ -294,6 +294,40 @@
     "Flag": {
       "params": [],
       "returns": "bool"
+    },
+    "Mix": {
+      "params": [
+        {
+          "name": "x",
+          "type": "int"
+        },
+        {
+          "name": "f",
+          "type": "float"
+        },
+        {
+          "name": "s",
+          "type": "string"
+        },
+        {
+          "name": "b",
+          "type": "bool"
+        }
+      ],
+      "returns": "string"
+    },
+    "Pick": {
+      "params": [
+        {
+          "name": "t",
+          "type": "Thing"
+        }
+      ],
+      "returns": "Thing"
+    },
+    "State": {
+      "params": [],
+      "returns": "Status"
     }
   },
   "context": {

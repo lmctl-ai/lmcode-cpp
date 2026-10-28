@@ -202,7 +202,8 @@ static std::vector<dslvm::Value> parse_call_args(const std::string& json, const 
   return args;
 }
 
-// The "result ..." line of a call vector: "result int N|float X|string S|bool true|false|void".
+// The "result ..." line of a call vector: "result int N|float X|string S|bool true|false|thing ID|void".
+// An enum result arrives as `string NAME`; an object result is the fixture Thing with the given id.
 static bool result_matches(const std::string& line, const dslvm::Value& v) {
   using dslvm::Value;
   if (line.compare(0, 7, "result ") != 0) return false;
@@ -215,6 +216,7 @@ static bool result_matches(const std::string& line, const dslvm::Value& v) {
   if (type == "float") return v.kind == Value::FLOAT && Stub::fmt(v.f) == text;
   if (type == "string") return v.kind == Value::STR && v.s == text;
   if (type == "bool") return v.kind == Value::BOOL && (v.b ? "true" : "false") == text;
+  if (type == "thing") return v.kind == Value::OBJ && v.type == "Thing" && std::to_string(static_cast<Thing*>(v.obj)->id) == text;
   return false;
 }
 

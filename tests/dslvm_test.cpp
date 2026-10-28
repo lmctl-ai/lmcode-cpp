@@ -383,23 +383,27 @@ int main() {
     try { p.call(0, c, h.reg, {}); std::cerr << "FAIL call arity: no error\n"; return 1; }
     catch (const Error& e) {
       assert(e.code == "RUN_HOST");
-      assert(std::string(e.what()).find("call entry 'increment' expects 1 argument") != std::string::npos);
+      assert(std::string(e.what()) == "call entry 'increment' expects 1 argument(s); found 0");
       passed++; std::cout << "ok - call arity is RUN_HOST naming the entry: " << e.what() << "\n";
     }
     expect_error("call entry index out of range", [&] { p.call(5, c, h.reg, {}); }, "call entry index 5 out of range (2 entries)");
   }
-  // Entry loader validation: parameter slots must exist and be unhidden.
+  // Entry loader validation: parameter count/types must match the interface, parameter slots must be unhidden.
   { Asm a; Asm e; e.halt(); a.halt(); a.entry({"r", "k", "interface Flag() -> bool", 2, {{"int", 0}}, 1, e.code, {}});
     expect_error("entry nparams exceeds nlocals", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'r': nparams 2 exceeds nlocals 1"); }
+  { Asm a; Asm e; e.u8(LOAD_LOCAL).u16(0).u8(LOAD_LOCAL).u16(1).u8(ADD_I).halt(); a.halt(); a.entry({"r", "k", "interface Step(int) -> int", 2, {{"int", 0}, {"int", 0}}, 2, e.code, {}});
+    expect_error("entry parameter count differs from the interface", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'r' declares 2 parameter(s); interface Step(int) -> int has 1"); }
+  { Asm a; Asm e; e.pushInt(1).halt(); a.halt(); a.entry({"r", "k", "interface Step(int) -> int", 1, {{"string", 0}}, 1, e.code, {}});
+    expect_error("entry parameter type differs from the interface", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'r' parameter 1 has type string; the interface expects int"); }
   { Asm a; Asm e; e.u8(LOAD_LOCAL).u16(0).halt(); a.halt(); a.entry({"r", "k", "interface Step(int) -> int", 1, {{"int", 1}}, 1, e.code, {}});
-    expect_error("entry parameter slot is hidden", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'r': parameter slot 0 is hidden"); }
+    expect_error("entry parameter slot is hidden", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'r' parameter 1 is hidden"); }
   // Entry verification: jumps stay inside the region and HALT depth matches the interface.
   { Asm a; Asm e; e.pushBool(true).u8(JUMP_IF_FALSE).i32(5).halt(); a.halt(); a.entry({"badjump", "k", "interface Flag() -> bool", 0, {}, 1, e.code, {}});
     expect_error("entry jump out of region", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'badjump': jump at offset 2 targets 12, not an instruction start"); }
   { Asm a; Asm e; e.halt(); a.halt(); a.entry({"flag", "k", "interface Flag() -> bool", 0, {}, 1, e.code, {}});
-    expect_error("value entry whose HALT leaves 0 values", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'flag': HALT leaves 0 values, interface returns bool"); }
-  { Asm a; Asm e; e.pushInt(1).halt(); a.halt(); a.entry({"noisy", "k", "interface Visit(Thing) -> void", 0, {}, 1, e.code, {}});
-    expect_error("void entry whose HALT leaves a value", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'noisy': HALT leaves 1 values, interface returns void"); }
+    expect_error("value entry whose HALT leaves 0 values", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'flag': HALT leaves 0 values"); }
+  { Asm a; Asm e; e.pushInt(1).halt(); a.halt(); a.entry({"noisy", "k", "interface Zap() -> void", 0, {}, 1, e.code, {}});
+    expect_error("void entry whose HALT leaves a value", [&] { Program::load(a.file(SCHEMA), SCHEMA, h.reg); }, "entry 'noisy': HALT leaves 1 values"); }
   std::cout << "PASS " << passed << " checks\n";
   return 0;
 }

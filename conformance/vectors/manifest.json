@@ -5,7 +5,7 @@
   "schema": "schema.json",
   "host": {
     "description": "Context t (Trace) records lines: int/float/str/bool/thing. Context root is Thing id 0 and xs is IntList [0,1,2,3]. Host functions and methods follow their schema names and preserve the existing trace semantics. Rule entries are called by name after load; primitive args are JSON scalar values and object args are {type:Thing,id:N}, stored into parameter slots 0..n-1. Entry calls return one typed value or void.",
-    "entry_call": "entries expect NAME ANNOTATION INTERFACE; every call runs the body once first, then selects the named entry. call expects line 2 ENTRY ARGS-JSON, args are stored in parameter slots 0..n-1, line 3 result int N|float X|string S|bool true|false|void, then trace lines; call_error expects line 2 ENTRY ARGS-JSON, line 3 CODE, line 4 MESSAGE; call_error_at expects line 2 ENTRY ARGS-JSON, line 3 CODE, line 4 LINE, line 5 COLUMN, line 6 MESSAGE. Interface text is canonical `interface I(T1, ...) -> R`.",
+    "entry_call": "entries expect NAME ANNOTATION INTERFACE; every call runs the body once first, then selects the named entry. call expects line 2 ENTRY ARGS-JSON, args are stored in parameter slots 0..n-1, line 3 result int N|float X|string S|bool true|false|thing ID|void (an enum result is its constant name as string S; an object result is thing ID), then trace lines; call_error expects line 2 ENTRY ARGS-JSON, line 3 CODE, line 4 MESSAGE; call_error_at expects line 2 ENTRY ARGS-JSON, line 3 CODE, line 4 LINE, line 5 COLUMN, line 6 MESSAGE. Interface text is canonical `interface I(T1, ...) -> R` (parameter names are not on the wire). Loader rules per entry (LOAD_BAD_BYTECODE, message substrings pinned by the load-entry-* vectors): nparams equals the interface parameter count (`entry 'NAME' declares N parameter(s); interface I(...) -> R has M`), parameter local i has the interface's type i (`entry 'NAME' parameter I has type T; the interface expects U`), no parameter local is hidden (`entry 'NAME' parameter I is hidden`), and HALT depth is 0 for void or 1 otherwise (`entry 'NAME': HALT leaves N values`). call arity: RUN_HOST `call entry 'NAME' expects N argument(s); found M`. call needs no prior run(); it returns the single HALT value (none for void).",
     "expect": "trace: the recorded lines in order, after a successful run. entries: one canonical entry line per rule in source order. call: line 2 selects an entry and JSON args, line 3 is the result, remaining lines are trace. call_error: calling with the wrong arity fails before execution. call_error_at: an entry runtime error carries exact code, line and column plus a message substring. runtime_error/runtime_error_at cover body execution. load_error: load() throws (nothing runs) and the message contains the substring."
   },
   "vectors": [
@@ -943,8 +943,7 @@
           "result": "int 5",
           "trace": [
             "int 5"
-          ],
-          "run_body": true
+          ]
         }
       }
     },
@@ -1018,6 +1017,152 @@
       "mutated": true,
       "expect": {
         "load_error": "HALT leaves 0 values"
+      }
+    },
+    {
+      "name": "call-body-trace",
+      "covers": "v6 every call runs the body first: its trace precedes the entry result",
+      "schema": "schema.json",
+      "bytecode": "call-body-trace.dslb",
+      "source": "call-body-trace.dsl",
+      "mutated": false,
+      "expect": {
+        "call": {
+          "entry": "increment",
+          "args": [
+            4
+          ],
+          "result": "int 5",
+          "trace": [
+            "int 9"
+          ]
+        }
+      }
+    },
+    {
+      "name": "call-multi-param",
+      "covers": "v6 int, float, string and bool arguments in parameter slots; string result",
+      "schema": "schema.json",
+      "bytecode": "call-multi-param.dslb",
+      "source": "call-multi-param.dsl",
+      "mutated": false,
+      "expect": {
+        "call": {
+          "entry": "mix",
+          "args": [
+            7,
+            2.5,
+            "a",
+            true
+          ],
+          "result": "string a72.5true"
+        }
+      }
+    },
+    {
+      "name": "call-enum-return",
+      "covers": "v6 enum result is its constant name as a string",
+      "schema": "schema.json",
+      "bytecode": "call-enum-return.dslb",
+      "source": "call-enum-return.dsl",
+      "mutated": false,
+      "expect": {
+        "call": {
+          "entry": "state",
+          "args": [],
+          "result": "string OPTIMAL"
+        }
+      }
+    },
+    {
+      "name": "call-object-return",
+      "covers": "v6 object result: the host receives the handle (result thing ID)",
+      "schema": "schema.json",
+      "bytecode": "call-object-return.dslb",
+      "source": "call-object-return.dsl",
+      "mutated": false,
+      "expect": {
+        "call": {
+          "entry": "pick",
+          "args": [
+            {
+              "type": "Thing",
+              "id": 2
+            }
+          ],
+          "result": "thing 3"
+        }
+      }
+    },
+    {
+      "name": "call-switch-foreach",
+      "covers": "v6 foreach over a context collection and switch inside an entry; hidden slots after the parameter",
+      "schema": "schema.json",
+      "bytecode": "call-switch-foreach.dslb",
+      "source": "call-switch-foreach.dsl",
+      "mutated": false,
+      "expect": {
+        "call": {
+          "entry": "flow",
+          "args": [
+            1
+          ],
+          "result": "int 106"
+        }
+      }
+    },
+    {
+      "name": "call-rule-calls-rule",
+      "covers": "v6 a rule calling another rule inlines it; both stay entries",
+      "schema": "schema.json",
+      "bytecode": "call-rule-calls-rule.dslb",
+      "source": "call-rule-calls-rule.dsl",
+      "mutated": false,
+      "expect": {
+        "call": {
+          "entry": "outer",
+          "args": [
+            3
+          ],
+          "result": "int 13",
+          "trace": [
+            "int 3",
+            "int 6"
+          ]
+        }
+      }
+    },
+    {
+      "name": "load-entry-params-mismatch",
+      "covers": "loader: entry nparams must equal the interface's parameter count",
+      "schema": "schema.json",
+      "bytecode": "load-entry-params-mismatch.dslb",
+      "source": "load-entry-params-mismatch.dsl",
+      "mutated": true,
+      "expect": {
+        "load_error": "entry 'increment' declares 0 parameter"
+      }
+    },
+    {
+      "name": "load-entry-hidden-param",
+      "covers": "loader: a parameter local must not carry the hidden flag",
+      "schema": "schema.json",
+      "bytecode": "load-entry-hidden-param.dslb",
+      "source": "load-entry-hidden-param.dsl",
+      "mutated": true,
+      "expect": {
+        "load_error": "entry 'increment' parameter 1 is hidden"
+      }
+    },
+    {
+      "name": "load-entry-param-type",
+      "covers": "loader: parameter local types must equal the interface's parameter types",
+      "schema": "schema.json",
+      "bytecode": "load-entry-param-type.dslb",
+      "source": "load-entry-param-type.dsl",
+      "mutated": true,
+      "expect": {
+        "load_error": "entry 'increment' parameter 1 has type step"
       }
     }
   ]
