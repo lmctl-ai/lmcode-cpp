@@ -37,6 +37,7 @@ static std::string run_fixture(const std::string& schema) {
   be16(out, 1); // max stack
   be32(out, 9); out.push_back(char(CALL_FN)); be16(out, 0); out.push_back(0); out.push_back(char(CALL_FN)); be16(out, 1); out.push_back(1); out.push_back(char(HALT));
   be32(out, 0); // lines
+  be16(out, 0); // entries
   return out;
 }
 

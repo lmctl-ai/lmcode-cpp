@@ -20,6 +20,7 @@ static std::string upper_chunk(const std::string& schema, const std::string& inp
   std::string code; code += char(dslvm::PUSH_STR); u32(code, 0);
   for (unsigned f : {0u, 1u}) { code += char(dslvm::CALL_FN); u16(code, f); code += char(1); }
   code += char(dslvm::HALT); u32(b, uint32_t(code.size())); b += code; u32(b, 0);
+  u16(b, 0); // entries
   return b;
 }
 
