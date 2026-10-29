@@ -48,3 +48,4 @@ scripts/matrix.sh                     # Cross-SDK verification across cpp, rust,
 Continuous Integration tests all pushes across 5 platforms: Linux x64/arm64, macOS arm64/x64, and Windows x64.
 - [update-sample-suite.md](update-sample-suite.md): canonical sample-suite update and all-port verification rule.
 - [Re-runnable std migrator](11-lmstd-migrator.md): lmscript transactional previews, known host patterns, compilation limits and historical SSL/SSH checks.
+- [13-lmscript-test-drivers.md](13-lmscript-test-drivers.md): lmscript-driven SDK/sample checks, binary adapter, exact-output and negative controls.

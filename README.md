@@ -265,3 +265,20 @@ Use lmscript 0.2.444 (DSLB v6). The expected trace is pinned in
 [sample-suite/expected/068-rule-entries.out](sample-suite/expected/068-rule-entries.out).
 For a non-void interface and returned entry value, see
 [069-rule-value-entry.lms](sample-suite/programs/069-rule-value-entry.lms).
+
+## Run checks with lmscript
+
+```sh
+npm install -g @lmctl-ai/lmctl
+lmctl test.lms
+# Equivalent: lmscript test.lms
+# Include a built reference host:
+lmscript --no-preflight test.lms ../lmcode-cpp-sample/build/lmcode-cpp-sample
+```
+
+The npm package installs both executables. Both run local `.lms` files;
+`lmctl` also accepts a URL ending in `.lms`. Repository tests require this
+checkout and its native build tools. `test.lms` runs SDK checks, canonical
+signature coverage, bytecode reproduction and negative runner controls.
+See [the sample driver documentation](sample-suite/README.md#lmscript-test-drivers)
+for byte-exact process capture and corpus-directory overrides.
