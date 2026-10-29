@@ -1,6 +1,6 @@
 # Purpose and place
 
-`lmcode-cpp` is the C++ runtime for lmscript `_dsl_` bytecode. A host embeds `include/dslvm.hpp`, binds the functions and object
+`lmcode-cpp` is the C++ runtime for lmscript `_lmcode_` bytecode. A host embeds `include/dslvm.hpp`, binds the functions and object
 methods in its JSON schema through `dslvm::Registry`, loads bytecode against the exact schema bytes, and runs it with host-owned
 objects in a `dslvm::Context`.
 

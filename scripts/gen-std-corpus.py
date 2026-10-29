@@ -180,7 +180,7 @@ def generate(directory,seeds,rounds,check=False,compile_bytecode=False):
     if compile_bytecode:
         compiler=os.environ.get('LMSCRIPT_BIN','lmscript')
         for name in generated:
-            wrapper='program = _dsl_ schema='+json.dumps(str((directory/'fuzz.schema.json').resolve()))+';\n'+files[name+'.dsl']+'end _dsl_\nsavedsl(program, '+json.dumps(str((directory/(name+'.dslb')).resolve()))+');\n'
+            wrapper='program = _lmcode_ schema='+json.dumps(str((directory/'fuzz.schema.json').resolve()))+';\n'+files[name+'.dsl']+'end _lmcode_\nsavedsl(program, '+json.dumps(str((directory/(name+'.dslb')).resolve()))+');\n'
             with tempfile.TemporaryDirectory(prefix='corpus-compile-') as tmp:
                 lm=Path(tmp)/'compile.lm';lm.write_text(wrapper);subprocess.run([compiler,str(lm)],check=True,stdout=subprocess.DEVNULL)
     print(f'{len(generated)} corpus vectors; seeds={seeds}; rounds={rounds}')

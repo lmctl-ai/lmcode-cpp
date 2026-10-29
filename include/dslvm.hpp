@@ -1,4 +1,4 @@
-// lmcode-cpp: the C++ runtime for lmscript `_dsl_` bytecode. Header-only, C++17, standard library only.
+// lmcode-cpp: the C++ runtime for lmscript `_lmcode_` bytecode. Header-only, C++17, standard library only.
 // Single source of truth: github.com/lmctl-ai/lmcode-cpp/include/dslvm.hpp (hosts vendor it by pinned sha256, see README).
 //
 // Public API (everything else in this header is an implementation detail):
@@ -46,7 +46,7 @@
 // the hidden end slot and a back displacement. WHILE_BEGIN marks a paired loop head, WHILE_TEST branches to its exit on false,
 // and LOOP_BACK returns only to that paired head. Int arithmetic is 64-bit two's complement with wraparound (no overflow trap);
 // division and remainder by zero are run-time errors. The language is defined by the lmscript compiler
-// (_dsl_ blocks, npm package @lmctl-ai/lmctl); this header implements the bytecode that compiler emits.
+// (_lmcode_ blocks, npm package @lmctl-ai/lmctl); this header implements the bytecode that compiler emits.
 //
 // Guarantees of load(): wrong magic, other version (including v3), schema-hash mismatch, truncation, trailing bytes, unknown
 // constant tags, undecodable instructions, out-of-range constants/locals/imports/context indices, jumps that do not land on an

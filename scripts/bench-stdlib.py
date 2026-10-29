@@ -32,7 +32,7 @@ def compile_vector(root, name, source, expected):
     (vector / (name + ".dsl")).write_text(source + "\n")
     (vector / (name + ".expect")).write_text("trace\n" + "\n".join(expected) + "\n")
     (vector / "manifest.json").write_text(json.dumps({"schema":"schema.json","vectors":[{"name":name,"schema":"schema.json","source":name+".dsl","bytecode":name+".dslb"}]}))
-    wrapper = f'program = _dsl_ schema={json.dumps(str(schema))};\n{source}\nend _dsl_\nsavedsl(program, {json.dumps(str(vector/(name+".dslb")))});\n'
+    wrapper = f'program = _lmcode_ schema={json.dumps(str(schema))};\n{source}\nend _lmcode_\nsavedsl(program, {json.dumps(str(vector/(name+".dslb")))});\n'
     with tempfile.TemporaryDirectory(prefix="lmcode-bench-compile-") as scratch:
         lm = Path(scratch) / "compile.lm"; lm.write_text(wrapper); subprocess.run([os.environ.get("LMSCRIPT_BIN", "lmscript"), str(lm)], check=True, stdout=subprocess.DEVNULL)
     return vector

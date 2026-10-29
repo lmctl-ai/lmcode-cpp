@@ -1,6 +1,6 @@
 # lmcode-cpp
 
-The C++ runtime for lmscript `_dsl_` bytecode: loader, verifier, VM and host registry in one header, `include/dslvm.hpp`.
+The C++ runtime for lmscript `_lmcode_` bytecode: loader, verifier, VM and host registry in one header, `include/dslvm.hpp`.
 C++17, standard library only, no dependencies. This repository is the single source of truth for the header; hosts vendor it
 by pinned hash (see "Consuming it").
 
@@ -16,7 +16,7 @@ See [Embedding it in twenty lines](#embedding-it-in-twenty-lines) for a minimal 
 
 ## What it is
 
-lmscript compiles a `_dsl_` block (a small strongly typed configuration language whose names come from a JSON schema) into a
+lmscript compiles a `_lmcode_` block (a small strongly typed configuration language whose names come from a JSON schema) into a
 portable bytecode file (`savedsl`). A host program written in C++ embeds this header, implements the schema's objects and
 functions in a `dslvm::Registry`, loads the file with the exact schema bytes, and runs the chunk once per event with a
 `dslvm::Context` of live host objects. The host owns the process, the objects and their lifetime; the chunk only calls what
@@ -247,3 +247,21 @@ ports and compare their actual output bytes; unfinished ports fail visibly.
 
 
 The v3 catalog adds strict byte Base64/hex codecs and independent insertion-order map `keys()`/`values()` snapshots; see [the canonical std inventory](docs/std.md).
+
+## Runnable annotated interface example
+
+[examples/rule-entries.lms](examples/rule-entries.lms) defines two `@item`
+functions and one `@total` function, each with `implements Adjuster`. The
+schema declares `Adjuster(Money) -> void`; the compiler checks the signature.
+The body prints first, then the host calls entries by annotation. `@never`
+demonstrates an entry that this host does not dispatch.
+
+```sh
+lmscript examples/rule-entries.lms /tmp/rule-entries.dslb
+../lmcode-cpp-sample/build/lmcode-cpp-sample --dsl /tmp/rule-entries.dslb
+```
+
+Use lmscript 0.2.444 (DSLB v6). The expected trace is pinned in
+[sample-suite/expected/068-rule-entries.out](sample-suite/expected/068-rule-entries.out).
+For a non-void interface and returned entry value, see
+[069-rule-value-entry.lms](sample-suite/programs/069-rule-value-entry.lms).

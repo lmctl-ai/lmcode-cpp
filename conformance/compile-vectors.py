@@ -18,8 +18,8 @@ def main():
         source = (directory / vector['source']).read_text()
         output = directory / vector['bytecode']
         # Keep exactly one wrapper line before the DSL, preserving source positions.
-        wrapper = ('program = _dsl_ schema=' + json.dumps(str(schema)) + ';\n'
-                   + source + 'end _dsl_\n'
+        wrapper = ('program = _lmcode_ schema=' + json.dumps(str(schema)) + ';\n'
+                   + source + 'end _lmcode_\n'
                    + 'savedsl(program, ' + json.dumps(str(output)) + ');\n')
         with tempfile.TemporaryDirectory(prefix='lmcode-compile-') as scratch:
             path = Path(scratch) / 'compile.lm'
