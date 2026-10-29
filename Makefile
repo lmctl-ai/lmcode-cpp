@@ -106,7 +106,7 @@ REFERENCE_HOST ?= ../lmcode-cpp-sample
 .PHONY: sample-suite
 sample-suite:
 	$(MAKE) -C "$(REFERENCE_HOST)" SDK="$(abspath .)" SUITE="$(abspath sample-suite)" BUILD="$(abspath $(BUILD)/sample-reference)" test
-	python3 -B sample-suite/test_runner.py
+	lmscript --no-preflight sample-suite/test-runner.lms
 
 $(BUILD)/stdlib_containers_test: tests/stdlib_containers_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
 	@mkdir -p $(BUILD)

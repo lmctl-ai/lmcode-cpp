@@ -4,7 +4,7 @@ on:
     inputs:
       compiler:
         description: Published compiler version or latest
-        default: '0.2.420'
+        default: 'latest'
         type: string
   repository_dispatch:
     types: [lmcode-language-changed]
@@ -14,7 +14,7 @@ jobs:
   sample:
     runs-on: ubuntu-24.04
     env:
-      LMSCRIPT_VERSION: ${{ inputs.compiler || github.event.client_payload.compiler || '0.2.420' }}
+      LMSCRIPT_VERSION: ${{ inputs.compiler || github.event.client_payload.compiler || 'latest' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -33,4 +33,4 @@ jobs:
       - name: Run current SDK and canonical corpus against the pinned reference host
         run: make -C lmcode-cpp sample-suite
       - name: Recompile supported source wrappers and report compiler feature gaps
-        run: python3 -B lmcode-cpp/sample-suite/check-recompile.py
+        run: cd lmcode-cpp && lmscript --no-preflight sample-suite/check-recompile.lms

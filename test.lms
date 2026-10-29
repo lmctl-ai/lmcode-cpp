@@ -1,0 +1,19 @@
+# Canonical SDK checks; optional first argument is a built reference host.
+import "./sample-suite/runner-lib.lms";
+root = suite_root();
+result = invoke(root, ["make", "test", "conformance"], [], {}, 600000);
+print(result.stdout);
+print(result.stderr);
+assert(result.code == 0 && result.error == "", "SDK checks failed");
+for (script in ["audit.lms", "check-recompile.lms", "test-runner.lms"]) {
+  result = invoke(root, compiler_command(), ["--no-preflight", path_join(root, script)], {}, 600000);
+  print(result.stdout);
+  print(result.stderr);
+  assert(result.code == 0 && result.error == "", "suite check failed: " + script);
+}
+if (len(ARGV) > 0) {
+  result = invoke(root, compiler_command(), concat(["--no-preflight", path_join(root, "run-suite.lms")], ARGV), {}, 600000);
+  print(result.stdout);
+  print(result.stderr);
+  assert(result.code == 0 && result.error == "", "reference host check failed");
+}
