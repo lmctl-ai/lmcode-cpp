@@ -440,6 +440,7 @@ parse_template(const std::string &s, size_t &pos, const std::string &mode,
         throw Error("template_render: invalid loop separator");
       auto raw = m[1].str();
       try {
+        utf8(raw);
         Parser p(raw);
         separator = p.val().text;
       } catch (const Error &) {

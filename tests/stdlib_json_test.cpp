@@ -84,6 +84,11 @@ static void templates() {
   assert(fn(r, "fn template_render(string, Json) -> string",
             {Value::string(bytes), Value::object("Json", &context)})
              .s == bytes);
+  bad(r, "fn template_render(string, Json) -> string",
+      {Value::string(std::string("<items:{x|x}; separator=\\\"") + char(255) +
+                     "\\\">"),
+       Value::object("Json", &context)},
+      "template_render: invalid loop separator");
   std::cout << "PASS template vectors and raw bytes\n";
 }
 int main(int argc, char **argv) {
