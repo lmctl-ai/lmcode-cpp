@@ -416,7 +416,7 @@ parse_template(const std::string &s, size_t &pos, const std::string &mode,
       "^<([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[[0-9]+\\])*)(?:"
       ":\\{([A-Za-z_][A-Za-z0-9_]*)\\||>)");
   static const std::regex close(
-      "^};[ ]*separator[ ]*=[ ]*(\"(?:[^\"\\\\]|\\\\.)*\")>");
+      "^\\};[ ]*separator[ ]*=[ ]*(\"(?:[^\"\\\\]|\\\\.)*\")>");
   std::vector<TemplateNode> nodes;
   std::string literal;
   auto flush = [&]() {
