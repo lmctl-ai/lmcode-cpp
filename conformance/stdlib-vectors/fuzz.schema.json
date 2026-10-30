@@ -439,6 +439,15 @@
         "returns": "string"
       }
     ],
+    "template_render": [
+      {
+        "params": [
+          "string",
+          "Json"
+        ],
+        "returns": "string"
+      }
+    ],
     "bytes": [
       {
         "params": [

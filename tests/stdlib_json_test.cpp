@@ -4,7 +4,9 @@
 #include "../stdlib/json.hpp"
 #include "dslvm.hpp"
 #include <cassert>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 using namespace dslvm;
 using namespace dslvm::stdlib;
 static Value fn(const Registry &r, const char *s, Args a) {
@@ -46,6 +48,44 @@ static std::string nested(size_t depth) {
     out.push_back(']');
   return out;
 }
+static void templates() {
+  std::ifstream input("std/template-cases.json");
+  std::stringstream buffer;
+  buffer << input.rdbuf();
+  auto data = buffer.str();
+  json_detail::Parser parser(data);
+  auto vectors = parser.val();
+  assert(!vectors.array.empty());
+  auto field = [](JsonNode &n, const std::string &key) -> JsonNode * {
+    for (auto &m : n.object)
+      if (m.key == key)
+        return m.value.get();
+    return nullptr;
+  };
+  Registry r;
+  for (auto &v : vectors.array) {
+    auto context = field(v, "context");
+    auto error = field(v, "error");
+    auto before = json_detail::emit(*context);
+    try {
+      auto result = fn(r, "fn template_render(string, Json) -> string",
+                       {Value::string(field(v, "template")->text),
+                        Value::object("Json", context)});
+      assert(!error && result.s == field(v, "result")->text);
+    } catch (const Error &e) {
+      assert(error && e.what() == error->text);
+    }
+    assert(before == json_detail::emit(*context));
+  }
+  std::string empty = "{}";
+  json_detail::Parser ep(empty);
+  auto context = ep.val();
+  std::string bytes("\xff\0", 2);
+  assert(fn(r, "fn template_render(string, Json) -> string",
+            {Value::string(bytes), Value::object("Json", &context)})
+             .s == bytes);
+  std::cout << "PASS template vectors and raw bytes\n";
+}
 int main(int argc, char **argv) {
   if (argc == 2 && std::string(argv[1]) == "--signatures") {
     Registry registry(StdMode::Disabled);
@@ -55,6 +95,7 @@ int main(int argc, char **argv) {
       std::cout << signature << '\n';
     return 0;
   }
+  templates();
   Registry r(StdMode::Disabled);
   Collections arena;
   register_json(r, arena);

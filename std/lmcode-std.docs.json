@@ -4,11 +4,12 @@
     "errors": "Catalog failures use RUN_HOST; file failures use FUNCTION: PATH: OS reason.",
     "lifetime": "Default registries own standard collection lifetimes; handles are valid only for the active run. All collection types share a 65536-object allocation budget; clearing a collection does not reclaim an allocation.",
     "paths": "Relative file paths use the process cwd without sandbox or root checks. Unix preserves native path bytes; Windows requires strict UTF-8 and supports long drive/UNC paths. Every platform rejects embedded NUL. Symlinks are followed; missing/broken paths and nonregular objects return false from file_exists, while other metadata errors trap.",
-    "registration": "Default registries install 181 built-ins; testing print/assertions remain explicit host registrations.",
+    "registration": "Default registries install 182 built-ins; testing print/assertions remain explicit host registrations.",
     "json": "Json is immutable strict UTF-8 JSON: scalar Unicode, signed int64 or finite binary64, depth 256, duplicate decoded keys/BOM rejected. Compact output preserves number/string token spellings; navigation borrows nodes until run end.",
     "priority": "PQ is min-first with insertion-order ties; signed zero priorities tie. Nonfinite priorities and next sequence 2^63-1 fail without mutation; clear resets sequence to zero.",
     "encoding": "Hex is lowercase on encode and accepts ASCII mixed-case digits on decode. Base64 is canonical padded RFC 4648 section 4, rejecting whitespace, URL-safe alphabet, invalid padding and nonzero pad bits. Strings are raw bytes.",
-    "snapshots": "Map keys()/values() each allocate one independent list snapshot in insertion order; mutation never aliases map storage. Float payload bits are preserved."
+    "snapshots": "Map keys()/values() each allocate one independent list snapshot in insertion order; mutation never aliases map storage. Float payload bits are preserved.",
+    "templates": "One-pass text rendering with nested JSON context, zero-based indexed lists, list loops and strict boolean conditions. Strings insert verbatim; other values use compact JSON. No recursive interpolation or format-specific escaping."
   },
   "schema": "std/lmcode-std.schema.json",
   "signatures": {
@@ -1499,6 +1500,25 @@
       ],
       "summary": "Append an item; return the same container.",
       "errors": []
+    },
+    "fn template_render(string, Json) -> string": {
+      "area": "string",
+      "params": [
+        "string",
+        "Json"
+      ],
+      "summary": "Render arbitrary text with <path>, <items[0]>, <items:{item|body}; separator=\", \"> and <if(flag)>yes<else>no<endif>. Loop index is zero-based. << emits <. Inserted values remain literal.",
+      "errors": [
+        "template_render: context must be an object",
+        "template_render: missing variable PATH",
+        "template_render: loop requires a list: PATH",
+        "template_render: condition requires a bool: PATH",
+        "template_render: unterminated block",
+        "template_render: unexpected conditional delimiter",
+        "template_render: invalid loop separator",
+        "template_render: index is reserved",
+        "template_render: maximum nesting exceeded"
+      ]
     }
   },
   "version": 3

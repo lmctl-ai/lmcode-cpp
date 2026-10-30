@@ -28,7 +28,7 @@ class MergeTests(unittest.TestCase):
         self.assertEqual(standard['name'], 'lmcode_std_v3')
         count = sum(len(overloads) for overloads in functions.values())
         count += sum(len(overloads) for item in types.values() for overloads in item['methods'].values())
-        self.assertEqual(count, 181)
+        self.assertEqual(count, 182)
 
     def test_preserves_host_metadata_and_input(self):
         host = self.host()

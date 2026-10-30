@@ -27,7 +27,7 @@ class StdSchemaTests(unittest.TestCase):
     def test_canonical_metadata_and_count(self):
         self.assertEqual(CANONICAL["name"], "lmcode_std_v3")
         self.assertEqual(set(CANONICAL), {"dsl.schema", "name", "types", "functions"})
-        self.assertEqual(len(merge.canonical_signatures(CANONICAL)), 181)
+        self.assertEqual(len(merge.canonical_signatures(CANONICAL)), 182)
 
     def test_canonical_digest_lock(self):
         import hashlib

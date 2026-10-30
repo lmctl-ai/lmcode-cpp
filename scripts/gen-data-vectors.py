@@ -167,6 +167,9 @@ for name,payload,reason,offset in [
 ]:
  write('data-json-'+name,'json_parse(bytes("'+payload.hex()+'"));',error=['RUN_HOST',f'json_parse: {reason} at byte {offset}'])
 
+# Text templates use Json only as a nested context container.
+write('data-text-template', 'let context=json_parse(bytes("7b226e616d65223a2253616d222c226974656d73223a5b312c325d2c226f6b223a747275657d")); t.hex(template_render("<if(ok)><name>:<items:{item|<index>=<item>}; separator=\\\",\\\"><endif>",context));', ['hex '+b'Sam:0=1,1=2'.hex()])
+
 def update_manifest():
     m = json.loads((OUT / "manifest.json").read_text())
     m["vectors"] = [v for v in m.get("vectors", []) if not v.get("name", "").startswith("data-")]

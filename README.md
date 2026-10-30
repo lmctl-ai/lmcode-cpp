@@ -215,7 +215,7 @@ Standard catalog conformance fixtures and their portable byte-tracing host contr
 
 ## Built-in lmcode std
 
-Every `dslvm::Registry` now includes the 181-signature standard by default. `Registry(StdMode::Disabled)` opts out; `dslvm::register_std(registry)` enables it idempotently. `signatures()` includes std, `host_signatures()` excludes it, and `matches_schema_signatures(...)` accepts either host-only or already-merged declarations while still rejecting host drift. Collections belong to the registry and are cleared at entry and exit of each `Program::run`, including failures; native callbacks allocate through `registry.std_collections()`. Printing and assertions are outside std and require the optional testing catalog or host implementations.
+Every `dslvm::Registry` now includes the 182-signature standard by default. `Registry(StdMode::Disabled)` opts out; `dslvm::register_std(registry)` enables it idempotently. `signatures()` includes std, `host_signatures()` excludes it, and `matches_schema_signatures(...)` accepts either host-only or already-merged declarations while still rejecting host drift. Collections belong to the registry and are cleared at entry and exit of each `Program::run`, including failures; native callbacks allocate through `registry.std_collections()`. Printing and assertions are outside std and require the optional testing catalog or host implementations.
 
 `std/lmcode-std.schema.json` is the canonical versioned surface. Until the compiler injects it implicitly, `python3 scripts/merge-std.py host.schema.json effective.schema.json` generates the effective compile/load schema without copying std declarations into host sources. The helper also extracts host-only schemas and normalizes compiler signature lists. Vendor `include/dslvm.hpp` together with all `stdlib/*.hpp`; default registration has no external library dependency. Individual group headers and explicit binders remain supported for manual opted-out registries. Domain-specific types and stricter assertions remain host APIs.
 
@@ -230,7 +230,7 @@ small C++17 shop/ledger host and a ten-step embedding guide. Its vendored copy o
 [`sample-suite/`](sample-suite/README.md) is shared by the C, C++, Rust, Go, C#,
 Java, Kotlin and Scala samples. The canonical suite lives here: 88 programs plus
 three loader mutations, exact stdout/exit fixtures, CLI protocol checks and an audit
-of every one of the 181 std imports, including the v2 data and Json programs.
+of every one of the 182 std imports, including the v2 data and Json programs.
 
 ```sh
 # With the C++ sample checked out beside this SDK:
@@ -282,3 +282,7 @@ checkout and its native build tools. `test.lms` runs SDK checks, canonical
 signature coverage, bytecode reproduction and negative runner controls.
 See [the sample driver documentation](sample-suite/README.md#lmscript-test-drivers)
 for byte-exact process capture and corpus-directory overrides.
+
+## Text templates
+
+The standard `template_render(string, Json) -> string` function renders arbitrary text with nested context, indexed lists, loops and boolean conditions. Inserted values remain literal. See the [portable contract and examples](std/template.md).

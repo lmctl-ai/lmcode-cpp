@@ -1,6 +1,6 @@
 # Built-in lmcode std v3
 
-Canonical signatures: 181.
+Canonical signatures: 182.
 
 **Bytes:** All strings are raw bytes; lengths and offsets are byte-based, NUL and invalid UTF-8 are preserved.
 
@@ -16,9 +16,11 @@ Canonical signatures: 181.
 
 **Priority:** PQ is min-first with insertion-order ties; signed zero priorities tie. Nonfinite priorities and next sequence 2^63-1 fail without mutation; clear resets sequence to zero.
 
-**Registration:** Default registries install 181 built-ins; testing print/assertions remain explicit host registrations.
+**Registration:** Default registries install 182 built-ins; testing print/assertions remain explicit host registrations.
 
 **Snapshots:** Map keys()/values() each allocate one independent list snapshot in insertion order; mutation never aliases map storage. Float payload bits are preserved.
+
+**Templates:** One-pass text rendering with nested JSON context, zero-based indexed lists, list loops and strict boolean conditions. Strings insert verbatim; other values use compact JSON. No recursive interpolation or format-specific escaping.
 
 | Signature | Area | Semantics | Errors |
 | --- | --- | --- | --- |
@@ -80,6 +82,7 @@ Canonical signatures: 181.
 | `fn str_to_int(string) -> int` | string | Parse a complete signed decimal int64 token; return zero on failure. | — |
 | `fn str_trim(string) -> string` | string | Remove ASCII space and bytes 0x09 through 0x0d from both ends. | — |
 | `fn str_upper(string) -> string` | string | Uppercase ASCII a-z bytes; preserve every other byte. | — |
+| `fn template_render(string, Json) -> string` | string | Render arbitrary text with <path>, <items[0]>, <items:{item\|body}; separator=", "> and <if(flag)>yes<else>no<endif>. Loop index is zero-based. << emits <. Inserted values remain literal. | template_render: context must be an object; template_render: missing variable PATH; template_render: loop requires a list: PATH; template_render: condition requires a bool: PATH; template_render: unterminated block; template_render: unexpected conditional delimiter; template_render: invalid loop separator; template_render: index is reserved; template_render: maximum nesting exceeded |
 | `method FloatList.add(float) -> FloatList` | collections | Append a float and return the receiver. | — |
 | `method FloatList.at(int) -> float` | collections | Return the element at a zero-based index. | FloatList.at: index out of range: i |
 | `method FloatList.clear() -> FloatList` | collections | Remove elements and return the receiver. | — |
