@@ -1,6 +1,6 @@
 # Standard catalog performance
 
-`scripts/bench-stdlib.py` generates temporary schema-bound DSL workloads and runs prebuilt conformance executables. Compilation is outside the measured interval. Each workload gets one warmup execution, then the requested number of timed repetitions; the runner must report the expected short trace. The harness captures only the small runner result, never the large file or string trace.
+`scripts/bench-stdlib.py` generates temporary schema-bound lmcode workloads and runs prebuilt conformance executables. Compilation is outside the measured interval. Each workload gets one warmup execution, then the requested number of timed repetitions; the runner must report the expected short trace. The harness captures only the small runner result, never the large file or string trace.
 
 The workloads exercise one million operations for `StrList` and `StrMap`, including full indexed reads, updates, removals and joins, a one-million-element replace/split/match workload, and a 200 MB write/read/append/lines workload. `--size 1000` is the fast smoke case. Supply additional SDK runners with repeated `--runner name=command`; the command receives the generated vector directory. The harness does not build SDKs; `--timeout` bounds each runner process.
 

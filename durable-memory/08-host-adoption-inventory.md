@@ -1,6 +1,6 @@
 # Host adoption audit
 
-Scope: 25 DSL host repositories and 30 schema/programmatic profiles under `the sibling checkouts directory`; lmproxy and SDK repositories are excluded. Corresponding `*.host.json` is preferred as the declaration set; older hosts use their primary `<host>.dsl.json`. lmdb has no schema directory, so `HostApi.java` is parsed as the declarative source and cross-checked against the emitted `Main --dsl-schema` JSON. lmgallery is a gallery/non-host repository; lmvideo is outside the DSL host adoption set. No in-scope host lacks an `origin` remote.
+Scope: 25 lmcode host repositories and 30 schema/programmatic profiles under `the sibling checkouts directory`; lmproxy and SDK repositories are excluded. Corresponding `*.host.json` is preferred as the declaration set; older hosts use their primary `<host>.dsl.json`. lmdb has no schema directory, so `HostApi.java` is parsed as the declarative source and cross-checked against the emitted `Main --dsl-schema` JSON. lmgallery is a gallery/non-host repository; lmvideo is outside the lmcode host adoption set. No in-scope host lacks an `origin` remote.
 
 ## Canonical standard overlap
 
@@ -164,7 +164,7 @@ Function names with multiple signature variants or profiles are in the JSON repo
 - `System`: lmmolecule, lmnum, lmphysics, lmspace
 - `Texture`: lmfilament, lmmagnum
 
-Programmatic lmdb schema: `Connection` and `Result` are the only DSL object types; `connect` and `connect_file` are the free functions. `Database` and `Database.QueryResult` are Java implementation types, and rows are `List<List<Object>>`; there is no `Row` DSL type.
+Programmatic lmdb schema: `Connection` and `Result` are the only lmcode object types; `connect` and `connect_file` are the free functions. `Database` and `Database.QueryResult` are Java implementation types, and rows are `List<List<Object>>`; there is no `Row` lmcode type.
 
 ## Classification and migration guidance
 

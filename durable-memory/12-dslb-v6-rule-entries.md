@@ -1,4 +1,4 @@
-# DSLB v6: rule entry table (2026-10-28)
+# lmcode bytecode (DSLB v6): rule entry table (2026-10-28)
 
 Version 6 = version 5 bytes (byte-identical through the body line table) plus an `entries` section; the version field is
 the only change for a file without rules (it ends with `u16 0`). **6 is the only accepted version**: v5 and all others are
@@ -28,7 +28,7 @@ last entry.
   private `execute()` as `run()`; the result is the stack value at HALT, `Value::none()` for void. Wrong arity or a bad
   index is RUN_HOST: `call entry 'increment' expects 1 argument(s); found 0`,
   `call entry index 5 out of range (2 entries)`.
-- Conformance: dsl-conformance/3, 70 core vectors (new expect kinds `entries`, `call`, `call_error`, `call_error_at`;
+- Conformance: `dsl-conformance/3`, 70 core vectors (new expect kinds `entries`, `call`, `call_error`, `call_error_at`;
   `load-other-version` pins a v5 file). The generator's `runtime-empty-lines-fallback` mutation was v5-shaped (sliced off
   the entries count); fixed upstream in the generator, not by hand. `runtime-type-error` was dropped by the v6 generator.
 - Sample suite: schema gains `Score (Money) -> int`; cases 068 (item/total/never dispatch), 069 (value entries),

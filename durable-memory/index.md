@@ -27,7 +27,7 @@ scripts/matrix.sh                     # Cross-SDK verification across cpp, rust,
 | [09-compiler-readiness-results.md](09-compiler-readiness-results.md) | Host-by-host compiler readiness results and baseline status (data: [09-compiler-readiness-results.json](09-compiler-readiness-results.json)) |
 | [10-std-migration-validation.md](10-std-migration-validation.md) | Standard library host migration validation plan and oracle verification |
 | [tools/README.md](tools/README.md) | The sweep, the rename-audit driver and the site-migration scripts |
-| [12-dslb-v6-rule-entries.md](12-dslb-v6-rule-entries.md) | DSLB v6 rule entry table: format, loader/verifier rules, entries()/call() API, sample-suite dispatch |
+| [12-dslb-v6-rule-entries.md](12-dslb-v6-rule-entries.md) | lmcode bytecode (DSLB v6) rule entry table: format, loader/verifier rules, entries()/call() API, sample-suite dispatch |
 | [12-result-sink.md](12-result-sink.md) | Invocation-owned result sink imports, canonical return signatures, numeric/frame contract and std-skew window |
 
 ## Adding a conformance vector or function
