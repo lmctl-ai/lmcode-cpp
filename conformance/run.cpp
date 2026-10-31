@@ -15,6 +15,9 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <map>
+#include <set>
+#include "../stdlib/json.hpp"
 #include <filesystem>
 #include <chrono>
 #include <sstream>
@@ -256,6 +259,51 @@ static bool result_matches(const std::string& line, const dslvm::Value& v) {
   return false;
 }
 
+// Reuse the SDK JSON parser rather than infer vector membership from files that
+// happen to remain. A deleted expectation must fail the command in BOUNDARIES.md.
+static const dslvm::stdlib::JsonNode& manifest_field(const dslvm::stdlib::JsonNode& node, const std::string& key) {
+  for (const auto& member : node.object) if (member.key == key) return *member.value;
+  throw std::runtime_error("manifest missing " + key);
+}
+static std::string manifest_string(const dslvm::stdlib::JsonNode& node, const std::string& key) {
+  const auto& value = manifest_field(node, key);
+  if (value.kind != dslvm::stdlib::JsonNode::Kind::String) throw std::runtime_error("manifest " + key + " must be a string");
+  return value.text;
+}
+static std::map<std::string, std::string> vector_manifest(const std::string& dir) {
+  using dslvm::stdlib::JsonNode;
+  const std::string text = dslvm::read_file(dir + "/manifest.json");
+  dslvm::stdlib::json_detail::Parser parser(text);
+  const auto manifest = parser.val(); parser.ws();
+  if (parser.p != text.size()) throw std::runtime_error("manifest has trailing input");
+  const auto& vectors = manifest_field(manifest, "vectors");
+  if (vectors.kind != JsonNode::Kind::Array || vectors.array.empty()) throw std::runtime_error("manifest vectors must be a nonempty array");
+  std::map<std::string, std::string> schemas;
+  std::set<std::string> expected;
+  for (const auto& vector : vectors.array) {
+    const auto name = manifest_string(vector, "name");
+    const auto schema = manifest_string(vector, "schema");
+    if (name.empty() || name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_") != std::string::npos)
+      throw std::runtime_error("invalid manifest vector name: " + name);
+    if (!schemas.emplace(name, schema).second) throw std::runtime_error("duplicate manifest vector: " + name);
+    if (manifest_string(vector, "bytecode") != name + ".dslb" || manifest_string(vector, "source") != name + ".dsl")
+      throw std::runtime_error("manifest paths disagree with vector name: " + name);
+    if (schema.find('/') != std::string::npos || schema.find('\\') != std::string::npos || !std::filesystem::is_regular_file(dir + "/" + schema))
+      throw std::runtime_error("missing or invalid manifest schema: " + schema);
+    for (const auto& suffix : {".expect", ".dslb", ".dsl"}) expected.insert(name + suffix);
+  }
+  std::set<std::string> actual;
+  for (const auto& file : std::filesystem::directory_iterator(dir)) {
+    const auto extension = file.path().extension().string();
+    if (extension == ".expect" || extension == ".dslb" || extension == ".dsl") {
+      if (!file.is_regular_file()) throw std::runtime_error("vector is not a regular file: " + file.path().string());
+      actual.insert(file.path().filename().string());
+    }
+  }
+  if (actual != expected) throw std::runtime_error("manifest/file-set mismatch in " + dir);
+  return schemas;
+}
+
 int main(int argc, char** argv) {
   if (argc != 2) { std::cerr << "usage: conformance VECTOR_DIR\n"; return 2; }
   // Keep the approximate matcher itself covered: tolerance accepts a close
@@ -268,18 +316,17 @@ int main(int argc, char** argv) {
     return 2;
   }
   std::string dir = argv[1];
+  std::map<std::string, std::string> schemas;
+  try { schemas = vector_manifest(dir); }
+  catch (const std::exception& e) { std::cerr << "corpus integrity: " << e.what() << "\n"; return 2; }
   std::vector<std::string> names;
-  if (DIR* d = ::opendir(dir.c_str())) { while (dirent* e = ::readdir(d)) { std::string n = e->d_name; if (n.size() > 7 && n.compare(n.size() - 7, 7, ".expect") == 0) names.push_back(n.substr(0, n.size() - 7)); } ::closedir(d); }
-  std::sort(names.begin(), names.end());
-  if (names.empty()) { std::cerr << "no vectors in " << dir << "\n"; return 2; }
+  for (const auto& entry : schemas) names.push_back(entry.first);
   int failed = 0;
   for (const std::string& name : names) {
     std::ifstream ex(dir + "/" + name + ".expect"); std::string kind; std::getline(ex, kind); std::vector<std::string> lines; for (std::string l; std::getline(ex, l);) lines.push_back(unescape(l));
     SinkExpectation expected_sink; bool has_sink_expectation = false;
     if (!lines.empty() && parse_sink_expectation(lines.back(), expected_sink)) { has_sink_expectation = true; lines.pop_back(); }
-    std::string schemaFile = dir + "/schema.json";
-    { std::ifstream m(dir + "/manifest.json"); std::stringstream ss; ss << m.rdbuf(); std::string mf = ss.str(); size_t p = mf.find("\"name\": \"" + name + "\"");
-      if (p != std::string::npos) { size_t q = mf.find("\"schema\": \"", p), next = mf.find("\"name\": \"", p + 1); if (q != std::string::npos && q < next) { q += 11; schemaFile = dir + "/" + mf.substr(q, mf.find('"', q) - q); } } }
+    const std::string schemaFile = dir + "/" + schemas.at(name);
     std::string bytes = dslvm::read_file(dir + "/" + name + ".dslb"), schema = dslvm::read_file(schemaFile);
     Stub stub(schema.find("\"str_list\"") != std::string::npos);
     dslvm::ResultSink sink; stub.reg.set_result_sink(&sink);
@@ -363,7 +410,7 @@ int main(int argc, char** argv) {
       uint32_t line = lines.size() > 2 ? uint32_t(std::stoul(lines[2])) : 0; uint16_t column = lines.size() > 3 ? uint16_t(std::stoul(lines[3])) : 0;
       ok = loaded && !called && lines.size() >= 5 && error_code == lines[1] && ((line == 0 && !error_has_location) || (line != 0 && error_has_location && error_line == line)) && ((column == 0 && !error_has_column) || (column != 0 && error_has_column && error_column == column)) && error.find(lines[4]) != std::string::npos;
     }
-    else if (kind == "load_error") ok = !loaded && error.find(lines.at(0)) != std::string::npos;
+    else if (kind == "load_error") ok = !loaded && lines.size() == 2 && error_code == lines[0] && error.find(lines[1]) != std::string::npos;
     else { std::cerr << name << ": unknown expectation kind '" << kind << "'\n"; return 2; }
     if (ok && has_sink_expectation) ok = sink.json() == expected_sink.json && frame_output.str() == expected_sink.frame;
     if (ok) std::cout << "ok - " << name << " (" << kind << ")\n";

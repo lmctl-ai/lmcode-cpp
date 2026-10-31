@@ -37,6 +37,7 @@ test-string-stdlib: $(BUILD)/stdlib_string_test $(BUILD)/stdlib_string_header.o
 conformance: $(BUILD)/conformance
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_std_corpus.py
 	PYTHONDONTWRITEBYTECODE=1 python3 scripts/gen-std-corpus.py --check
+	PYTHONDONTWRITEBYTECODE=1 LMCODE_CONFORMANCE_RUNNER="$(abspath $(BUILD)/conformance)" python3 tests/test_core_corpus.py
 	$(BUILD)/conformance conformance/vectors
 	$(BUILD)/conformance conformance/stdlib-vectors
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_data_vectors.py
