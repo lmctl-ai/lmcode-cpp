@@ -118,5 +118,10 @@
     "name": "truncated",
     "raw_hex": "7b2276657273696f6e223a",
     "frame": "LMCODE_RETURN_BEGIN\n{\"ok\":false,\"phase\":\"cli\",\"code\":\"CLI_USAGE\",\"message\":\"lmcode invocation: json_parse: expected value at byte 11\"}\nLMCODE_RETURN_END\n"
+  },
+  {
+    "name": "control-key-diagnostic",
+    "raw_hex": "7b2276657273696f6e223a312c226d6f6465223a2273696e676c65222c227061727473223a5b5d2c225c625c66223a307d",
+    "frame": "LMCODE_RETURN_BEGIN\n{\"ok\":false,\"phase\":\"cli\",\"code\":\"CLI_USAGE\",\"message\":\"lmcode invocation: unknown key \\b\\f\"}\nLMCODE_RETURN_END\n"
   }
 ]
