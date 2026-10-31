@@ -16,6 +16,18 @@ class MergeTests(unittest.TestCase):
     def host(self):
         return {'dsl.schema': 2, 'name': 'host', 'types': {}, 'functions': {}, 'context': {}, 'enums': {'State': ['READY']}}
 
+    def test_result_metadata_is_host_owned_and_survives_merge_strip(self):
+        host = self.host()
+        host['result'] = {'type': 'IntMap', 'nullable': False}
+        original = json.dumps(host)
+        other = dict(standard, result={'type': 'string'})
+        merged = merge_std.merge_schema(host, other)
+        self.assertEqual(merged['result'], host['result'])
+        self.assertEqual(merge_std.remove_standard(merged, other)['result'], host['result'])
+        self.assertEqual(json.dumps(host), original)
+        plain = self.host()
+        self.assertNotIn('result', merge_std.merge_schema(plain, other))
+
     def test_canonical_matches_all_compatibility_fragments(self):
         types, functions = {}, {}
         for name in ['string', 'math', 'collections', 'file', 'containers', 'json', 'encoding', 'result']:

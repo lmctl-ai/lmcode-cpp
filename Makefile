@@ -4,6 +4,7 @@ BUILD ?= build
 EXEEXT ?=
 ifeq ($(OS),Windows_NT)
 EXEEXT := .exe
+INVOCATION_ENTRY_FLAGS := -municode
 endif
 
 .PHONY: test test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std conformance all clean
@@ -163,9 +164,9 @@ $(BUILD)/return_registration_test: tests/return_registration_test.cpp include/ds
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -I include -o $@ $<
 
-$(BUILD)/return_conformance$(EXEEXT): conformance/run_returns.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+$(BUILD)/return_conformance$(EXEEXT): conformance/run_returns.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp) conformance/native_invocation_args.hpp
 	@mkdir -p $(BUILD)
-	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+	$(CXX) $(CXXFLAGS) $(INVOCATION_ENTRY_FLAGS) -I include -o $@ $<
 
 .PHONY: test-results test-return-vectors
 test-results: $(BUILD)/result_sink_test $(BUILD)/result_json_test $(BUILD)/return_registration_test
@@ -185,3 +186,23 @@ $(BUILD)/stdlib_result_header.o: tests/stdlib_result_header.cpp include/dslvm.hp
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -Werror -I include -c -o $@ $<
 test-results: $(BUILD)/stdlib_result_header.o
+
+# Amendment R1: native invocation ownership, metadata, envelope and contracts.
+$(BUILD)/invocation_results_test: tests/invocation_results_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+$(BUILD)/stdlib_invocation_header.o: tests/stdlib_invocation_header.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -Werror -I include -c -o $@ $<
+$(BUILD)/invocation_conformance$(EXEEXT): conformance/run_invocations.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp) conformance/native_invocation_args.hpp
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) $(INVOCATION_ENTRY_FLAGS) -I include -o $@ $<
+.PHONY: test-invocations test-invocation-vectors
+test-invocations: $(BUILD)/invocation_results_test $(BUILD)/stdlib_invocation_header.o
+	$(BUILD)/invocation_results_test
+	PYTHONDONTWRITEBYTECODE=1 CXX="$(CXX)" python3 tests/test_invocation_controls.py
+test-invocation-vectors: $(BUILD)/invocation_conformance$(EXEEXT)
+	PYTHONDONTWRITEBYTECODE=1 LMCODE_INVOCATION_HARNESS="$(abspath $(BUILD)/invocation_conformance$(EXEEXT))" python3 tests/test_invocation_vectors.py
+	PYTHONDONTWRITEBYTECODE=1 python3 scripts/gen-invocation-expectations.py --check
+test: test-invocations
+conformance: test-invocation-vectors

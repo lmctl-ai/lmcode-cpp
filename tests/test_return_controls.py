@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix='return-controls-',dir=ROOT/'build') as 
   source=originals[path];assert anchor in source,('missing anchor',name)
   source=source.replace(anchor,replacement)
   if name=='source-mutation alias':
-   source=source.replace('void set(const Value& value) { root_=', 'void set(const Value& value) { borrowed_=std::make_shared<Value>(value); root_=')
+   source=source.replace('void set(const Value& value) {', 'void set(const Value& value) { borrowed_=std::make_shared<Value>(value);')
    source=source.replace('return stdlib::result_detail::encode(root_);','return borrowed_ ? stdlib::result_detail::encode(stdlib::result_detail::copy_value(*borrowed_)) : stdlib::result_detail::encode(root_);')
   (work/path).write_text(source)
   result=run(unit,case)

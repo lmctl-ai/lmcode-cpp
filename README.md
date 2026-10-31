@@ -67,12 +67,12 @@ check, not a defense: by design the VM performs no comprehensive call-time argum
 own code. `Value` carries `INT` (int64), `FLOAT` (binary64), `STR`, `BOOL` and `OBJ` (a host pointer plus the schema type name); a
 void method returns `Value::none()`. Host code throws `dslvm::Error` to report a run-time failure.
 
-**Result line and exit codes.** CLI hosts print exactly one JSON line on stdout through `dslvm::report_ok(json)`,
-`dslvm::report_error("load"|"run", e)` (returns 3) or `dslvm::report_app_failure(message)` (returns 4) and exit with the returned
-code; lmscript's own compile failures are exit 2. `Error::code` is `LOAD_BAD_BYTECODE`, `LOAD_SCHEMA_MISMATCH`, `LOAD_UNBOUND`,
-`RUN_ERROR` (a VM error), `RUN_HOST` (thrown by a host closure) or `APP_FAIL`. When a non-empty line table maps the faulting
-opcode, `Error` carries numeric `line`/`column` and prefixes the message with `dsl line N:C: `; the standard JSON result includes
-those fields; a zero column means the line is known and only `line` is emitted. Empty line tables preserve the original message and omit the fields. Server hosts (lmweb) keep their own protocol.
+**Invocation envelopes and exit codes.** CLI adapters explicitly use
+`InvocationResults` and `failure_frame`, described below. Success is 0; controlled
+cli/load-or-run/app failures are 2/3/4. Native errors preserve their code and
+positive source location. The internal message prefix `dsl line N:C: ` is a
+literal diagnostic format; a zero column is omitted. VM execution never prints
+an envelope implicitly.
 
 ## Versioning rule
 
@@ -288,53 +288,75 @@ for byte-exact process capture and corpus-directory overrides.
 The standard `template_render(string, Json) -> string` function renders arbitrary text with nested context, indexed lists, loops and boolean conditions. Inserted values remain literal. See the [portable contract and examples](std/template.md).
 
 
-## Invocation-owned JSON results (std slice 1)
+## Program-slot results and invocation envelopes (R1)
 
-`dslvm::ResultSink` is an optional host-owned invocation sink. Configure it before
-running the body, retain it across selected `Program::call` entries, and reset it
-only before the next logical program. Per-region arena reset never resets it:
+One native collector owns independent `ResultSink` instances for submitted slots:
 
 ```cpp
+auto results = dslvm::InvocationResults::from_command(parsed_files);
 dslvm::Registry registry;
-dslvm::ResultSink sink;
-registry.set_result_sink(&sink);
-sink.reset();
-program.run(context, registry);
-for (size_t i = 0; i < program.entries().size(); ++i)
-  program.call(i, context, registry, {}); // supply the interface's actual args
-// After successful dispatch AND application validation only:
-dslvm::write_result_frame(output, sink);
+for (const auto& part : results.registrations()) {
+  std::string phase = "load";
+  try {
+    auto contract = dslvm::ResultContract::from_schema(host_schema_bytes);
+    auto program = dslvm::Program::load(read_program(part.file), host_schema_bytes, registry);
+    results.select(part.index, registry, contract);
+    phase = "run";
+    program.run(context, registry);
+    // Dispatch the host's selected entries with their actual arguments.
+    results.complete(part.index);
+  } catch (const dslvm::Error& error) {
+    results.fail(part.index, phase, error);
+    break; // parallel adapters must also drain already-started work
+  }
+}
+// Complete global application validation; fail(nullopt,"app",error) if needed.
+return results.write_frame(std::cout);
 ```
 
-A successful host appends `LMCODE_RETURN_BEGIN\n<compact JSON>\nLMCODE_RETURN_END\n`
-to its diagnostics. `result_frame(sink)` returns these bytes without printing;
-`write_result_frame(stream,sink)` writes to an explicitly selected stream.
-The stream must preserve LF bytes (binary stdout mode on Windows). Failed host
-invocations do not call either framing helper. Existing `report_ok`/error helpers
-remain diagnostic reporters; SDK installation does not add implicit CLI output.
+The host may execute slots in another order or reselect active slots for entry
+interleaving. Results remain in add order. A slot's contract cannot change;
+completion validates, snapshots and seals its sink. Sealed sinks refuse writes,
+reset, selection and another completion. Host state may remain shared, while
+ordinary VM collection arenas keep their existing region lifetimes.
 
-The 24 ordinary standard imports are `lmcode_return_set(T)` and
-`lmcode_return_put(string,T)` for int, float, bool, string, Json, the three typed
-lists and the three typed maps, plus `lmcode_return_null()` and
-`lmcode_return_put_null(string)`. Values are deep owned copies. Missing sink,
-invalid UTF-8, nonfinite/unsafe integer values, nonzero underflow, cycles and
-unsupported handles throw `RUN_HOST`; failed writes leave the prior value intact.
-Field writes promote null to an insertion-ordered object and refuse scalar/list
-roots. Overwriting a key preserves its position. Unset and explicit null frame
-as `null`. Binary64 uses `std::to_chars` shortest-round-trip formatting, not the
-legacy `str(float)` formatter: `0.1+0.2` frames as `0.30000000000000004`.
+`LMCODE_INVOCATION_FILE` identifies private version-1 metadata with mode single or
+builder and contiguous `(index,file)` parts. Files are absolute/unique; parsed
+registrations must match exactly before dispatch. No descriptor means one CLI
+occurrence is single and several are builder mode in occurrence order, including
+duplicates. A one-slot builder is distinct from a single list payload.
 
-The new canonical fixtures in `conformance/return-vectors` execute all 24 imports,
-entry lifetime/HALT behavior and failure silence independently of the existing
-trace corpus. `make test` and `make conformance` include these checks and their
-fault controls. The older shared sample corpus/adopter cutover is slice 6.
+Exactly one terminal frame contains a compact envelope:
 
-**Std skew:** this canonical standard moves before the compiler's bundled std in
-slice 3. Do not release an npm compiler in that window. DSLB stays version 6 and
-the catalog stays version 3. Explicit fixture schemas can declare these ordinary
-imports for the pinned compiler; `$return` lowering and executable blocks are
-separate slices. Consumer SDK/suite pins are updated by their assigned adopters.
-See [result-sink lifetime and skew notes](durable-memory/12-result-sink.md).
+```text
+LMCODE_RETURN_BEGIN
+{"ok":true,"result":[0.30000000000000004,null],"parts":2}
+LMCODE_RETURN_END
+```
+
+Single success omits parts. Controlled cli/load/run/app failures return 2/3/3/4
+with one flat failure envelope and no result/parts; builder slot failures retain
+their part index. `failure_frame(out,phase,error)` covers pre-collector failures.
+The first failure wins, missing completion cannot become null, and output failure
+returns 4 without attempting a second frame. Hosts use LF-preserving streams
+(binary stdout and UTF-8 argv on Windows). Domain summaries are separate tagged
+`host_summary` diagnostics, never duplicate unframed result records.
+
+Schema 2 optionally declares `result` with required type and optional nullable.
+The 24 imports and canonical v3 catalog remain unchanged (206 signatures); no VM
+opcode or bytecode change. Writes own validated copies, preserve numeric rules,
+and check their slot's contract atomically. See
+[the native lifecycle and contract](durable-memory/13-invocation-envelope.md).
+
+`make test` and `make conformance` run native collector/contract controls and the
+new [invocation goldens](conformance/invocation-vectors/README.md), plus the original
+return fixtures. Fixture tooling uses the retained low-level compiler API, not a
+retired public export form. Original nine fixture bytecodes remain unchanged.
+
+**Protocol skew:** R1 precedes compiler R2 and actual host/sample R6 adoption.
+Do not release during this mixed-protocol window. The old sink-only frame and
+unframed report helpers are removed rather than retained as compatibility APIs.
+
 Boundary and malformed-wire coverage is described in [conformance/BOUNDARIES.md](conformance/BOUNDARIES.md).
 
 ## Historical literal names

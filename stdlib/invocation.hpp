@@ -31,9 +31,11 @@ inline std::string failure(const std::string& phase,const Error& e,std::optional
   if(part)out+=",\"part\":"+std::to_string(*part);
   return out+"}";
 }
+inline void output_error()noexcept{try{std::cerr<<"lmcode invocation: cannot write envelope\n";}catch(...){}}
 inline int emit(std::ostream& out,const std::string& json,int code)noexcept{
-  try{const auto bytes=framed(json);out.write(bytes.data(),static_cast<std::streamsize>(bytes.size()));out.flush();return out?code:4;}
-  catch(...){return 4;} // Never append a second envelope after partial output.
+  try{const auto bytes=framed(json);out.write(bytes.data(),static_cast<std::streamsize>(bytes.size()));out.flush();if(out)return code;}
+  catch(...){} // Never append a second envelope after partial output.
+  output_error();return 4;
 }
 [[noreturn]] inline void metadata_error(const std::string& text){throw Error("CLI_USAGE","lmcode invocation: "+text);}
 inline void keys(const Node& n,std::initializer_list<const char*> allowed){
@@ -65,13 +67,13 @@ public:
     try{
       auto root=parse(raw);keys(root,{"version","mode","parts"});
       const auto*version=member(root,"version"),*mode=member(root,"mode"),*parts=member(root,"parts");
-      if(!version||version->kind!=Kind::Int||version->integer!=1)metadata_error("unsupported version");
+      if(!version||!integer(*version)||integer_value(*version)!=1)metadata_error("unsupported version");
       if(!mode||mode->kind!=Kind::String||(mode->text!="single"&&mode->text!="builder"))metadata_error("invalid mode");
       if(!parts||parts->kind!=Kind::Array||parts->array.empty()||(mode->text=="single"&&parts->array.size()!=1))metadata_error("invalid parts");
       std::vector<std::string> files;
       for(size_t i=0;i<parts->array.size();++i){
         const auto& part=parts->array[i];keys(part,{"index","file"});const auto*index=member(part,"index"),*file=member(part,"file");
-        if(!index||index->kind!=Kind::Int||index->integer<0||static_cast<uint64_t>(index->integer)!=i)metadata_error("noncontiguous index");
+        if(!index||!integer(*index)||integer_value(*index)<0||static_cast<uint64_t>(integer_value(*index))!=i)metadata_error("noncontiguous index");
         if(!file||file->kind!=Kind::String||file->text.find('\0')!=std::string::npos||!std::filesystem::u8path(file->text).is_absolute())metadata_error("file must be absolute");
         if(std::find(files.begin(),files.end(),file->text)!=files.end())metadata_error("duplicate file");
         files.push_back(file->text);
@@ -96,11 +98,20 @@ public:
     }
     if(parsed_files.empty())invocation_detail::metadata_error("empty parts");
     std::vector<InvocationRegistration> registrations;
-    for(size_t i=0;i<parsed_files.size();++i){if(parsed_files[i].empty()||parsed_files[i].find('\0')!=std::string::npos)invocation_detail::metadata_error("invalid command file");stdlib::result_detail::valid_utf8(parsed_files[i],"");registrations.push_back({parsed_files[i],i});}
+    for(size_t i=0;i<parsed_files.size();++i){if(parsed_files[i].empty()||parsed_files[i].find('\0')!=std::string::npos)invocation_detail::metadata_error("invalid command file");try{stdlib::result_detail::valid_utf8(parsed_files[i],"");}catch(const Error&){invocation_detail::metadata_error("file must be UTF-8");}registrations.push_back({parsed_files[i],i});}
     return InvocationResults(parsed_files.size()>1,std::move(registrations),parsed_files.size());
   }
   static InvocationResults from_command(const std::vector<std::string>& parsed_files){
+#ifdef _WIN32
+    const wchar_t* value=_wgetenv(L"LMCODE_INVOCATION_FILE");
+    if(!value)return from_command(parsed_files,std::nullopt);
+    std::string manifest;
+    try{const auto bytes=std::filesystem::path(value).u8string();manifest.assign(reinterpret_cast<const char*>(bytes.data()),bytes.size());}
+    catch(const std::exception&){invocation_detail::metadata_error("invalid manifest path encoding");}
+    return from_command(parsed_files,manifest);
+#else
     const char* value=std::getenv("LMCODE_INVOCATION_FILE");return from_command(parsed_files,value?std::optional<std::string>(value):std::nullopt);
+#endif
   }
   const std::vector<InvocationRegistration>& registrations()const{return registrations_;}
   ResultSink& select(size_t index,Registry& registry,const ResultContract& contract){
@@ -112,15 +123,17 @@ public:
     registry.set_result_sink(s.sink.get());return *s.sink;
   }
   void complete(size_t index){if(writing_)throw Error("lmcode invocation: finalized");
-    auto& s=slot(index);if(!s.sink)throw Error("lmcode invocation: slot was not selected");s.result=s.sink->seal();}
+    auto& s=slot(index);if(!s.sink)throw Error("lmcode invocation: slot was not selected");try{s.result=s.sink->seal();}catch(const Error&e){fail(index,"run",e);throw;} }
   void fail(std::optional<size_t> index,const std::string& phase,const Error& error){
     if(writing_)throw Error("lmcode invocation: finalized");
+    if(failure_)return;
     if(index)(void)slot(*index);
     (void)invocation_detail::failure(phase,error); // validate before latching
     if(!failure_)failure_.emplace(Failure{phase,error,builder_?index:std::nullopt});
   }
-  int write_frame(std::ostream& out){
+  int write_frame(std::ostream& out)noexcept{
     if(writing_)return 4;
+    try{
     if(!failure_)for(size_t i=0;i<slots_.size();++i)if(!slots_[i].result){fail(i,"run",Error("lmcode invocation: slot not completed"));break;}
     std::string payload;int code=0;
     if(failure_){payload=invocation_detail::failure(failure_->phase,failure_->error,failure_->part);code=invocation_detail::exit_code(failure_->phase);}
@@ -131,6 +144,7 @@ public:
       payload+='}';
     }
     writing_=true;return invocation_detail::emit(out,payload,code);
+    }catch(...){writing_=true;invocation_detail::output_error();return 4;}
   }
 };
 } // namespace dslvm

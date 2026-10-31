@@ -329,7 +329,8 @@ int main(int argc, char** argv) {
     const std::string schemaFile = dir + "/" + schemas.at(name);
     std::string bytes = dslvm::read_file(dir + "/" + name + ".dslb"), schema = dslvm::read_file(schemaFile);
     Stub stub(schema.find("\"str_list\"") != std::string::npos);
-    dslvm::ResultSink sink; stub.reg.set_result_sink(&sink);
+    auto invocation=dslvm::InvocationResults::from_command({name},std::nullopt);
+    auto& sink=invocation.select(0,stub.reg,dslvm::ResultContract::from_schema(schema));
     TempCleanup temp_cleanup{stub.temp_dir};
     if (schema.find("\"test_temp_dir\"") != std::string::npos) {
       std::error_code temp_error;
@@ -344,7 +345,7 @@ int main(int argc, char** argv) {
       if (stub.temp_dir.empty()) { std::cerr << name << ": cannot create fresh temp directory: " << temp_error.message() << "\n"; return 2; }
     }
     std::string result, error, error_code, bare_error; bool loaded = false, ran = false, called = false, error_has_location = false, error_has_column = false; uint32_t error_line = 0; uint16_t error_column = 0;
-    dslvm::Value call_result; std::ostringstream frame_output;
+    dslvm::Value call_result; std::ostringstream frame_output; std::optional<dslvm::Error> native_failure;
     const bool is_call = kind == "call" || kind == "call_error" || kind == "call_error_at";
     std::unique_ptr<dslvm::Program> program;
     try {
@@ -363,19 +364,18 @@ int main(int argc, char** argv) {
         called = true;
       }
     }
-    catch (const dslvm::Error& e) { error = e.what(); bare_error = error;
+    catch (const dslvm::Error& e) { native_failure=e; error = e.what(); bare_error = error;
       if (e.has_location) {
         std::string prefix = "dsl line " + std::to_string(e.line) + (e.has_column ? ":" + std::to_string(e.column) : "") + ": ";
         if (bare_error.compare(0, prefix.size(), prefix) == 0) bare_error.erase(0, prefix.size());
       }
       error_code = e.code; error_has_location = e.has_location; error_has_column = e.has_column; error_line = e.line; error_column = e.column; }
-    if (has_sink_expectation && loaded && ran && (!is_call || called) && error.empty()) {
-      try { dslvm::write_result_frame(frame_output, sink); }
-      catch (const dslvm::Error& e) { error = e.what(); error_code = e.code; }
-    }
-    if (std::getenv("LMCODE_TRACE")) {
-      for (const auto& line : stub.trace) std::cout << "TRACE\t" << name << "\t" << line << "\n";
-      if (!error_code.empty()) std::cout << "ERROR\t" << name << "\t" << error_code << "\t" << bare_error << "\n";
+    if(has_sink_expectation) {
+      try {
+        if(native_failure)invocation.fail(0,loaded?"run":"load",*native_failure);
+        else invocation.complete(0);
+        (void)invocation.write_frame(frame_output);
+      }catch(const dslvm::Error& e){std::cerr<<name<<": native envelope: "<<e.what()<<"\n";return 2;}
     }
     bool ok;
     if (kind == "trace") {

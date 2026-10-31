@@ -18,3 +18,7 @@ sample-suite/bytecode/*.dslb binary
 # Terminal protocol frames and schema/source digests are literal LF bytes.
 conformance/return-vectors/** text eol=lf
 conformance/return-vectors/*.dslb binary
+
+# Native invocation goldens are byte exact on all operating systems.
+conformance/invocation-vectors/** text eol=lf
+conformance/invocation-vectors/*.dslb binary

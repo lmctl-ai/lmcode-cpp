@@ -13,16 +13,18 @@ namespace invocation_detail {
 using Node=stdlib::JsonNode;
 using Kind=Node::Kind;
 inline const Node* member(const Node& n,const std::string& key){for(const auto&m:n.object)if(m.key==key)return m.value.get();return nullptr;}
-inline Node parse(const std::string& raw){
+inline Node parse(const std::string& raw,bool validate_numbers=true){
   stdlib::json_detail::utf8(raw);
   if(raw.rfind("\xef\xbb\xbf",0)==0)throw Error("JSON BOM is not allowed");
   stdlib::json_detail::Parser parser(raw);auto n=parser.val();parser.ws();
   if(parser.p!=raw.size())throw Error("trailing JSON input");
-  return stdlib::result_detail::copy_node(n);
+  return validate_numbers?stdlib::result_detail::copy_node(n):std::move(n);
 }
 inline const char* kind(const Node& n){switch(n.kind){case Kind::Null:return "null";case Kind::Bool:return "bool";case Kind::Int:return "int";case Kind::Float:return "float";case Kind::String:return "string";case Kind::Array:return "array";case Kind::Object:return "object";}return "handle";}
 [[noreturn]] inline void mismatch(const std::string& path,const std::string& type,const std::string& got){throw Error("lmcode return: result type mismatch at "+path+": expected "+type+"; got "+got);}
-inline bool primitive(const Node& n,const std::string&t){return(t=="int"&&n.kind==Kind::Int)||(t=="float"&&(n.kind==Kind::Int||n.kind==Kind::Float))||(t=="bool"&&n.kind==Kind::Bool)||(t=="string"&&n.kind==Kind::String);}
+inline bool integer(const Node& n){const auto safe=stdlib::result_detail::kSafeInteger;return(n.kind==Kind::Int&&n.integer>=-safe&&n.integer<=safe)||(n.kind==Kind::Float&&std::isfinite(n.floating)&&std::abs(n.floating)<=double(safe)&&std::trunc(n.floating)==n.floating);}
+inline int64_t integer_value(const Node& n){return n.kind==Kind::Int?n.integer:static_cast<int64_t>(n.floating);}
+inline bool primitive(const Node& n,const std::string&t){return(t=="int"&&integer(n))||(t=="float"&&(n.kind==Kind::Int||n.kind==Kind::Float))||(t=="bool"&&n.kind==Kind::Bool)||(t=="string"&&n.kind==Kind::String);}
 }
 // Host-owned schema metadata; never inferred from an invocation manifest.
 class ResultContract {
@@ -37,8 +39,8 @@ public:
   static ResultContract from_schema(const std::string& schema){
     using namespace invocation_detail;
     try{
-      auto root=parse(schema);if(root.kind!=Kind::Object)throw Error("schema must be an object");
-      const auto* version=member(root,"dsl.schema");if(!version||version->kind!=Kind::Int||version->integer!=2)throw Error("requires schema 2");
+      auto root=parse(schema,false);if(root.kind!=Kind::Object)throw Error("schema must be an object");
+      const auto* version=member(root,"dsl.schema");if(!version||!integer(*version)||integer_value(*version)!=2)throw Error("requires schema 2");
       const auto* result=member(root,"result");ResultContract c;if(!result)return c;
       if(result->kind!=Kind::Object)throw Error("result must be an object");
       for(const auto&m:result->object)if(m.key!="type"&&m.key!="nullable")throw Error("unknown key "+m.key);
@@ -77,7 +79,7 @@ public:
     return actual==expected||(actual=="int"&&expected=="float")||(actual=="IntList"&&expected=="FloatList")||(actual=="IntMap"&&expected=="FloatMap");
   }
   void validate_source(const Value& v)const{
-    if(type_.empty()||v.kind==Value::VOID||(v.kind==Value::OBJ&&v.type=="Json"))return;
+    if(type_.empty()||type_=="Json"||v.kind==Value::VOID||(v.kind==Value::OBJ&&v.type=="Json"))return;
     const auto actual=source_type(v);
     if(!assignable(actual,type_))invocation_detail::mismatch("",type_,actual);
   }

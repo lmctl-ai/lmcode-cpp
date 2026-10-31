@@ -25,15 +25,15 @@ for case in manifest['vectors']:
  if case['name']=='scalar-field':assert b'field assignment requires object or null' in result.stderr
  if case['name']=='invalid-utf8':assert b': utf8' in result.stderr
  print('PASS canonical return fixture',case['name'])
-assert (VECTORS/'float-roundtrip.expect').read_bytes()==b'LMCODE_RETURN_BEGIN\n0.30000000000000004\nLMCODE_RETURN_END\n'
+assert (VECTORS/'float-roundtrip.expect').read_bytes()==b'LMCODE_RETURN_BEGIN\n{"ok":true,"result":0.30000000000000004}\nLMCODE_RETURN_END\n'
 for name,flag in [('float-roundtrip','--mutate-rounding'),('repeated-calls','--mutate-reset')]:
  result=run(name,'--repeat','2',flag)
  assert result.returncode==0,result.stderr
  assert result.stdout!=(VECTORS/(name+'.expect')).read_bytes(),f'uncaught {flag}'
  print('CAUGHT',flag)
 result=run('entry-error','--mutate-early-frame')
-assert result.returncode==3 and b'LMCODE_RETURN_BEGIN\n' in result.stdout
+assert result.returncode==3 and result.stdout.count(b'LMCODE_RETURN_BEGIN\n')==2
 print('CAUGHT premature frame before entry error')
 result=run('entry-sink','--app-fail')
-assert result.returncode==4 and result.stdout==b''
-print('PASS application failure is frame-silent')
+assert result.returncode==4 and b'\"ok\":false' in result.stdout and b'\"result\"' not in result.stdout
+print('PASS application failure emits only a failure envelope')

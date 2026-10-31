@@ -14,17 +14,21 @@ including duplicate file occurrences. Do not deduplicate these records.
 
 Call `select(index, registry, contract)` before the body and again for interleaved
 entry work. Active selection retains its sink. Each slot has a different owned
-ResultSink; complete validates/snapshots/seals it. Contracts cannot change on
+ResultSink; complete validates/snapshots/seals it. A completion validation failure latches
+its slot/run association before rethrowing. Contracts cannot change on
 reselect. Sealed sinks refuse routing/writes/reset/completion. After a failure,
 new slots cannot start, but already-started work may drain; the first failure wins.
 The registry/collector lifetime and synchronization discipline remain host-owned.
+Serialize collector bookkeeping calls; parallel VM work uses distinct slots and
+registries and must drain before the writer. No collector method waits for work.
 
 `ResultContract::from_schema(raw_bytes)` reads schema 2's optional result object.
 Types/nullability match the approved amendment. Known native writes preserve type
 identity except int->float and IntList/IntMap->FloatList/FloatMap widening without
-conversion. A Json handle defers to actual JSON shape; a declared Json root accepts
-that handle's non-null shapes, or root null when nullable. Known non-Json whole
-writes do not implicitly become Json. Json field construction accepts JSON values.
+conversion. A Json handle defers to actual JSON shape. A declared Json root permits all
+supported non-null JSON shapes without conversion, or root null when nullable.
+This matches the concurrent R2 compiler's JSON-wide contract rule. Json field
+construction accepts JSON values.
 Map elements cannot be null even when its root is nullable. Initial/reset null is
 unfinished; explicit null and completion validate immediately. No declaration is
 unconstrained. Copies validate before replacing state. The final payload shape is
@@ -48,3 +52,8 @@ R1 intentionally precedes compiler R2 and host R6. No release during the mixed
 protocol window. The canonical std stays v3 / 206 signatures / 24 return imports,
 and bytecode stays DSLB v6. Typed bytecode fixtures belong to R2; R1 native contract
 checks do not pretend the older compiler supports result metadata.
+
+Windows adapters supply UTF-8 argv (convert the wide CRT argv without splitting)
+and binary stdout. The SDK reads the wide environment variable and converts its
+manifest path to UTF-8 before filesystem access. Native goldens include spaces
+and Unicode in private slot filenames. The environment is never mutated.
