@@ -28,11 +28,13 @@ class CoreCorpusTests(unittest.TestCase):
         for filename in ['matrix-int-add-0.expect', 'matrix-int-add-0.dslb', 'matrix-int-add-0.dsl', 'schema.json', 'manifest.json']:
             with self.subTest(missing=filename):
                 result = self.run_copy(lambda p: (p / filename).unlink())
-                self.assertNotEqual(result.returncode, 0, filename + '\n' + result.stdout)
+                self.assertEqual(result.returncode, 2, filename + '\n' + result.stdout + result.stderr)
+                self.assertIn('corpus integrity:', result.stderr)
         for suffix in ['expect', 'dslb', 'dsl']:
             with self.subTest(extra=suffix):
                 result = self.run_copy(lambda p: shutil.copyfile(p / ('matrix-int-add-0.' + suffix), p / ('unlisted.' + suffix)))
-                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertIn('corpus integrity:', result.stderr)
 
     def test_duplicate_manifest_name_is_refused(self):
         def duplicate(p):
@@ -40,7 +42,8 @@ class CoreCorpusTests(unittest.TestCase):
             manifest['vectors'].append(manifest['vectors'][0])
             (p / 'manifest.json').write_text(json.dumps(manifest))
         result = self.run_copy(duplicate)
-        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn('corpus integrity:', result.stderr)
 
     def test_wrong_load_code_is_refused(self):
         def wrong_code(p):
