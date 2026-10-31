@@ -4,6 +4,9 @@ conformance/vectors/*.json text eol=lf
 conformance/stdlib-vectors/*.json text eol=lf
 conformance/stdlib-vectors/*.dsl text eol=lf
 conformance/stdlib-vectors/*.expect text eol=lf
+conformance/return-vectors/*.dsl text eol=lf
+conformance/return-vectors/*.expect text eol=lf
+conformance/return-vectors/*.json text eol=lf
 
 # Canonical standard surface is hashed byte-for-byte by every SDK.
 std/*.json text eol=lf
