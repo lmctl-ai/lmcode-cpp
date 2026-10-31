@@ -22,7 +22,8 @@ class CoreCorpusTests(unittest.TestCase):
     def test_baseline(self):
         result = self.run_copy()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn('PASS 406/406', result.stdout)
+        count = len(json.loads((ROOT / 'conformance/vectors/manifest.json').read_text())['vectors'])
+        self.assertIn(f'PASS {count}/{count}', result.stdout)
 
     def test_missing_or_extra_core_files_are_refused(self):
         for filename in ['matrix-int-add-0.expect', 'matrix-int-add-0.dslb', 'matrix-int-add-0.dsl', 'schema.json', 'manifest.json']:

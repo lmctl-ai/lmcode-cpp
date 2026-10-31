@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate native envelope expectations from authored core VM sink assertions.
+"""Independently verify native envelopes from authored core VM sink assertions.
 
-The upstream compiler owns program/VM fixtures. This native-host stage owns
-framing expectations; it never reads execution output or rewrites bytecode.
+The upstream compiler owns the canonical program, VM and frame expectations.
+This native check never reads execution output or rewrites bytecode or provenance.
 """
 import argparse, json
 from pathlib import Path
@@ -25,8 +25,6 @@ def main():
         lines[-1]='sink '+json.dumps(sink,separators=(',',':'),ensure_ascii=False)
         raw='\n'.join(lines)+'\n'
         if raw!=fixture.read_text():changed.append(fixture);a.check or fixture.write_text(raw,encoding='utf8',newline='\n')
-    manifest['host']['result_sink']='Native sink JSON is asserted independently from one terminal invocation envelope; success includes ok/result and controlled failure includes phase/code/message/location with no payload.'
-    manifest['invocation_expectations_generated_by']='scripts/gen-invocation-expectations.py'
     raw=json.dumps(manifest,indent=2,ensure_ascii=False)+'\n'
     if raw!=path.read_text():changed.append(path);a.check or path.write_text(raw,encoding='utf8',newline='\n')
     if a.check and changed:raise SystemExit('stale native envelope fixtures: '+', '.join(p.name for p in changed))
