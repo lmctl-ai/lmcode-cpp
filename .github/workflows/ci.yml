@@ -9,7 +9,7 @@ on:
       compiler_version:
         description: "Published @lmctl-ai/lmctl version"
         required: false
-        default: "0.2.444"
+        default: "0.2.450"
 
 permissions:
   contents: read
@@ -56,7 +56,7 @@ jobs:
 
       - name: lmscript compiler (npm @lmctl-ai/lmctl)
         run: |
-          compiler_version="${{ inputs.compiler_version || vars.LMCODE_COMPILER_VERSION || '0.2.444' }}"
+          compiler_version="${{ inputs.compiler_version || vars.LMCODE_COMPILER_VERSION || '0.2.450' }}"
           npm install --prefix "$RUNNER_TEMP/lmcode-lmctl" "@lmctl-ai/lmctl@$compiler_version"
           echo "$RUNNER_TEMP/lmcode-lmctl/node_modules/.bin" >> "$GITHUB_PATH"
           if [[ "$RUNNER_OS" == Windows ]]; then
