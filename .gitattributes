@@ -14,3 +14,7 @@ std/*.json text eol=lf
 # Portable sample corpus and exact stdout are byte-for-byte fixtures.
 sample-suite/** text eol=lf
 sample-suite/bytecode/*.dslb binary
+
+# Terminal protocol frames and schema/source digests are literal LF bytes.
+conformance/return-vectors/** text eol=lf
+conformance/return-vectors/*.dslb binary

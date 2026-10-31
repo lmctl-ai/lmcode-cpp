@@ -14,7 +14,7 @@ static JsonNode parsed(const std::string& text) {json_detail::Parser p(text);aut
 int main(int argc,char** argv) {
  int failures=0,passed=0;
  auto test=[&](const char* name,const std::function<void()>& fn){if(argc>1&&std::string(name).find(argv[1])==std::string::npos)return;try{fn();++passed;std::cout<<"PASS "<<name<<'\n';}catch(const std::exception& e){++failures;std::cerr<<"FAIL "<<name<<": "<<e.what()<<'\n';}};
- test("shortest float and zero",[]{check(encode(copy_value(Value::real(.1+.2)))=="0.30000000000000004","%.15g truncates result");check(encode(copy_value(Value::real(-0.0)))=="0","negative zero");check(encode(copy_value(Value::real(std::numeric_limits<double>::denorm_min())))=="5e-324","subnormal");});
+ test("shortest float and zero",[]{check(encode(copy_value(Value::real(.1+.2)))=="0.30000000000000004","%.15g truncates result");check(encode(copy_value(Value::real(.1)))=="0.1","formatter is round-tripping but not shortest");check(encode(copy_value(Value::real(-0.0)))=="0","negative zero");check(encode(copy_value(Value::real(std::numeric_limits<double>::denorm_min())))=="5e-324","subnormal");});
  test("exact decimal integer classification",[]{
   for(const char* token:{"9007199254740991","-9007199254740991","9007199254740991.0","90071992547409910e-1","9.007199254740991e15","1.0000000000000000","0e-999999999999999999999999999","-0.0e99999999999999999999999999","1e-20","0.00001e20"})check(!decimal_unsafe_integer(token),"safe/fractional token rejected");
   for(const char* token:{"9007199254740992","9007199254740993","-9007199254740993","90071992547409930000e-4","9.007199254740992e15","1e20","1e99999999999999999999999999"})check(decimal_unsafe_integer(token),"unsafe raw integer accepted");

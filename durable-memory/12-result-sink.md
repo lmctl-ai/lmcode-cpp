@@ -41,3 +41,11 @@ shortest float spelling, entry HALT values, repeated calls, null and failed
 invocation silence. Its fault hosts frame too early or reset per entry;
 `tests/test_return_controls.py` additionally compiles isolated SDK faults for
 arena teardown, borrowed sources, missing sinks, raw numbers and `%.15g`.
+
+
+Keep the registry/sink binding unchanged for the complete body-plus-entry
+sequence. Registry copies share their standard runtime; they are not independent
+concurrent invocation containers. Use separate registries/runtimes and sinks for
+parallel invocations, or serialize a registry's complete logical invocations.
+The explicit stream helper flushes before reporting success so buffered I/O
+failures surface as errors.

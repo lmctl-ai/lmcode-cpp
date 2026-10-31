@@ -57,6 +57,7 @@ inline std::string result_frame(const ResultSink& sink) {
 inline void write_result_frame(std::ostream& output,const ResultSink& sink) {
   const std::string frame=result_frame(sink);
   output.write(frame.data(),static_cast<std::streamsize>(frame.size()));
+  output.flush(); // Surface a buffered write failure before reporting success.
   if(!output) throw Error("lmcode return: cannot write result frame");
 }
 namespace stdlib {
