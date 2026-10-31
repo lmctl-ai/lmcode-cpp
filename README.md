@@ -116,7 +116,7 @@ Integer arithmetic is 64-bit two's complement and wraps; division and remainder 
 ## Test
 
     make test           # native runtime and optional string catalog tests
-    make conformance    # 397 core runtime vectors and 268 standard catalog vectors
+    make conformance    # 406 core runtime vectors and 268 standard catalog vectors
     make test-string-stdlib # stdlib/string.hpp unit cases and schema/registry/compiler signature parity
 
 ## Standard library catalog
