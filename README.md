@@ -279,7 +279,7 @@ lmscript --no-preflight test.lms ../lmcode-cpp-sample/build/lmcode-cpp-sample
 The npm package installs both executables. Both run local `.lms` files;
 `lmctl` also accepts a URL ending in `.lms`. Repository tests require this
 checkout and its native build tools. `test.lms` runs SDK checks, canonical
-signature coverage, bytecode reproduction and negative runner controls.
+signature coverage, source type-checking, fixture mutation controls and negative runner controls.
 See [the sample driver documentation](sample-suite/README.md#lmscript-test-drivers)
 for byte-exact process capture and corpus-directory overrides.
 
