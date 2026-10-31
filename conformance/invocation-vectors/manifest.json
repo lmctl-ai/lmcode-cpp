@@ -138,6 +138,34 @@
       "exit": 3
     },
     {
+      "name": "single-dry",
+      "programs": [
+        "null"
+      ],
+      "mode": "single",
+      "dry": true,
+      "exit": 0
+    },
+    {
+      "name": "single-dry-failure",
+      "programs": [
+        "error"
+      ],
+      "mode": "single",
+      "dry": true,
+      "exit": 3
+    },
+    {
+      "name": "builder-dry-failure",
+      "programs": [
+        "a",
+        "error"
+      ],
+      "mode": "builder",
+      "dry": true,
+      "exit": 3
+    },
+    {
       "name": "dry-null-object-return",
       "programs": [
         "dry-null-object-return"
@@ -216,6 +244,16 @@
       "mode": "single",
       "dry": true,
       "exit": 3
+    },
+    {
+      "name": "dry-null-skipped-concrete-method",
+      "programs": [
+        "dry-null-skipped-concrete-method"
+      ],
+      "schema": "dry-null-skipped-concrete-method.schema.json",
+      "mode": "single",
+      "dry": true,
+      "exit": 0
     }
   ]
 }
