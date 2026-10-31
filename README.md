@@ -116,7 +116,7 @@ Integer arithmetic is 64-bit two's complement and wraps; division and remainder 
 ## Test
 
     make test           # native runtime and optional string catalog tests
-    make conformance    # 70 core runtime vectors and 267 standard catalog vectors
+    make conformance    # 397 core runtime vectors and 268 standard catalog vectors
     make test-string-stdlib # stdlib/string.hpp unit cases and schema/registry/compiler signature parity
 
 ## Standard library catalog
@@ -335,3 +335,4 @@ the catalog stays version 3. Explicit fixture schemas can declare these ordinary
 imports for the pinned compiler; `$return` lowering and executable blocks are
 separate slices. Consumer SDK/suite pins are updated by their assigned adopters.
 See [result-sink lifetime and skew notes](durable-memory/12-result-sink.md).
+Boundary and malformed-wire coverage is described in [conformance/BOUNDARIES.md](conformance/BOUNDARIES.md).
