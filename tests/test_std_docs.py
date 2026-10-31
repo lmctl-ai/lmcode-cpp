@@ -20,13 +20,13 @@ assert set(docs["signatures"]) == {
     *(f"method {typ}.{name}({', '.join(overload['params'])}) -> {overload['returns']}"
       for typ, body in schema["types"].items() for name, overloads in body.get("methods", {}).items() for overload in overloads),
 }
-assert len(docs["signatures"]) == 182
+assert len(docs["signatures"]) == 206
 assert docs["notes"]["bytes"]
 assert "StrMap.set" not in docs["signatures"]["method StrMap.set(string, string) -> StrMap"]["errors"]
 assert docs["signatures"]["fn math_pow(float, float) -> float"]["errors"] == []
 assert "StrList object limit exceeded (65536)" in docs["signatures"]["fn file_lines(string) -> StrList"]["errors"]
 for signature, meta in docs["signatures"].items():
-    assert meta["area"] in {"string", "math", "collections", "file", "json", "encoding", "containers"}, signature
+    assert meta["area"] in {"string", "math", "collections", "file", "json", "encoding", "containers", "return"}, signature
     assert meta["summary"].strip(), signature
     assert isinstance(meta["errors"], list), signature
 print(f"PASS std docs ({len(docs['signatures'])} signatures)")

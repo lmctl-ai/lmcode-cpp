@@ -27,7 +27,7 @@ class StdSchemaTests(unittest.TestCase):
     def test_canonical_metadata_and_count(self):
         self.assertEqual(CANONICAL["name"], "lmcode_std_v3")
         self.assertEqual(set(CANONICAL), {"dsl.schema", "name", "types", "functions"})
-        self.assertEqual(len(merge.canonical_signatures(CANONICAL)), 182)
+        self.assertEqual(len(merge.canonical_signatures(CANONICAL)), 206)
 
     def test_canonical_digest_lock(self):
         import hashlib
@@ -88,7 +88,7 @@ class StdSchemaTests(unittest.TestCase):
 
     def test_fragments_are_subsets_of_canonical(self):
         fragment_signatures = set()
-        for name in ("string", "math", "collections", "file", "containers", "json", "encoding"):
+        for name in ("string", "math", "collections", "file", "containers", "json", "encoding", "result"):
             path = ROOT / "stdlib" / (name + ".schema-fragment.json")
             fragment = json.loads(path.read_text())
             fragment_signatures.update(merge.signature_strings(fragment))

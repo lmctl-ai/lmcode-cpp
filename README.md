@@ -215,7 +215,7 @@ Standard catalog conformance fixtures and their portable byte-tracing host contr
 
 ## Built-in lmcode std
 
-Every `dslvm::Registry` now includes the 182-signature standard by default. `Registry(StdMode::Disabled)` opts out; `dslvm::register_std(registry)` enables it idempotently. `signatures()` includes std, `host_signatures()` excludes it, and `matches_schema_signatures(...)` accepts either host-only or already-merged declarations while still rejecting host drift. Collections belong to the registry and are cleared at entry and exit of each `Program::run`, including failures; native callbacks allocate through `registry.std_collections()`. Printing and assertions are outside std and require the optional testing catalog or host implementations.
+Every `dslvm::Registry` now includes the 206-signature standard by default. `Registry(StdMode::Disabled)` opts out; `dslvm::register_std(registry)` enables it idempotently. `signatures()` includes std, `host_signatures()` excludes it, and `matches_schema_signatures(...)` accepts either host-only or already-merged declarations while still rejecting host drift. Collections belong to the registry and are cleared at entry and exit of each `Program::run`, including failures; native callbacks allocate through `registry.std_collections()`. Printing and assertions are outside std and require the optional testing catalog or host implementations.
 
 `std/lmcode-std.schema.json` is the canonical versioned surface. Until the compiler injects it implicitly, `python3 scripts/merge-std.py host.schema.json effective.schema.json` generates the effective compile/load schema without copying std declarations into host sources. The helper also extracts host-only schemas and normalizes compiler signature lists. Vendor `include/dslvm.hpp` together with all `stdlib/*.hpp`; default registration has no external library dependency. Individual group headers and explicit binders remain supported for manual opted-out registries. Domain-specific types and stricter assertions remain host APIs.
 
@@ -286,3 +286,52 @@ for byte-exact process capture and corpus-directory overrides.
 ## Text templates
 
 The standard `template_render(string, Json) -> string` function renders arbitrary text with nested context, indexed lists, loops and boolean conditions. Inserted values remain literal. See the [portable contract and examples](std/template.md).
+
+
+## Invocation-owned JSON results (std slice 1)
+
+`dslvm::ResultSink` is an optional host-owned invocation sink. Configure it before
+running the body, retain it across selected `Program::call` entries, and reset it
+only before the next logical program. Per-region arena reset never resets it:
+
+```cpp
+dslvm::Registry registry;
+dslvm::ResultSink sink;
+registry.set_result_sink(&sink);
+sink.reset();
+program.run(context, registry);
+for (size_t i = 0; i < program.entries().size(); ++i)
+  program.call(i, context, registry, {}); // supply the interface's actual args
+// After successful dispatch AND application validation only:
+dslvm::write_result_frame(output, sink);
+```
+
+A successful host appends `LMCODE_RETURN_BEGIN\n<compact JSON>\nLMCODE_RETURN_END\n`
+to its diagnostics. `result_frame(sink)` returns these bytes without printing;
+`write_result_frame(stream,sink)` writes to an explicitly selected stream.
+The stream must preserve LF bytes (binary stdout mode on Windows). Failed host
+invocations do not call either framing helper. Existing `report_ok`/error helpers
+remain diagnostic reporters; SDK installation does not add implicit CLI output.
+
+The 24 ordinary standard imports are `lmcode_return_set(T)` and
+`lmcode_return_put(string,T)` for int, float, bool, string, Json, the three typed
+lists and the three typed maps, plus `lmcode_return_null()` and
+`lmcode_return_put_null(string)`. Values are deep owned copies. Missing sink,
+invalid UTF-8, nonfinite/unsafe integer values, nonzero underflow, cycles and
+unsupported handles throw `RUN_HOST`; failed writes leave the prior value intact.
+Field writes promote null to an insertion-ordered object and refuse scalar/list
+roots. Overwriting a key preserves its position. Unset and explicit null frame
+as `null`. Binary64 uses `std::to_chars` shortest-round-trip formatting, not the
+legacy `str(float)` formatter: `0.1+0.2` frames as `0.30000000000000004`.
+
+The new canonical fixtures in `conformance/return-vectors` execute all 24 imports,
+entry lifetime/HALT behavior and failure silence independently of the existing
+trace corpus. `make test` and `make conformance` include these checks and their
+fault controls. The older shared sample corpus/adopter cutover is slice 6.
+
+**Std skew:** this canonical standard moves before the compiler's bundled std in
+slice 3. Do not release an npm compiler in that window. DSLB stays version 6 and
+the catalog stays version 3. Explicit fixture schemas can declare these ordinary
+imports for the pinned compiler; `$return` lowering and executable blocks are
+separate slices. Consumer SDK/suite pins are updated by their assigned adopters.
+See [result-sink lifetime and skew notes](durable-memory/12-result-sink.md).

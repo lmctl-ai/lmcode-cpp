@@ -1,6 +1,6 @@
 # Built-in lmcode std v3
 
-Canonical signatures: 182.
+Canonical signatures: 206.
 
 **Bytes:** All strings are raw bytes; lengths and offsets are byte-based, NUL and invalid UTF-8 are preserved.
 
@@ -16,7 +16,9 @@ Canonical signatures: 182.
 
 **Priority:** PQ is min-first with insertion-order ties; signed zero priorities tie. Nonfinite priorities and next sequence 2^63-1 fail without mutation; clear resets sequence to zero.
 
-**Registration:** Default registries install 182 built-ins; testing print/assertions remain explicit host registrations.
+**Registration:** Default registries install 206 built-ins; testing print/assertions remain explicit host registrations. Return-sink imports are host-bound and write only to an invocation-owned sink.
+
+**Results:** The invocation-owned ResultSink is external to arenas and retains owned writes across body/entry calls. JSON values use strict UTF-8, safe mathematical integers (±9007199254740991), finite binary64 and shortest-round-trip formatting; explicit successful host framing follows dispatch and application validation.
 
 **Snapshots:** Map keys()/values() each allocate one independent list snapshot in insertion order; mutation never aliases map storage. Float payload bits are preserved.
 
@@ -40,6 +42,30 @@ Canonical signatures: 182.
 | `fn int_queue() -> IntQueue` | collections | Create an empty IntQueue in the run arena. | IntQueue object limit exceeded (65536) |
 | `fn int_stack() -> IntStack` | collections | Create an empty IntStack in the run arena. | IntStack object limit exceeded (65536) |
 | `fn json_parse(string) -> Json` | json | Parse strict UTF-8 JSON eagerly; int64 integers, finite binary64 decimals, depth <=256, duplicate decoded keys rejected. | json_parse: REASON at byte N; Json object limit exceeded (65536) |
+| `fn lmcode_return_null() -> void` | return | Replace the invocation result with null. | lmcode return: no result sink |
+| `fn lmcode_return_put(string, FloatList) -> void` | return | Store an owned float list at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, FloatMap) -> void` | return | Store an owned float map at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, IntList) -> void` | return | Store an owned int list at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, IntMap) -> void` | return | Store an owned int map at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, Json) -> void` | return | Store an owned JSON value at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, StrList) -> void` | return | Store an owned string list at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, StrMap) -> void` | return | Store an owned string map at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, bool) -> void` | return | Store a bool at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, float) -> void` | return | Store a float at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, int) -> void` | return | Store an int at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put(string, string) -> void` | return | Store a string at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_put_null(string) -> void` | return | Store null at a JSON object path in the invocation result. | lmcode return: no result sink; lmcode return: field assignment requires object or null; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(FloatList) -> void` | return | Replace the invocation result with an owned float list. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(FloatMap) -> void` | return | Replace the invocation result with an owned float map. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(IntList) -> void` | return | Replace the invocation result with an owned int list. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(IntMap) -> void` | return | Replace the invocation result with an owned int map. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(Json) -> void` | return | Replace the invocation result with an owned JSON value. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(StrList) -> void` | return | Replace the invocation result with an owned string list. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(StrMap) -> void` | return | Replace the invocation result with an owned string map. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(bool) -> void` | return | Replace the invocation result with an owned bool. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(float) -> void` | return | Replace the invocation result with an owned float. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(int) -> void` | return | Replace the invocation result with an owned int. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
+| `fn lmcode_return_set(string) -> void` | return | Replace the invocation result with an owned string. | lmcode return: no result sink; lmcode return: invalid JSON value at PATH: REASON |
 | `fn math_abs(float) -> float` | math | Absolute value; integer arithmetic wraps, and float signed zero is cleared. | — |
 | `fn math_abs(int) -> int` | math | Absolute value; integer arithmetic wraps, and float signed zero is cleared. | — |
 | `fn math_ceil(float) -> float` | math | Identity for int; ceiling for binary64 while preserving signed zero. | — |

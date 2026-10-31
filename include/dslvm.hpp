@@ -183,6 +183,7 @@ inline std::string signature_text(const Signature& s) { std::string out = "("; f
 namespace stdlib { struct Collections; struct StdRuntime; }
 enum class StdMode { Enabled, Disabled };
 class Registry;
+class ResultSink;
 inline Registry& register_std(Registry&);
 
 class Registry {
@@ -193,6 +194,8 @@ class Registry {
   bool has_std() const { return std_initialized_; }
   stdlib::Collections& std_collections() const;
   void set_std_output(std::ostream* sink);
+  // Host-owned invocation sink; never reset by a per-region VM run.
+  void set_result_sink(ResultSink* sink);
   std::ostream& std_output() const { return *std_output_; }
   std::vector<std::string> std_signatures() const { return std_signatures_; }
   std::vector<std::string> host_signatures() const {

@@ -144,3 +144,39 @@ test-v3-stdlib: $(BUILD)/stdlib_encoding_test $(BUILD)/stdlib_encoding_header.o 
 	bash tests/string-signature-parity.sh "$(abspath $(BUILD)/stdlib_encoding_test)" encoding
 
 test: test-v3-stdlib
+
+# Invocation-owned result boundary: SDK helpers do not print automatically.
+$(BUILD)/result_sink_test: tests/result_sink_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+$(BUILD)/result_json_test: tests/result_json_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+$(BUILD)/return_registration_test: tests/return_registration_test.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+$(BUILD)/return_conformance: conformance/run_returns.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+.PHONY: test-results test-return-vectors
+test-results: $(BUILD)/result_sink_test $(BUILD)/result_json_test $(BUILD)/return_registration_test
+	$(BUILD)/result_sink_test
+	$(BUILD)/result_json_test
+	$(BUILD)/return_registration_test
+	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_return_catalog.py
+	PYTHONDONTWRITEBYTECODE=1 CXX="$(CXX)" python3 tests/test_return_controls.py
+
+test-return-vectors: $(BUILD)/return_conformance
+	PYTHONDONTWRITEBYTECODE=1 LMCODE_RETURN_HARNESS="$(abspath $(BUILD)/return_conformance)" python3 tests/test_return_vectors.py
+
+test: test-results
+conformance: test-return-vectors
+
+$(BUILD)/stdlib_result_header.o: tests/stdlib_result_header.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -Werror -I include -c -o $@ $<
+test-results: $(BUILD)/stdlib_result_header.o
