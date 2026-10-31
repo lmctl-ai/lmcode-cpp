@@ -1,6 +1,5 @@
-#!/usr/bin/env -S lmscript --no-preflight
+#!/usr/bin/env lmscript
 # Transactional host migration. All transformation logic is lmscript.
-import "native:git";
 
 fn refuse(reason) {
   println(json_stringify({status:"refused", reason:reason}));
@@ -38,8 +37,7 @@ fn signatures(schema) {
 }
 fn same_json(a,b) { return json_stringify(a) == json_stringify(b); }
 fn clean(repo) {
-  s = git.status(repo);
-  return s.staged.len() == 0 && s.unstaged.len() == 0 && s.untracked.len() == 0 && s.conflicted.len() == 0;
+  return gitcmd(repo,["status","--porcelain=v1","--untracked-files=all"]) == "";
 }
 fn selector(target) {
   return replace_all(r'''#!/usr/bin/env bash
@@ -139,7 +137,7 @@ while (i < ARGV.len()) {
 if (opts.repo == "" || !regex_test(opts.target,"^0\\.2\\.[0-9]+$") || json_parse(split(opts.target,".")[2]) < 420) { refuse("repo and stable target >= 0.2.420 are required"); }
 if (!contains(["auto","always","never"],opts.tests)) { refuse("unknown --tests mode"); }
 repo = abs_path(opts.repo);
-if (system(["git","--version"]).stdout == "") { refuse("invoke lmscript with --no-preflight (the script's --dry-run is its transactional preview)"); }
+if (system(["git","--version"]).stdout == "") { refuse("git is required for transactional preview"); }
 root = trim(gitcmd(repo,["rev-parse","--show-toplevel"]));
 repo = root;
 if (opts.report != "") {
@@ -447,7 +445,7 @@ if (report.status == "ready") {
         if (save == null) { refuse("recognized wrapper lacks an isolated savedsl: " + file); }
         sanitized = replace(text,save[0],"savedsl(" + save[1] + ", " + json_stringify(output) + ");");
         write_file(path_join(stage,file),sanitized);
-        run([opts.compiler,"--no-preflight",path_join(stage,file),output],stage);
+        run([opts.compiler,path_join(stage,file),output],stage);
         write_file(path_join(stage,file),text);
         if (!file_exists(output)) { push(report.unrecognized,"compile wrapper ignores output argument: " + file); }
         else {

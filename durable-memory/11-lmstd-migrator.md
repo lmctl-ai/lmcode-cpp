@@ -2,15 +2,14 @@
 
 `scripts/lmstd-migrate.lms` is the source copy of `~/tools/lmstd-migrate.lms`.
 The transformation logic is lmscript, using its file/regex/process helpers and
-`native:git`. Run with released lmscript >= 0.2.420:
+direct argv calls to `git`. Run with a current locally built lmscript:
 
 ```sh
-lmscript --no-preflight ~/tools/lmstd-migrate.lms --repo /path/to/host \
+lmscript ~/tools/lmstd-migrate.lms --repo /path/to/host \
   --target 0.2.420 --dry-run --report /tmp/claude-1000/scratch-lmcode/host.json
 ```
 
-The script defaults to its own transactional dry run. `--no-preflight` disables
-lmscript's separate effect simulation; it does not authorize an apply.
+The script defaults to its own transactional preview (`--dry-run` is script-tail data).
 `--apply` explicitly copies the staged changes, commits with the fixed noreply
 identity and model trailer, rebases before writing, and pushes existing main.
 It never creates repositories/remotes or changes visibility. Exclusions are

@@ -10,7 +10,7 @@
 # CONFIG.argv supplies a default argv template. CONFIG.argvByMode may override
 # it for dry-run, apply, dirty, behind, or apply-second. For example:
 # {"program":"/tmp/.../lmstd-migrate.lms",
-#  "argv":["lmscript","--no-preflight","{program}","--repo","{repo}","--target","{target}","--dry-run",
+#  "argv":["lmscript","{program}","--repo","{repo}","--target","{target}","--dry-run",
 #          "--report","{report}"],
 #  "argvByMode":{"apply":["...","--apply"],"apply-second":["...","--apply"]},
 #  "applyFixtures":["plain-pin"],"requireReport":true}
@@ -19,7 +19,6 @@
 # runs by default and are deleted after parsing so they cannot dirty fixtures.
 # Placeholders are substituted by this script; no migration flags are guessed.
 
-import "native:git";
 
 fn fail(message) {
   println(json_stringify({ok:false, error:message}));
@@ -37,16 +36,19 @@ fn command(repo, args) {
 }
 
 fn sha(repo) {
-  return trim(git.rev_parse(repo, "HEAD"));
+  return trim(command(repo, ["rev-parse", "HEAD"]));
 }
 
 fn status(repo) {
-  return git.status(repo);
+  ahead = system(["git", "-C", repo, "rev-list", "--count", "HEAD..@{upstream}"]);
+  behind = 0;
+  if (ahead.code == 0) { behind = num(trim(ahead.stdout)); }
+  return {porcelain:command(repo,["status","--porcelain=v1","--untracked-files=all"]),behind:behind};
 }
 
 fn clean(repo) {
   state = status(repo);
-  return state.unstaged.len() == 0 && state.staged.len() == 0 && state.untracked.len() == 0 && state.conflicted.len() == 0;
+  return state.porcelain == "";
 }
 
 fn blob_hash(repo, file) {
