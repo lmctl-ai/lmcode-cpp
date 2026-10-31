@@ -1,6 +1,10 @@
 CXX ?= g++
 CXXFLAGS ?= -std=c++17 -O1 -Wall -Wextra -pedantic
 BUILD ?= build
+EXEEXT ?=
+ifeq ($(OS),Windows_NT)
+EXEEXT := .exe
+endif
 
 .PHONY: test test-string-stdlib test-math-stdlib test-collections-stdlib test-testing-stdlib test-file-stdlib test-std conformance all clean
 all: test conformance
@@ -158,7 +162,7 @@ $(BUILD)/return_registration_test: tests/return_registration_test.cpp include/ds
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -I include -o $@ $<
 
-$(BUILD)/return_conformance: conformance/run_returns.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+$(BUILD)/return_conformance$(EXEEXT): conformance/run_returns.cpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -I include -o $@ $<
 
@@ -170,8 +174,8 @@ test-results: $(BUILD)/result_sink_test $(BUILD)/result_json_test $(BUILD)/retur
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_return_catalog.py
 	PYTHONDONTWRITEBYTECODE=1 CXX="$(CXX)" python3 tests/test_return_controls.py
 
-test-return-vectors: $(BUILD)/return_conformance
-	PYTHONDONTWRITEBYTECODE=1 LMCODE_RETURN_HARNESS="$(abspath $(BUILD)/return_conformance)" python3 tests/test_return_vectors.py
+test-return-vectors: $(BUILD)/return_conformance$(EXEEXT)
+	PYTHONDONTWRITEBYTECODE=1 LMCODE_RETURN_HARNESS="$(abspath $(BUILD)/return_conformance$(EXEEXT))" python3 tests/test_return_vectors.py
 
 test: test-results
 conformance: test-return-vectors
