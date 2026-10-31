@@ -17,7 +17,7 @@ write_file(path_join(seed,"CMakeLists.txt"),'set(DEMO_HOST_SCHEMA "${CMAKE_CURRE
 write_file(path_join(seed,"scripts/select-compiler.sh"),'MIN_VERSION="0.2.420"\n# existing implicit-std.schema.json probe\n');
 # Capability markers are sufficient for a no-op; no native probe should run.
 write_file(path_join(seed,"cpp/dslvm.hpp"),"// register_std\n");write_file(path_join(seed,"cpp/stdlib/std.hpp"),"// fixture\n");
-write_file(path_join(seed,"test.sh"),'python3 scripts/merge-std.py --normalize-signatures schema/demo.host.json "$WORK/host-only.sig"\ndiff "$WORK/host.sig" "$WORK/host-only.sig"\nok "old normalization check retained"\n"$LMSCRIPT" --dsl-signatures schema/demo.host.json --without-std > "$WORK/host-only-compiler.sig"\ncmp schema/demo.host.json schema/demo.dsl.json\n');
+write_file(path_join(seed,"test.sh"),'python3 scripts/merge-std.py --normalize-signatures schema/demo.host.json "$WORK/host-only.sig"\ndiff "$WORK/host.sig" "$WORK/host-only.sig"\nok "old normalization check retained"\n"$LMSCRIPT" --lmcode-signatures schema/demo.host.json --without-std > "$WORK/host-only-compiler.sig"\ncmp schema/demo.host.json schema/demo.dsl.json\n');
 g(seed,["add","."]);g(seed,["commit","-m","already migrated parity fixture"]);g(seed,["branch","-M","main"]);
 checked(["git","clone","--bare",seed,origin],root);g(origin,["config","core.hooksPath",hooks]);
 checked(["git","clone",origin,repo],root);g(repo,["config","core.hooksPath",hooks]);

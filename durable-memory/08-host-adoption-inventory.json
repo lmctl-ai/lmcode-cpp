@@ -985,7 +985,7 @@
         "Database",
         "Database.QueryResult"
       ],
-      "runtime_schema": "Main --dsl-schema emitted JSON parsed without DB operations",
+      "runtime_schema": "Main --lmcode-schema emitted JSON parsed without DB operations",
       "source": "src/main/java/ai/lmctl/lmdb/HostApi.java"
     }
   },
@@ -1228,7 +1228,7 @@
       "methods": 26,
       "profile": "programmatic-host-source",
       "repo": "lmdb",
-      "schema": "HostApi.java (Main --dsl-schema)",
+      "schema": "HostApi.java (Main --lmcode-schema)",
       "types": [
         "Connection",
         "Result"
@@ -1929,7 +1929,7 @@
     "Result": [
       "lmbio:lmbio.dsl.json",
       "lmcell:lmcell.dsl.json",
-      "lmdb:HostApi.java (Main --dsl-schema)",
+      "lmdb:HostApi.java (Main --lmcode-schema)",
       "lmfinance:lmfinance.dsl.json",
       "lmparticle:lmparticle.dsl.json",
       "lmssh:lmssh.dsl.json",

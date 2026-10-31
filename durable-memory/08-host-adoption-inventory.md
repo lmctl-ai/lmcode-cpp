@@ -1,6 +1,6 @@
 # Host adoption audit
 
-Scope: 25 lmcode host repositories and 30 schema/programmatic profiles under `the sibling checkouts directory`; lmproxy and SDK repositories are excluded. Corresponding `*.host.json` is preferred as the declaration set; older hosts use their primary `<host>.dsl.json`. lmdb has no schema directory, so `HostApi.java` is parsed as the declarative source and cross-checked against the emitted `Main --dsl-schema` JSON. lmgallery is a gallery/non-host repository; lmvideo is outside the lmcode host adoption set. No in-scope host lacks an `origin` remote.
+Scope: 25 lmcode host repositories and 30 schema/programmatic profiles under `the sibling checkouts directory`; lmproxy and SDK repositories are excluded. Corresponding `*.host.json` is preferred as the declaration set; older hosts use their primary `<host>.dsl.json`. lmdb has no schema directory, so `HostApi.java` is parsed as the declarative source and cross-checked against the emitted `Main --lmcode-schema` JSON. lmgallery is a gallery/non-host repository; lmvideo is outside the lmcode host adoption set. No in-scope host lacks an `origin` remote.
 
 ## Canonical standard overlap
 

@@ -117,7 +117,7 @@ class StdSchemaTests(unittest.TestCase):
         compiler = shutil.which(selected) or selected
         # npm installs a .cmd launcher on Windows, which needs the command shell.
         batch = os.name == "nt" and Path(compiler).suffix.lower() in (".cmd", ".bat")
-        output = subprocess.check_output([compiler, "--dsl-signatures", str(ROOT / "std/lmcode-std.schema.json")], text=True, shell=batch)
+        output = subprocess.check_output([compiler, "--lmcode-signatures", str(ROOT / "std/lmcode-std.schema.json")], text=True, shell=batch)
         compiler_signatures = set(output.splitlines())
         self.assertEqual(compiler_signatures, merge.canonical_signatures(CANONICAL))
 

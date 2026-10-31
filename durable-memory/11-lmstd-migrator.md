@@ -33,7 +33,7 @@ or parents resolving outside scratch are refused before any apply effects.
   `configure_file(... COPYONLY)` into the existing ignored `.dsl.json`.
 * Host declarations are derived with the SDK's `merge-std.py --host-only`.
   Canonical signatures are independently compared with compiler
-  `--dsl-signatures ... --without-std`. Existing host-only byte formatting is
+  `--lmcode-signatures ... --without-std`. Existing host-only byte formatting is
   retained; raw schema bytes are never replaced merely to pretty-print them.
 * Registry-dump `gen-schema.py` scripts with the known final `print(dump(schema))`
   become host-only generators. Existing `bridge.remove_standard` generators

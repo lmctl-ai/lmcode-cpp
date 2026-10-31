@@ -31,7 +31,7 @@ Existing C++ group binders remain available: manual registration into an opted-o
 
 `scripts/merge-std.py HOST_SCHEMA OUTPUT` (also available through the compatibility name `merge-std-schema.py`) is the temporary compiler bridge: it merges the canonical fragment into a full host schema, preserves context/domain metadata and overloads, and refuses conflicting parameter tuples/return types. It also supplies signature normalization and host-only schema extraction modes. Already-merged schemas are accepted idempotently. The helper reads a vendored `cpp/std/lmcode-std.schema.json` in host checkouts, or the canonical `std/` file in the SDK. It does not modify the input file or infer adapters.
 
-Until compiler injection is released, migrated hosts keep only host declarations in a checked-in source schema and generate the effective merged schema during their build. The existing compiler-facing schema path can remain a generated, ignored file so examples continue to compile after building. `--dsl-schema --json` prints the exact effective embedded schema bytes today; the loader hashes those same bytes. Future injection can use the host-only schema bytes instead; default std import resolution already works with either form. Signature self-checks normalize std membership, so they accept both forms without hiding host/schema drift.
+Until compiler injection is released, migrated hosts keep only host declarations in a checked-in source schema and generate the effective merged schema during their build. The existing compiler-facing schema path can remain a generated, ignored file so examples continue to compile after building. `--lmcode-schema --json` prints the exact effective embedded schema bytes today; the loader hashes those same bytes. Future injection can use the host-only schema bytes instead; default std import resolution already works with either form. Signature self-checks normalize std membership, so they accept both forms without hiding host/schema drift.
 
 ### Collection lifetime and native adapters
 
@@ -149,7 +149,7 @@ convert explicitly (validated or lossy). Rust follows the same rule with a byte-
 1. Add the signature to the C++ fragment (`stdlib/string.schema-fragment.json`) and `tests/string.schema.json` (they must be identical).
 2. Implement it in `stdlib/string.hpp` and register it in `register_string`.
 3. Port it: `lmcode-rust/dslvm/src/stdlib.rs` + `lmcode-rust/stdlib/` fragment, `lmcode-go/stdlib`, `lmcode-csharp/stdlib` (fragment + binder).
-4. Run each SDK's signature-parity check against `lmscript --dsl-signatures` (sorted registry signatures must equal the compiler's output).
+4. Run each SDK's signature-parity check against `lmscript --lmcode-signatures` (sorted registry signatures must equal the compiler's output).
 5. Add a stdlib conformance vector (below) and make every SDK pass it.
 6. Update each README's catalog line and this table.
 

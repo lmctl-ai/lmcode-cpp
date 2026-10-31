@@ -159,7 +159,7 @@ function selfTest(Lexer) {
     ['p=_dsl_;\nend _json_\n',null,true],
     ['p=_dsl_;\nend _dsl_;\n',null,true],
     ['p=_dsl_;\n${"}"}\nend _dsl_\n','p=_lmcode_;\n${"}"}\nend _lmcode_\n',true],
-    ['Mention `_dsl_`, --dsl-schema, .dsl.json and dslvm.\n```lms\np=_dsl_;\nend _dsl_\n```\n','Mention `_dsl_`, --dsl-schema, .dsl.json and dslvm.\n```lms\np=_lmcode_;\nend _lmcode_\n```\n',false],
+    ['Mention `_dsl_`, --lmcode-schema, .dsl.json and dslvm.\n```lms\np=_dsl_;\nend _dsl_\n```\n','Mention `_dsl_`, --lmcode-schema, .dsl.json and dslvm.\n```lms\np=_lmcode_;\nend _lmcode_\n```\n',false],
     ['    p=_dsl_;\n    end _dsl_\n','    p=_lmcode_;\n    end _lmcode_\n',false],
     ["```sh\ncat > a.lms <<'LMS'\np=_dsl_;\nend _dsl_\nLMS\n```\n","```sh\ncat > a.lms <<'LMS'\np=_lmcode_;\nend _lmcode_\nLMS\n```\n",false],
     ['```json\n{"x":"_dsl_"}\n```\n',null,false],

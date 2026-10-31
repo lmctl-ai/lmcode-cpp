@@ -3,7 +3,7 @@
 `lmcode-std.schema.json` is the canonical, byte-pinned standard surface. Its
 schema name `lmcode_std_v1` carries standard-library version 1; `dsl.schema: 2`
 is the schema-language version and bytecode version 5 is separate. It is directly
-readable by the current `lmscript --dsl-signatures` command. The merge helper adds
+readable by the current `lmscript --lmcode-signatures` command. The merge helper adds
 only its declarations to a host schema, preserving host metadata.
 
 The file combines string, math, collection and file declarations: 72 canonical
@@ -15,7 +15,7 @@ Until implicit compiler injection is available, merge it at build time:
 
 ```sh
 python3 scripts/merge-std-schema.py host.schema.json merged.schema.json
-lmscript --dsl-signatures merged.schema.json
+lmscript --lmcode-signatures merged.schema.json
 ```
 
 The helper retains host metadata and accepts identical declarations or additional

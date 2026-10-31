@@ -94,7 +94,7 @@ if bytecode[:6] != b'DSLB\x00\x05': raise SystemExit('error: compiler did not em
 if bytecode[6:38] != hashlib.sha256(schema).digest(): raise SystemExit('error: bytecode schema hash does not match raw host schema bytes')
 PY
 done
-"$candidate" --dsl-signatures "$SCHEMA" | grep -Fq 'fn str_len(string) -> int' || { echo "error: compiler inspection surface lacks implicit std fn str_len(string) -> int" >&2; exit 2; }
+"$candidate" --lmcode-signatures "$SCHEMA" | grep -Fq 'fn str_len(string) -> int' || { echo "error: compiler inspection surface lacks implicit std fn str_len(string) -> int" >&2; exit 2; }
 printf '%s\n' "$candidate"
 ''', 'MIN_VERSION="0.2.420"', 'MIN_VERSION="' + target + '"');
 }
@@ -239,7 +239,7 @@ std = path_join(opts.sdk,"std/lmcode-std.schema.json");
 helper = path_join(opts.sdk,"scripts/merge-std.py");
 empty = path_join(work,"empty.json");
 write_json(empty,{"dsl.schema":2,name:"migration_probe"});
-standard_sig = run([opts.compiler,"--dsl-signatures",empty],stage);
+standard_sig = run([opts.compiler,"--lmcode-signatures",empty],stage);
 if (!contains(standard_sig,"fn str_len(string) -> int\n") || split(trim(standard_sig),"\n").len() != 72) { refuse("compiler implicit std capability probe failed"); }
 cmake_file = path_join(stage,"CMakeLists.txt");
 migrating = false;
@@ -254,7 +254,7 @@ if (file_exists(cmake_file)) {
     derive = path_join(work,"host-only.json");
     run(["python3",helper,"--std",std,"--host-only",path_join(stage,host),derive],stage);
     if (!same_json(read_json(path_join(stage,host)),read_json(derive))) { put(stage,host,read_file(derive),candidates); migrating = true; }
-    compiler_sig = run([opts.compiler,"--dsl-signatures",derive,"--without-std"],stage);
+    compiler_sig = run([opts.compiler,"--lmcode-signatures",derive,"--without-std"],stage);
     if (join(sort(split(trim(compiler_sig),"\n")),"\n") != trim(signatures(read_json(derive)))) { refuse("host-only schema signature cross-check failed"); }
     begin = index_of(cmake,"set(" + prefix + "_STD_SCHEMA ");
     end = index_of(cmake,"set(" + prefix + "_SCHEMA ");
@@ -312,7 +312,7 @@ sys.stdout.buffer.write((json.dumps(bridge.remove_standard(schema, standard), in
     if (file_exists(test_file)) {
       text = read_file(test_file);
       old = 'python3 scripts/merge-std.py --normalize-signatures ' + host + ' "$WORK/host-only.sig"\n';
-      already_host_only = contains(text,"--dsl-signatures " + host + " --without-std") &&
+      already_host_only = contains(text,"--lmcode-signatures " + host + " --without-std") &&
         (contains(text,"cmp " + host + " " + generated) || contains(text,"cmp -s " + host + " " + generated));
       if (contains(text,old) && !already_host_only) {
         start = index_of(text,old);
@@ -321,9 +321,9 @@ sys.stdout.buffer.write((json.dumps(bridge.remove_standard(schema, standard), in
         finish = len(join(slice(test_lines,0,3),"\n"));
         if (test_lines.len() < 3 || !starts_with(test_lines[1],"diff ") || !starts_with(test_lines[2],"ok ")) { push(report.unrecognized,"test.sh normalization block"); }
         else {
-          block = '"$LMSCRIPT" --dsl-signatures cpp/std/lmcode-std.schema.json > "$WORK/std.sig"\n' +
+          block = '"$LMSCRIPT" --lmcode-signatures cpp/std/lmcode-std.schema.json > "$WORK/std.sig"\n' +
             'grep -Fvx -f "$WORK/std.sig" "$WORK/host.sig" > "$WORK/host-only.sig" || true\n' +
-            '"$LMSCRIPT" --dsl-signatures ' + host + ' --without-std > "$WORK/compiler-host-only.sig"\n' +
+            '"$LMSCRIPT" --lmcode-signatures ' + host + ' --without-std > "$WORK/compiler-host-only.sig"\n' +
             'diff "$WORK/host-only.sig" "$WORK/compiler-host-only.sig" >/dev/null || fail "host-only registry/compiler parity"\n' +
             'cmp -s ' + host + ' ' + generated + ' || fail "host-only schema byte identity"\n' +
             'ok "host-only bytes and --without-std registry parity"';

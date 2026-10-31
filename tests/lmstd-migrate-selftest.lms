@@ -259,7 +259,7 @@ cmake = fixture(root, "cmake-merge", [
   {path:"CMakeLists.txt", content:"set(STD_SCHEMA cpp/std/lmcode-std.schema.json)\nset(MERGE scripts/merge-std.py)\nexecute_process(COMMAND python3 ${MERGE} schema/demo.host.json schema/demo.dsl.json)\n"}
 ]);
 generator = fixture(root, "schema-generator", [
-  {path:"scripts/gen-schema.py", content:"import subprocess\nout = subprocess.check_output([host, '--dsl-signatures'])\n"},
+  {path:"scripts/gen-schema.py", content:"import subprocess\nout = subprocess.check_output([host, '--lmcode-signatures'])\n"},
   {path:"schema/demo.dsl.json", content:"{\"dsl.schema\":2,\"name\":\"demo\",\"functions\":{\"str_len\":[{\"params\":[\"string\"],\"returns\":\"int\"}]},\"types\":{},\"context\":{}}\n"}
 ]);
 compile_case = fixture(root, "compile-fixture", [

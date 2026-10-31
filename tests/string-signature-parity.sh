@@ -11,12 +11,12 @@ WORK="$(mktemp -d "${TMPDIR:-/tmp}/dsl-string-signatures-XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 if [[ -n "${LMSCRIPT_BIN:-}" ]]; then
   COMPILER=("$LMSCRIPT_BIN")
-elif command -v lmscript >/dev/null 2>&1 && lmscript --dsl-signatures "$SCHEMA" > /dev/null 2>&1; then
+elif command -v lmscript >/dev/null 2>&1 && lmscript --lmcode-signatures "$SCHEMA" > /dev/null 2>&1; then
   COMPILER=(lmscript)
 elif command -v npx >/dev/null 2>&1; then
   COMPILER=(npx --yes --package=@lmctl-ai/lmctl -- lmscript)
 else
-  echo "fail: signature parity needs a compiler with --dsl-signatures; install @lmctl-ai/lmctl, provide npx, or set LMSCRIPT_BIN" >&2
+  echo "fail: signature parity needs a compiler with --lmcode-signatures; install @lmctl-ai/lmctl, provide npx, or set LMSCRIPT_BIN" >&2
   exit 2
 fi
 node - "$SCHEMA" "$FRAGMENT" <<'JS_CHECK'
@@ -27,9 +27,9 @@ const fragment = JSON.parse(fs.readFileSync(fragmentPath));
 assert.deepStrictEqual(fixture.functions, fragment.functions, 'test schema differs from shipped catalog fragment');
 assert.deepStrictEqual(fixture.types || {}, fragment.types || {}, 'test types differ from shipped catalog fragment');
 JS_CHECK
-"${COMPILER[@]}" --dsl-signatures "$SCHEMA" > "$WORK/compiler-signatures-all"
+"${COMPILER[@]}" --lmcode-signatures "$SCHEMA" > "$WORK/compiler-signatures-all"
 "$HOST" --signatures > "$WORK/host-signatures"
-# Since lmscript 0.2.420 std is built into the compiler, so --dsl-signatures
+# Since lmscript 0.2.420 std is built into the compiler, so --lmcode-signatures
 # merges the built-in std catalog with the schema instead of listing only the
 # schema's own functions. Restrict the compiler listing to the names this
 # catalog declares so the diff stays catalog-vs-catalog (a no-op for older

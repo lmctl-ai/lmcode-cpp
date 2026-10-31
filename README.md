@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
   reg.method("Greeter", "say", {"string"}, "void", [](void* self, dslvm::Args& a) { // Greeter.say(string) -> void, declared as in the schema
     static_cast<Greeter*>(self)->last = a[0].s; return dslvm::Value::none(); });
   reg.function("now", {}, "string", [](dslvm::Args&) { return dslvm::Value::string("2026-10-18"); });  // now() -> string
-  if (argc > 3 && std::string(argv[3]) == "--dsl-signatures") { for (auto& s : reg.signatures()) std::cout << s << "\n"; return 0; }  // diffed against `lmscript --dsl-signatures`
+  if (argc > 3 && std::string(argv[3]) == "--lmcode-signatures") { for (auto& s : reg.signatures()) std::cout << s << "\n"; return 0; }  // diffed against `lmscript --lmcode-signatures`
 
   dslvm::Program program;
   try { program = dslvm::Program::load(dslvm::read_file(argv[1]), dslvm::read_file(argv[2]), reg); }  // bytecode, schema
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 ```
 
 `Registry` is declared with the schema's types (parameter types and return type, as strings); a name may have several overloads with distinct parameter tuples, while registering the same parameter tuple twice is refused. `load()` resolves canonical import signatures (including parameter and return types), and refuses a file whose imports the registry does not provide, before anything runs. `reg.signatures()` lists the
-sorted canonical strings, including the built-in standard. Compare them with `lmscript --dsl-signatures`
+sorted canonical strings, including the built-in standard. Compare them with `lmscript --lmcode-signatures`
 for the merged schema, or use `matches_schema_signatures(...)` with a host-only schema. That is a consistency
 check, not a defense: by design the VM performs no comprehensive call-time argument or return checks; it still checks method receiver kinds and other defensive VM invariants. Bytecode is trusted like the host's
 own code. `Value` carries `INT` (int64), `FLOAT` (binary64), `STR`, `BOOL` and `OBJ` (a host pointer plus the schema type name); a
@@ -143,7 +143,7 @@ second.run(context, registry);
 ```
 
 Copy the fragment's `functions` object into the host schema. `make test` runs the unit host and compares its sorted
-`Registry::signatures()` against the current compiler's `--dsl-signatures` output for `tests/string.schema.json`. It uses
+`Registry::signatures()` against the current compiler's `--lmcode-signatures` output for `tests/string.schema.json`. It uses
 `$LMSCRIPT_BIN` when set; otherwise the check uses a compatible `lmscript` on PATH, or runs the published package with `npx` if the PATH command is too old. Set `LMSCRIPT_BIN` to select a specific CLI.
 The parity test also checks the fixture against the shipped fragment and uses the executable selected by `BUILD`, including sanitizer builds.
 The catalog header is compiled alone with `-std=c++17 -Wall -Wextra -Werror`.
@@ -258,7 +258,7 @@ demonstrates an entry that this host does not dispatch.
 
 ```sh
 lmscript examples/rule-entries.lms /tmp/rule-entries.dslb
-../lmcode-cpp-sample/build/lmcode-cpp-sample --dsl /tmp/rule-entries.dslb
+../lmcode-cpp-sample/build/lmcode-cpp-sample --lmcode /tmp/rule-entries.dslb
 ```
 
 Use lmscript 0.2.444 using lmcode bytecode (DSLB v6). The expected trace is pinned in
@@ -339,4 +339,4 @@ Boundary and malformed-wire coverage is described in [conformance/BOUNDARIES.md]
 
 ## Historical literal names
 
-The documentation calls the language lmcode. `--dsl`, `--dsl-schema` and `--dsl-signatures` are current host flag literals; `DSLB` is the bytecode magic and `DSLB v6` is the current format name; `.dslb` is the current bytecode filename extension; `_dsl_` is the historical block spelling; `dsl.schema` is the current schema JSON key. Other code-formatted API names, paths, manifest names and diagnostic text retain their current literal spellings.
+The documentation calls the language lmcode. `--lmcode`, `--lmcode-schema` and `--lmcode-signatures` are current host flag literals; `DSLB` is the bytecode magic and `DSLB v6` is the current format name; `.dslb` is the current bytecode filename extension; `_dsl_` is the historical block spelling; `dsl.schema` is the current schema JSON key. Other code-formatted API names, paths, manifest names and diagnostic text retain their current literal spellings.

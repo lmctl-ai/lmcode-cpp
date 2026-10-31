@@ -16,7 +16,7 @@ unchanged. Invalid UTF-8 text is reported rather than decoded lossily; a UTF-8
 BOM is preserved, including when the selected lexer rejects that source.
 
 Names such as `.dsl.json`, `.dslb`, `dslvm`, `savedsl`, `dsl_cli`,
-`--dsl-schema` and `--dsl-signatures` are not renamed. Marker text inside
+`--lmcode-schema` and `--lmcode-signatures` are not renamed. Marker text inside
 strings, comments, raw body data or prose stays text. Remaining `_dsl_`
 mentions are listed with file, line and column for manual classification.
 Markdown LMScript fences, indented code and LMScript shell heredocs are
