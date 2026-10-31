@@ -33,8 +33,8 @@ for name,programs,execution,mode,result,code in cases:
  envelope=result if code else {'ok':True,'result':result}
  if name=='canonical-controls':envelope['result']=''.join(chr(i)for i in range(32))+'水'
  if not code and (mode=='builder' or(mode is None and len(programs)>1)):envelope['parts']=len(programs)
- if name=='canonical-numbers':envelope['result']=json.loads('[0,0.0001,9.999999999999999e-05,1e-05,1e-07,5e-324,1e-323,2.2250738585072014e-308,0.30000000000000004,1e+06,999999,1.0000005e+06,9.007199254740991e+15]')
- (HERE/(name+'.expect')).write_bytes(('LMCODE_RETURN_BEGIN\n'+('{"ok":true,"result":'+'[0,0.0001,9.999999999999999e-05,1e-05,1e-07,5e-324,1e-323,2.2250738585072014e-308,0.30000000000000004,1e+06,999999,1.0000005e+06,9.007199254740991e+15]'+'}' if name=='canonical-numbers' else json.dumps(envelope,ensure_ascii=False,separators=(',',':')))+'\nLMCODE_RETURN_END\n').encode())
+ if name=='canonical-numbers':envelope['result']=json.loads('[0,0.0001,9.999999999999999e-05,1e-05,1e-07,5e-324,1e-323,2.2250738585072014e-308,0.30000000000000004,1e+06,999999,1.0000005e+06,9.007199254740991e+15,6.697725194769412e+14,-6.697725194769412e+14,7.120236347223045e-307,-7.120236347223045e-307]')
+ (HERE/(name+'.expect')).write_bytes(('LMCODE_RETURN_BEGIN\n'+('{"ok":true,"result":'+'[0,0.0001,9.999999999999999e-05,1e-05,1e-07,5e-324,1e-323,2.2250738585072014e-308,0.30000000000000004,1e+06,999999,1.0000005e+06,9.007199254740991e+15,6.697725194769412e+14,-6.697725194769412e+14,7.120236347223045e-307,-7.120236347223045e-307]'+'}' if name=='canonical-numbers' else json.dumps(envelope,ensure_ascii=False,separators=(',',':')))+'\nLMCODE_RETURN_END\n').encode())
  manifest['cases'].append({'name':name,'programs':programs,'mode':mode,'exit':code})
 (HERE/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf8',newline='\n')
 paths=sorted(p for p in HERE.iterdir()if p.suffix in ['.json','.lmcode','.dslb','.expect'])
