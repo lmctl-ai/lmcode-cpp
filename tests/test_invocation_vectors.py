@@ -18,7 +18,7 @@ for case in manifest['cases']:
    target=folder/f'part {index}-水.dslb';target.write_bytes(raw);files.append(str(target));parts.append({'index':index,'file':str(target)})
   env=dict(os.environ);env.pop('LMCODE_INVOCATION_FILE',None)
   if case['mode'] is not None:
-   path=folder/'invocation.json';path.write_text(json.dumps({'version':1,'mode':case['mode'],'parts':parts}));env['LMCODE_INVOCATION_FILE']=str(path)
+   path=folder/'invocation.json';path.write_text(json.dumps({'version':1,'mode':case['mode'],'dry':case.get('dry',False),'parts':parts}));env['LMCODE_INVOCATION_FILE']=str(path)
   else:files=[files[0]]*len(files) # standalone duplicate file occurrences are legal
   # Reverse parsed argv order too: canonical indices must come from metadata.
   parsed=files[::-1]if case['mode']is not None else files
@@ -33,7 +33,7 @@ print('PASS',len(manifest['cases']),'native invocation goldens')
 with tempfile.TemporaryDirectory(prefix='metadata-controls-')as temporary:
  folder=Path(temporary);a=folder/'a.dslb';b=folder/'b.dslb'
  a.write_bytes((HERE/'float.dslb').read_bytes());b.write_bytes(a.read_bytes())
- base={'version':1,'mode':'single','parts':[{'index':0,'file':str(a)}]}
+ base={'version':1,'mode':'single','dry':False,'parts':[{'index':0,'file':str(a)}]}
  variants=[]
  def add(name,fn):
   value=json.loads(json.dumps(base));fn(value);variants.append((name,json.dumps(value).encode(),[str(a)]))
@@ -41,6 +41,8 @@ with tempfile.TemporaryDirectory(prefix='metadata-controls-')as temporary:
  add('mode',lambda v:v.update(mode='batch'))
  add('empty',lambda v:v.update(parts=[]))
  add('unknown-root',lambda v:v.update(result={'type':'int'}))
+ add('missing-dry',lambda v:v.pop('dry'))
+ add('nonboolean-dry',lambda v:v.update(dry=1))
  add('unknown-part',lambda v:v['parts'][0].update(contract='int'))
  add('relative',lambda v:v['parts'][0].update(file='relative.dslb'))
  add('nul',lambda v:v['parts'][0].update(file=str(a)+'\0'))
@@ -48,9 +50,9 @@ with tempfile.TemporaryDirectory(prefix='metadata-controls-')as temporary:
  add('negative',lambda v:v['parts'][0].update(index=-1))
  add('fractional',lambda v:v['parts'][0].update(index=0.5))
  add('unsafe',lambda v:v['parts'][0].update(index=9007199254740993))
- duplicate={'version':1,'mode':'builder','parts':[{'index':0,'file':str(a)},{'index':1,'file':str(a)}]}
+ duplicate={'version':1,'mode':'builder','dry':False,'parts':[{'index':0,'file':str(a)},{'index':1,'file':str(a)}]}
  variants.append(('duplicate-files',json.dumps(duplicate).encode(),[str(a),str(a)]))
- two={'version':1,'mode':'builder','parts':[{'index':0,'file':str(a)},{'index':1,'file':str(b)}]}
+ two={'version':1,'mode':'builder','dry':False,'parts':[{'index':0,'file':str(a)},{'index':1,'file':str(b)}]}
  variants.append(('duplicate-registration',json.dumps(two).encode(),[str(a),str(a)]))
  variants.append(('missing-registration',json.dumps(two).encode(),[str(a)]))
  variants.append(('extra-registration',json.dumps(base).encode(),[str(a),str(b)]))

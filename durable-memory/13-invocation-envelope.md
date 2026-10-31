@@ -6,6 +6,14 @@ It reads LMCODE_INVOCATION_FILE when present; an explicitly supplied native
 optional path overload supports embedding/testing. The environment is read,
 never modified. Nested language executions must replace inherited metadata.
 
+Version-1 metadata requires `dry` as a boolean. A missing or nonboolean value is
+a CLI failure; standalone hosts without metadata default to real mode. Embedded
+callers can use `InvocationResults::from_command(parsed_files, true)`. The selected
+mode is invocation-wide, including every builder slot. Dry success and controlled
+failure envelopes append `"dry":true` after existing keys; real envelopes omit it.
+The marker reports invocation mode and does not assert that arbitrary host code
+was effect free.
+
 `registrations()` preserves parser order and supplies each unchanged file string
 with its canonical slot index. Manifest indices are contiguous add order; file
 strings must be absolute and unique, and registrations a complete permutation.

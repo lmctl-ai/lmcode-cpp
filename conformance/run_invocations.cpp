@@ -20,8 +20,10 @@ static int run_cli(int argc,char**argv){
   std::vector<std::string> files;for(int i=3;i<argc;++i)files.emplace_back(argv[i]);
   auto results=InvocationResults::from_command(files);
   Registry registry;Context context;int64_t counter=0;
+  context.set_dry(results.dry());
   registry.function("next_counter",{},"int",[&](Args&){return Value::integer(++counter);});
-  registry.function("entry_fail",{},"void",[](Args&)->Value{throw Error("native entry failure");});
+  registry.function("entry_fail",{},"void",[](Args&)->Value{throw Error("native entry failure");},
+                    dry(Function([](Args&)->Value{throw Error("preview failed");})));
   const std::string schema=read(argv[1]);const auto contract=ResultContract::from_schema(schema);
   const auto* order=invocation_detail::member(config,"execution");
   for(const auto& entry:order->array){
