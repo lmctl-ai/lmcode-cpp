@@ -29,7 +29,7 @@ for (kind in ["outside-stage","source-checkout"]) {
   checked(["git","clone","--bare",seed,origin],folder);g(origin,["config","core.hooksPath",hooks]);
   checked(["git","clone",origin,repo],folder);g(repo,["config","core.hooksPath",hooks]);
   before=g(repo,["rev-parse","HEAD"]);report=path_join(folder,"report.json");
-  checked(["env","GIT_ALLOW_PROTOCOL=file","lmscript","--no-preflight",program,"--repo",repo,"--historical","--dry-run","--tests","never","--report",report],folder);
+  checked(["env","GIT_ALLOW_PROTOCOL=file","lmscript",program,"--repo",repo,"--historical","--dry-run","--tests","never","--report",report],folder);
   result=read_json(report);
   assert(result.status == "ready","recognized wrapper should compile to a controlled artifact");
   assert(result.examples.len() == 1 && result.examples[0].status == "compiled","wrapper must actually compile");

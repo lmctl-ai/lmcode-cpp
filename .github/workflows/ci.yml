@@ -81,6 +81,9 @@ jobs:
         if: runner.os == 'Linux'
         run: bash scripts/test-matrix.sh
 
+      - name: consumer execution-mode boundaries
+        run: PYTHONDONTWRITEBYTECODE=1 python3 tests/removed-imports.test.py
+
       - name: canonical std schema and merge helper
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-merge-std.py
 

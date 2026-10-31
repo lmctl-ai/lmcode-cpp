@@ -5,10 +5,12 @@ The canonical sample suite now includes `run-suite.lms`, `runner-lib.lms`,
 drives SDK checks; the C and C++ sample roots have their own `test.lms`
 for build, lock validation, canonical tests and the annotated-rule example.
 
-Install both executables with `npm install -g @lmctl-ai/lmctl`. Run from the
+Use a current locally built or installed lmscript. Run from the
 repository root with `lmctl test.lms` or `lmscript test.lms`; CI uses
-`lmscript --no-preflight test.lms`. `run-suite.sh` is an lmscript launcher
+`lmscript test.lms`. `run-suite.sh` is an lmscript launcher
 and supplies an absolute `LMCODE_SUITE` so argv host commands stay intact.
+A normal invocation checks, then runs once; a script-tail `--dry-run` belongs to
+the script and does not select interpreter dry execution.
 
 Assertions and test selection are in lmscript. `bytes.mjs` is a small Node
 adapter for byte-preserving reads/hashes, bytecode import decoding/mutation,

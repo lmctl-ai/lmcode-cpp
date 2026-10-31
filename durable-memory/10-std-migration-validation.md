@@ -21,7 +21,7 @@ required on each run:
 
 ```sh
 lmscript --check tests/lmstd-migrate-selftest.lms
-lmscript --no-preflight tests/lmstd-migrate-selftest.lms CONFIG.json SCRATCH_DIR
+lmscript tests/lmstd-migrate-selftest.lms CONFIG.json SCRATCH_DIR
 ```
 
 For historical validation, each pre-migration commit and expected post-migration

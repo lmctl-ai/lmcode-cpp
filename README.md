@@ -282,7 +282,7 @@ npm install -g @lmctl-ai/lmctl
 lmctl test.lms
 # Equivalent: lmscript test.lms
 # Include a built reference host:
-lmscript --no-preflight test.lms ../lmcode-cpp-sample/build/lmcode-cpp-sample
+lmscript test.lms ../lmcode-cpp-sample/build/lmcode-cpp-sample
 ```
 
 The npm package installs both executables. Both run local `.lms` files;

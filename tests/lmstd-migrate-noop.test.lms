@@ -23,7 +23,7 @@ checked(["git","clone","--bare",seed,origin],root);g(origin,["config","core.hook
 checked(["git","clone",origin,repo],root);g(repo,["config","core.hooksPath",hooks]);
 program=path_join(Directory,"scripts/lmstd-migrate.lms");if (ARGV.len() > 1) { program=ARGV[1]; }
 report=path_join(root,"report.json");
-checked(["env","GIT_ALLOW_PROTOCOL=file","lmscript","--no-preflight",program,"--repo",repo,"--historical","--dry-run","--tests","never","--report",report],root);
+checked(["env","GIT_ALLOW_PROTOCOL=file","lmscript",program,"--repo",repo,"--historical","--dry-run","--tests","never","--report",report],root);
 r=read_json(report);
 assert(r.status == "no-op" && r.changed_files.len() == 0,"existing host-only parity must not trigger migration");
 assert(g(repo,["status","--porcelain"]) == "","no-op changed source");
