@@ -60,6 +60,16 @@ int main(int argc, char** argv) {
   check(contains(registry.std_signatures(), "method StrList.at(int) -> string"));
   check(!contains(registry.signatures(), "fn assert_close(float, float, float) -> void"));
   check(!contains(registry.signatures(), "fn print(string) -> void"));
+  for (const auto& signature : registry.std_signatures()) {
+    const bool write = signature == "fn file_write(string, string) -> void" || signature == "fn file_append(string, string) -> void";
+    if (signature.rfind("fn ", 0) == 0) {
+      const auto* entry = registry.function_by_signature(signature);
+      check(entry && static_cast<bool>(entry->dry_fn) == !write);
+    } else if (signature.rfind("method ", 0) == 0) {
+      const auto* entry = registry.method_by_signature(signature);
+      check(entry && static_cast<bool>(entry->dry_fn));
+    }
+  }
 
   // Built-in registration is idempotent, and the old explicit group binders
   // remain safe for hosts that have not migrated their registration code yet.
@@ -79,6 +89,7 @@ int main(int argc, char** argv) {
   // wrong-return signatures are rejected by the same self-check.
   Registry host(StdMode::Disabled);
   host.function("host_only", {"int"}, "string", [](Args&) { return Value::string("ok"); });
+  check(!host.function_by_signature("fn host_only(int) -> string")->dry_fn);
   const auto host_sigs = host.host_signatures();
   check(host.matches_schema_signatures(host_sigs));
   register_std(host);

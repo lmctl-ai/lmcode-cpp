@@ -29,9 +29,11 @@ int main(int argc, char** argv) {
   check(print && close && registry.signatures().size() == 2);
   dslvm::Args bytes{dslvm::Value::string(std::string("a\0b", 3))};
   check(print->fn(bytes).kind == dslvm::Value::VOID && output.str() == std::string("a\0b\n", 4));
+  check(print->dry_fn && print->dry_fn(bytes).kind == dslvm::Value::VOID && output.str() == std::string("a\0b\na\0b\n", 8));
 
   dslvm::Args equal{dslvm::Value::real(1.0), dslvm::Value::real(1.0001), dslvm::Value::real(0.001)};
   check(close->fn(equal).kind == dslvm::Value::VOID);
+  check(close->dry_fn && close->dry_fn(equal).kind == dslvm::Value::VOID);
   dslvm::Args rounded{dslvm::Value::real(1.2345678901234567), dslvm::Value::real(2.0), dslvm::Value::real(0.25)};
   try { close->fn(rounded); check(false); }
   catch (const dslvm::Error& e) { check(e.message == "assert_close failed: 1.23456789012346 vs 2 (tol 0.25)"); }

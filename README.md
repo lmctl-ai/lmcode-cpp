@@ -100,6 +100,15 @@ returns `Value::none()` for a void interface, and treats a wrong argument count 
 programming error (`RUN_HOST`, naming the entry). Argument kinds are not checked (the host built them from its own
 schema). `run()` is unchanged and executes only the body.
 
+Registered callbacks may take an optional final dry slot using the same callback
+signature. Without one, dry dispatch skips the real callback and returns a fresh
+dummy based on the declared return type. `dslvm::dry(callback)` marks the callback
+for the dry slot; it does not execute at registration time. `Context::set_dry(true)`
+selects dry execution for embedded callers. Dry mode is not a sandbox: dry callbacks
+must not write external state, consume streams/devices, prompt, or spawn effectful
+children. Standard-library computations and run-owned collection operations run in
+dry mode; regular-file reads opt into their real callback; writes use safe defaults.
+
 ## What load() guarantees
 
 Wrong magic, another version (v3/v4 included), a schema-hash mismatch, truncation, trailing bytes, unknown constant tags,

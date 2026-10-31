@@ -101,6 +101,119 @@ static void expect_trace(const std::string& label, Host& h, const std::string& b
 
 int main() {
   Host h;
+  {
+    int real_effects = 0, previews = 0; bool sentinel = false;
+    Asm::EntrySpec entry;
+    entry.name = "probe"; entry.annotation = ""; entry.iface = "interface probe() -> bool";
+    entry.maxStack = 1; entry.code = Asm().fn("fn effect() -> bool", 0).halt().code;
+    Asm program; program.imp("fn effect() -> bool"); program.halt().entry(entry);
+    Registry defaults(StdMode::Disabled);
+    defaults.function("effect", {}, "bool", [&](Args&) { ++real_effects; sentinel = true; return Value::boolean(false); });
+    auto p = Program::load(program.file(SCHEMA), SCHEMA, defaults);
+    Context dry_ctx; dry_ctx.set_dry(true);
+    Value dummy = p.call(0, dry_ctx, defaults, {});
+    assert(real_effects == 0 && !sentinel && dummy.kind == Value::BOOL && dummy.b);
+
+    Registry overridden(StdMode::Disabled);
+    overridden.function("effect", {}, "bool", [&](Args&) { ++real_effects; sentinel = true; return Value::boolean(false); },
+                        dry(Function([&](Args&) { ++previews; return Value::boolean(false); })));
+    auto op = Program::load(program.file(SCHEMA), SCHEMA, overridden);
+    Context preview_ctx; preview_ctx.set_dry(true);
+    Value preview = op.call(0, preview_ctx, overridden, {});
+    assert(previews == 1 && real_effects == 0 && !sentinel && preview.kind == Value::BOOL && !preview.b);
+    Context real_ctx;
+    Value real = op.call(0, real_ctx, overridden, {});
+    assert(real_effects == 1 && sentinel && previews == 1 && real.kind == Value::BOOL && !real.b);
+    Registry wrong_return(StdMode::Disabled);
+    wrong_return.function("effect", {}, "bool", [](Args&) { return Value::boolean(true); },
+                          dry(Function([](Args&) { return Value::string("wrong"); })));
+    auto bad = Program::load(program.file(SCHEMA), SCHEMA, wrong_return);
+    try { (void)bad.call(0, dry_ctx, wrong_return, {}); assert(false); }
+    catch (const Error& error) { assert(error.code == "RUN_HOST" && error.message.find("dry callback for bool returned string") != std::string::npos); }
+    passed++; std::cout << "ok - dry defaults skip real callbacks, overrides run once, real mode is unchanged\n";
+  }
+  {
+    int real_calls = 0, dry_calls = 0;
+    Registry reg(StdMode::Disabled);
+    reg.function("acquire", {}, "Opaque", [](Args&) { return Value::object("Opaque", nullptr); });
+    reg.method("Opaque", "read", {}, "int", [&](void*, Args&) { ++real_calls; return Value::integer(1); },
+               dry(Method([&](void*, Args&) { ++dry_calls; return Value::integer(2); })));
+    Asm body; body.fn("fn acquire() -> Opaque", 0);
+    const auto method_pc = static_cast<uint32_t>(body.code.size());
+    body.line(method_pc, 11, 4).method("method Opaque.read() -> int", 0).halt();
+    Program p = Program::load(body.file(SCHEMA), SCHEMA, reg);
+    Context ctx; ctx.set_dry(true);
+    Registry skipped(StdMode::Disabled);
+    skipped.function("acquire", {}, "Opaque", [](Args&) { return Value::object("Opaque", nullptr); });
+    skipped.method("Opaque", "read", {}, "int", [&](void*, Args&) { ++real_calls; return Value::integer(1); });
+    Program skip_program = Program::load(body.file(SCHEMA), SCHEMA, skipped);
+    skip_program.run(ctx, skipped); // no dry method slot: skip without dereferencing the dry-null receiver
+    try { (void)p.run(ctx, reg); assert(false); }
+    catch (const Error& error) { assert(error.code == "RUN_HOST" && error.has_location && error.line == 11 && error.column == 4); }
+    assert(real_calls == 0 && dry_calls == 0);
+    passed++; std::cout << "ok - dry null cannot reach an override or real object method\n";
+  }
+  {
+    Registry reg;
+    Asm::EntrySpec entry; entry.name = "length"; entry.iface = "interface length() -> int";
+    Asm pure; pure.imp("fn str_len(string) -> int"); pure.pushStr("dry").fn("fn str_len(string) -> int", 1).halt();
+    entry.maxStack = 1; entry.code = pure.code; pure.code.clear(); pure.halt().entry(entry);
+    auto p = Program::load(pure.file(SCHEMA), SCHEMA, reg);
+    Context dry_ctx; dry_ctx.set_dry(true);
+    Value length = p.call(0, dry_ctx, reg, {});
+    assert(length.kind == Value::INT && length.i == 3);
+
+    const auto source = std::filesystem::temp_directory_path() / "lmcode-cpp-dry-read-fixture";
+    { std::ofstream out(source, std::ios::binary); out << "fixture bytes"; }
+    int reads = 0;
+    Registry reader(StdMode::Disabled);
+    Function real_read = [&](Args&) { ++reads; std::ifstream in(source, std::ios::binary); std::ostringstream bytes; bytes << in.rdbuf(); return Value::string(bytes.str()); };
+    reader.function("fixture_read", {}, "string", real_read, dry(real_read));
+    Asm::EntrySpec read_entry; read_entry.name = "read"; read_entry.iface = "interface read() -> string";
+    read_entry.maxStack = 1; read_entry.code = Asm().fn("fn fixture_read() -> string", 0).halt().code;
+    Asm read_program; read_program.imp("fn fixture_read() -> string"); read_program.halt().entry(read_entry);
+    auto read_bytecode = Program::load(read_program.file(SCHEMA), SCHEMA, reader);
+    Value bytes = read_bytecode.call(0, dry_ctx, reader, {});
+    assert(reads == 1 && bytes.kind == Value::STR && bytes.s == "fixture bytes");
+    const std::string file_read_sig = "fn file_read(string) -> string";
+    Asm std_read; std_read.imp(file_read_sig); std_read.pushStr(source.string()).fn(file_read_sig, 1).halt();
+    Asm::EntrySpec std_read_entry; std_read_entry.name = "file_read"; std_read_entry.iface = "interface file_read() -> string";
+    std_read_entry.maxStack = 1; std_read_entry.code = std_read.code; std_read.code.clear(); std_read.halt().entry(std_read_entry);
+    auto std_read_bytecode = Program::load(std_read.file(SCHEMA), SCHEMA, reg);
+    Value std_bytes = std_read_bytecode.call(0, dry_ctx, reg, {});
+    assert(std_bytes.kind == Value::STR && std_bytes.s == "fixture bytes");
+
+    const auto path = std::filesystem::temp_directory_path() / "lmcode-cpp-dry-write-sentinel";
+    std::error_code ignored; std::filesystem::remove(path, ignored);
+    Asm write; write.pushStr(path.string()).pushStr("should not exist").fn("fn file_write(string, string) -> void", 2).halt();
+    auto wp = Program::load(write.file(SCHEMA), SCHEMA, reg);
+    wp.run(dry_ctx, reg);
+    assert(!std::filesystem::exists(path));
+    std::filesystem::remove(source, ignored);
+
+    ResultSink sink; reg.set_result_sink(&sink);
+    Asm result; result.pushInt(42).fn("fn lmcode_return_set(int) -> void", 1).halt();
+    auto rp = Program::load(result.file(SCHEMA), SCHEMA, reg);
+    rp.run(dry_ctx, reg);
+    assert(sink.json() == "42");
+    passed++; std::cout << "ok - dry std computations and result sink run while file writes skip\n";
+  }
+  {
+    Registry reg(StdMode::Disabled);
+    const auto integer = dry_dummy(reg, "int"), floating = dry_dummy(reg, "float"), text = dry_dummy(reg, "string");
+    const auto nothing = dry_dummy(reg, "void"), null_value = dry_dummy(reg, "null"), opaque = dry_dummy(reg, "Opaque");
+    assert(integer.kind == Value::INT && integer.i == 0);
+    assert(floating.kind == Value::FLOAT && floating.f == 0.0);
+    assert(text.kind == Value::STR && text.s.empty());
+    assert(nothing.kind == Value::VOID && null_value.kind == Value::DRY_NULL && null_value.is_dry_null() && opaque.kind == Value::DRY_NULL && opaque.is_dry_null());
+    const auto first = dry_dummy(reg, "IntList"), second = dry_dummy(reg, "IntList");
+    assert(first.kind == Value::OBJ && second.kind == Value::OBJ && first.obj != second.obj);
+    static_cast<stdlib::IntList*>(first.obj)->items.push_back(9);
+    assert(static_cast<stdlib::IntList*>(second.obj)->items.empty());
+    const auto map = dry_dummy(reg, "IntMap");
+    assert(map.kind == Value::OBJ && map.type == "IntMap" && static_cast<stdlib::IntMap*>(map.obj)->items.empty());
+    passed++; std::cout << "ok - typed dry dummies include fresh collection values\n";
+  }
   const int64_t MAX = INT64_MAX, MIN = INT64_MIN;
   // Malformed values are VM failures, not host callback failures. Exercise every
   // type-check family that formerly used Error(message)'s RUN_HOST default.
@@ -252,6 +365,7 @@ int main() {
   // Registry signatures: signatures, duplicate registrations, error codes, the result line.
   { auto sigs = h.reg.host_signatures(); std::vector<std::string> want = {"context root: Thing", "context t: Trace", "fn boom() -> void", "fn twice(int) -> int", "method Thing.id() -> int", "method Trace.int(int) -> void", "method Trace.str(string) -> void"}; assert(sigs == want); passed++; std::cout << "ok - signatures() lists the sorted canonical strings\n"; }
   { Registry dup; dup.function("f", {}, "void", [](Args&) { return Value::none(); }); expect_error("duplicate registration", [&] { dup.function("f", {}, "void", [](Args&) { return Value::none(); }); }, "registered twice"); }
+  { Registry empty(StdMode::Disabled); expect_error("empty dry callback refused at registration", [&] { empty.function("f", {}, "void", [](Args&) { return Value::none(); }, dry(Function{})); }, "dry function f callback is empty"); }
   { Registry over; over.function("f", {"int"}, "int", [](Args&) { return Value::integer(1); }); over.function("f", {"float"}, "float", [](Args&) { return Value::real(1); }); over.function("f", {"int", "int"}, "int", [](Args&) { return Value::integer(2); }); auto sigs = over.host_signatures(); assert(sigs.size() == 3 && sigs[0] == "fn f(float) -> float" && sigs[1] == "fn f(int) -> int" && sigs[2] == "fn f(int, int) -> int"); expect_error("duplicate overload parameter tuple", [&] { over.function("f", {"int"}, "float", [](Args&) { return Value::real(1); }); }, "registered twice"); passed++; std::cout << "ok - overloads are keyed by parameter types and canonical imports\n"; }
   { Registry over; int picked = 0; over.function("pick", {"int"}, "void", [&](Args&) { picked = 1; return Value::none(); }); over.function("pick", {"float"}, "void", [&](Args&) { picked = 2; return Value::none(); }); over.function("pick", {"int", "int"}, "void", [&](Args&) { picked = 3; return Value::none(); }); Asm a; a.pushInt(1).fn("fn pick(int) -> void", 1).pushFloat(1.5).fn("fn pick(float) -> void", 1).pushInt(2).pushInt(3).fn("fn pick(int, int) -> void", 2).halt(); Program p = Program::load(a.file(SCHEMA), SCHEMA, over); Context c; p.run(c, over); assert(picked == 3); passed++; std::cout << "ok - canonical overload imports dispatch the selected closure\n"; }
   { Registry over; int picked = 0; over.context("thing", "Thing"); over.method("Thing", "pick", {"int"}, "void", [&](void*, Args&) { picked = 1; return Value::none(); }); over.method("Thing", "pick", {"float"}, "void", [&](void*, Args&) { picked = 2; return Value::none(); }); over.method("Thing", "pick", {"int", "int"}, "void", [&](void*, Args&) { picked = 3; return Value::none(); }); Asm a; a.ctx("thing", "Thing").pushInt(1).method("method Thing.pick(int) -> void", 1).ctx("thing", "Thing").pushFloat(1.5).method("method Thing.pick(float) -> void", 1).ctx("thing", "Thing").pushInt(2).pushInt(3).method("method Thing.pick(int, int) -> void", 2).halt(); Program p = Program::load(a.file(SCHEMA), SCHEMA, over); Thing thing{0}; Context c; c.set("thing", &thing); p.run(c, over); assert(picked == 3); passed++; std::cout << "ok - canonical method overload imports dispatch the selected closure\n"; }
@@ -274,89 +388,6 @@ int main() {
   // No VM resource limits (design decision): deep stacks and large strings are the host's memory to spend, not the VM's to refuse.
   { Asm a; a.maxStack = 1; for (int i = 0; i < 5000; ++i) a.pushInt(1); for (int i = 0; i < 4999; ++i) a.u8(ADD_I); a.ctx("t", "Trace").u8(DUP).u8(POP); a.halt(); Program p = Program::load(a.file(SCHEMA), SCHEMA, h.reg); Context c; c.set("t", &h.trace); p.run(c, h.reg); passed++; std::cout << "ok - 5000 operands on the stack run without a cap (max_stack is a reservation hint only)\n"; }
   { Asm a; a.ctx("t", "Trace").pushStr(std::string(65536, 'x')); for (int i = 0; i < 9; ++i) a.u8(DUP).u8(CONCAT); a.method(T_STR, 1).halt(); auto got = h.run(a.file(SCHEMA)); assert(got.size() == 1 && got[0].size() == 4 + 65536u * 512u); passed++; std::cout << "ok - a 32 MiB concatenation succeeds (no string cap)\n"; }
-  // Mutating methods, Context::set_dry, PlanEntry call sites, VmConfig::step_budget, and set_std_output.
-  {
-    struct ChangeObj { std::string json_str; };
-    std::vector<ChangeObj> changes;
-    changes.reserve(16);
-    int plan_calls = 0, apply_calls = 0;
-    Registry reg;
-    reg.context("net", "Net");
-    reg.method("Change", "json", {}, "string", [](void* s, Args&) {
-      return Value::string(static_cast<ChangeObj*>(s)->json_str);
-    });
-    reg.mutating_method(
-        "Net", "link_set", {"string", "int"}, "Change",
-        [&](void*, Args& a) {
-          ++plan_calls;
-          changes.push_back(ChangeObj{"{\"planned\":\"" + a[0].s + "\",\"mtu\":" + std::to_string(a[1].i) + ",\"budget_exceeded\":false}"});
-          return Value::object("Change", &changes.back());
-        },
-        [&](void*, Args& a) {
-          ++apply_calls;
-          changes.push_back(ChangeObj{"{\"applied\":\"" + a[0].s + "\",\"mtu\":" + std::to_string(a[1].i) + "}"});
-          return Value::object("Change", &changes.back());
-        });
-    std::ostringstream out_sink;
-    reg.function("println", {"string"}, "void", [](Args& a) {
-      std::cout << a[0].s << "\n";
-      return Value::none();
-    });
-    reg.set_std_output(&out_sink);
-
-    Asm a;
-    a.pushStr("hello").fn("fn println(string) -> void", 1);
-    const size_t call1_pc = a.code.size() + 3 + 5 + 9; // after ctx + pushStr + pushInt
-    a.ctx("net", "Net").pushStr("eth0").pushInt(1400);
-    assert(a.code.size() == call1_pc);
-    a.line(uint32_t(call1_pc), 12, 5);
-    a.method("method Net.link_set(string, int) -> Change", 2).u8(POP);
-    const size_t call2_pc = a.code.size() + 3 + 5 + 9;
-    a.ctx("net", "Net").pushStr("eth1").pushInt(9000);
-    assert(a.code.size() == call2_pc);
-    a.line(uint32_t(call2_pc), 15, 3);
-    a.method("method Net.link_set(string, int) -> Change", 2).u8(POP);
-    a.halt();
-
-    Program p = Program::load(a.file(SCHEMA), SCHEMA, reg);
-    Thing net_obj{1};
-
-    // Dry mode: runs plan_fn, records PlanEntry with call-site line/column and detail_json.
-    Context dry_ctx;
-    dry_ctx.set("net", &net_obj);
-    dry_ctx.set_dry(true);
-    dry_ctx.set_file("test.dslb");
-    p.run(dry_ctx, reg);
-    assert(plan_calls == 2 && apply_calls == 0);
-    assert(!dry_ctx.truncated() && dry_ctx.plan_entries().size() == 2);
-    assert(out_sink.str() == "hello\n");
-    const auto& e0 = dry_ctx.plan_entries()[0];
-    assert(e0.seq == 1 && e0.kind == "host_effect" && e0.function == "net.link_set");
-    assert(e0.arguments_json == "[\"eth0\",1400]" && e0.file == "test.dslb" && e0.line == 12 && e0.column == 5);
-    assert(e0.simulated && e0.detail_json == "{\"planned\":\"eth0\",\"mtu\":1400,\"budget_exceeded\":false}" && !e0.budget_exceeded);
-    const auto& e1 = dry_ctx.plan_entries()[1];
-    assert(e1.seq == 2 && e1.line == 15 && e1.column == 3 && e1.arguments_json == "[\"eth1\",9000]");
-
-    // Step budget / dry loop limit: stops before (N+1)th mutating call.
-    plan_calls = 0;
-    Context lim_ctx;
-    lim_ctx.set("net", &net_obj);
-    lim_ctx.set_dry(true);
-    VmConfig cfg;
-    cfg.step_budget = 1;
-    lim_ctx.set_config(cfg);
-    p.run(lim_ctx, reg);
-    assert(plan_calls == 1 && lim_ctx.truncated() && lim_ctx.stop_reason() == "dry loop limit" && lim_ctx.plan_entries().size() == 1);
-
-    // Apply mode: runs apply_fn, records no plan entries.
-    Context app_ctx;
-    app_ctx.set("net", &net_obj);
-    app_ctx.set_dry(false);
-    p.run(app_ctx, reg);
-    assert(apply_calls == 2 && app_ctx.plan_entries().empty());
-    passed++;
-    std::cout << "ok - mutating_method, Context::set_dry, PlanEntry locations, VmConfig::step_budget, and set_std_output\n";
-  }
   // ---- v6 rule entries ----
   // A value entry and a void entry sharing the file's pools; the body is HALT only.
   {
