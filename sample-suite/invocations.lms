@@ -44,4 +44,8 @@ negative = _lmcode_ s;
 ledger.record(money(-1));$return = 123;
 end _lmcode_
 r = run_lmcode(negative);assert(!r.ok && r.phase == "app" && !r.has("part") && !r.has("result"), "global validation failure");
+global_builder=lmcode_build(s);global_builder.add(negative);
+r=run_lmcode(global_builder);assert(!r.ok&&r.phase=="app"&&!r.has("part")&&!r.has("result")&&!r.has("parts"),"builder global failure");
+repaired=lmcode_build(s);repaired.add(negative);repaired.add(p);
+r=run_lmcode(repaired);assert(r.ok&&r.result[0]==123&&r.result[1].balance==9&&r.result[1].count==2,"global validation after all parts");
 println("PASS real single/builder/reuse/roles/shared-state/entries/failures");
