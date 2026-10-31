@@ -6,6 +6,7 @@
 #include "../stdlib/math.hpp"
 #include "../stdlib/collections.hpp"
 #include "../stdlib/testing.hpp"
+#include "../stdlib/result.hpp"
 #include "../stdlib/file.hpp"
 #include <algorithm>
 #include <cstdio>
@@ -118,6 +119,37 @@ struct Stub {
 };
 
 static std::string unescape(const std::string& s) { std::string out; for (size_t i = 0; i < s.size(); ++i) { if (s[i] == '\\' && i + 1 < s.size() && s[i + 1] == 'n') { out += '\n'; ++i; } else out += s[i]; } return out; }
+
+struct SinkExpectation { std::string json; std::string frame; };
+static bool parse_json_string(const std::string& text, size_t& p, std::string& out) {
+  if (p >= text.size() || text[p++] != '"') return false;
+  out.clear();
+  while (p < text.size()) {
+    const char c = text[p++];
+    if (c == '"') return true;
+    if (c != '\\' || p >= text.size()) { out += c; continue; }
+    const char e = text[p++];
+    if (e == 'n') out += '\n'; else if (e == 'r') out += '\r'; else if (e == 't') out += '\t';
+    else if (e == 'b') out += '\b'; else if (e == 'f') out += '\f'; else out += e;
+  }
+  return false;
+}
+static bool parse_sink_expectation(const std::string& line, SinkExpectation& out) {
+  if (line.compare(0, 5, "sink ") != 0) return false;
+  const std::string body = line.substr(5); size_t p = 0;
+  if (p >= body.size() || body[p++] != '{') return false;
+  while (p < body.size() && body[p] == ' ') ++p;
+  std::string key, value;
+  if (!parse_json_string(body, p, key) || key != "json") return false;
+  while (p < body.size() && (body[p] == ' ' || body[p] == ':')) ++p;
+  if (!parse_json_string(body, p, out.json)) return false;
+  while (p < body.size() && (body[p] == ' ' || body[p] == ',')) ++p;
+  if (!parse_json_string(body, p, key) || key != "frame") return false;
+  while (p < body.size() && (body[p] == ' ' || body[p] == ':')) ++p;
+  if (!parse_json_string(body, p, out.frame)) return false;
+  while (p < body.size() && body[p] == ' ') ++p;
+  return p < body.size() && body[p] == '}';
+}
 
 // A vector may use "~ prefix number" for libm results.  The prefix is still
 // exact; only its final numeric token gets the cross-runtime tolerance.
@@ -243,11 +275,14 @@ int main(int argc, char** argv) {
   int failed = 0;
   for (const std::string& name : names) {
     std::ifstream ex(dir + "/" + name + ".expect"); std::string kind; std::getline(ex, kind); std::vector<std::string> lines; for (std::string l; std::getline(ex, l);) lines.push_back(unescape(l));
+    SinkExpectation expected_sink; bool has_sink_expectation = false;
+    if (!lines.empty() && parse_sink_expectation(lines.back(), expected_sink)) { has_sink_expectation = true; lines.pop_back(); }
     std::string schemaFile = dir + "/schema.json";
     { std::ifstream m(dir + "/manifest.json"); std::stringstream ss; ss << m.rdbuf(); std::string mf = ss.str(); size_t p = mf.find("\"name\": \"" + name + "\"");
       if (p != std::string::npos) { size_t q = mf.find("\"schema\": \"", p), next = mf.find("\"name\": \"", p + 1); if (q != std::string::npos && q < next) { q += 11; schemaFile = dir + "/" + mf.substr(q, mf.find('"', q) - q); } } }
     std::string bytes = dslvm::read_file(dir + "/" + name + ".dslb"), schema = dslvm::read_file(schemaFile);
     Stub stub(schema.find("\"str_list\"") != std::string::npos);
+    dslvm::ResultSink sink; stub.reg.set_result_sink(&sink);
     TempCleanup temp_cleanup{stub.temp_dir};
     if (schema.find("\"test_temp_dir\"") != std::string::npos) {
       std::error_code temp_error;
@@ -262,7 +297,7 @@ int main(int argc, char** argv) {
       if (stub.temp_dir.empty()) { std::cerr << name << ": cannot create fresh temp directory: " << temp_error.message() << "\n"; return 2; }
     }
     std::string result, error, error_code, bare_error; bool loaded = false, ran = false, called = false, error_has_location = false, error_has_column = false; uint32_t error_line = 0; uint16_t error_column = 0;
-    dslvm::Value call_result;
+    dslvm::Value call_result; std::ostringstream frame_output;
     const bool is_call = kind == "call" || kind == "call_error" || kind == "call_error_at";
     std::unique_ptr<dslvm::Program> program;
     try {
@@ -287,6 +322,10 @@ int main(int argc, char** argv) {
         if (bare_error.compare(0, prefix.size(), prefix) == 0) bare_error.erase(0, prefix.size());
       }
       error_code = e.code; error_has_location = e.has_location; error_has_column = e.has_column; error_line = e.line; error_column = e.column; }
+    if (has_sink_expectation && loaded && ran && (!is_call || called) && error.empty()) {
+      try { dslvm::write_result_frame(frame_output, sink); }
+      catch (const dslvm::Error& e) { error = e.what(); error_code = e.code; }
+    }
     if (std::getenv("LMCODE_TRACE")) {
       for (const auto& line : stub.trace) std::cout << "TRACE\t" << name << "\t" << line << "\n";
       if (!error_code.empty()) std::cout << "ERROR\t" << name << "\t" << error_code << "\t" << bare_error << "\n";
@@ -326,6 +365,7 @@ int main(int argc, char** argv) {
     }
     else if (kind == "load_error") ok = !loaded && error.find(lines.at(0)) != std::string::npos;
     else { std::cerr << name << ": unknown expectation kind '" << kind << "'\n"; return 2; }
+    if (ok && has_sink_expectation) ok = sink.json() == expected_sink.json && frame_output.str() == expected_sink.frame;
     if (ok) std::cout << "ok - " << name << " (" << kind << ")\n";
     else { failed++; std::cout << "FAIL - " << name << " (" << kind << ")\n"; if (!error.empty()) std::cout << "    error: " << error << "\n";
       if (kind == "entries" && loaded) for (const auto& e : program->entries()) std::cout << "    got:  " << e.name << " " << e.annotation << " " << e.iface << "\n";
