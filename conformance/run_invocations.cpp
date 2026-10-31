@@ -24,6 +24,10 @@ static int run_cli(int argc,char**argv){
   registry.function("next_counter",{},"int",[&](Args&){return Value::integer(++counter);});
   registry.function("entry_fail",{},"void",[](Args&)->Value{throw Error("native entry failure");},
                     dry(Function([](Args&)->Value{throw Error("preview failed");})));
+  registry.function("wp90_Json",{},"Json",[](Args&)->Value{throw Error("real dummy callback ran");});
+  registry.function("wp90_consume",{"Json"},"int",[](Args&)->Value{throw Error("real consumer ran");});
+  registry.method("Json","wp90_consume",{"Json"},"int",[](void*,Args&)->Value{throw Error("real method ran");});
+  registry.method("Json","wp90_preview",{"Json"},"int",[](void*,Args&)->Value{throw Error("real method ran");},dry(Method([](void*,Args&)->Value{throw Error("preview received dry null");})));
   const std::string schema=read(argv[1]);const auto contract=ResultContract::from_schema(schema);
   const auto* order=invocation_detail::member(config,"execution");
   for(const auto& entry:order->array){
