@@ -59,6 +59,7 @@ jobs:
           compiler_version="${{ inputs.compiler_version || vars.LMCODE_COMPILER_VERSION || '0.2.444' }}"
           npm install --prefix "$RUNNER_TEMP/lmcode-lmctl" "@lmctl-ai/lmctl@$compiler_version"
           echo "$RUNNER_TEMP/lmcode-lmctl/node_modules/.bin" >> "$GITHUB_PATH"
+          export PATH="$RUNNER_TEMP/lmcode-lmctl/node_modules/.bin:$PATH"
           lmscript --version
 
       - name: python3 shim (windows)
