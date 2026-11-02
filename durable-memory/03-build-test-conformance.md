@@ -59,4 +59,4 @@ as an oracle. `make conformance` checks generated-source freshness.
 `MATRIX_CORPUS=large scripts/matrix.sh` adds 16 seeds × 64 rounds, with retained
 compiler/build/run logs under `MATRIX_LOG_DIR/corpus`; `MATRIX_CORPUS=small`
 compares the committed reduced corpus. `TMPDIR` selects temporary storage.
-The standard conformance count is 118; the core count remains 51.
+The standard conformance count is 271; the core count remains 51.

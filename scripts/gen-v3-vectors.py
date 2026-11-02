@@ -59,7 +59,8 @@ def make_vectors() -> None:
         body=f'let m={prefix}_map().set("a",{vals[0]}).set("b",{vals[1]}).set("c",{vals[2]}); let keys=m.keys(); let values=m.values(); m.set("a",{vals[3]}); m.remove("b"); m.set("b",{vals[3]}); t.hex(m.keys().join(",")); t.{scalar}(values.at(0)); t.{scalar}(values.at(1)); keys.set(0,"changed"); values.set(0,{vals[1]}); keys.add("extra"); values.add({vals[0]}); t.hex(m.keys().join(",")); t.{scalar}(m.get("a")); m.clear(); t.int(keys.len()); t.int(values.len());'
         write('snapshots-'+prefix+'-independence',body,['hex 612c632c62',trace[0],trace[1],'hex 612c632c62',trace[2],'int 4','int 4'])
         for method,ret in [('keys','StrList'),('values',{'str':'StrList','int':'IntList','float':'FloatList'}[prefix])]:
-            write('snapshots-'+prefix+'-'+method+'-limit',f'let m={prefix}_map(); for (i in range(0,65535)) {{ str_list(); }} m.{method}();',error=['RUN_HOST',f'{ret} object limit exceeded (65536)'])
+            source=f'let m={prefix}_map(); for (i in range(0,65535)) {{ str_list(); }} let snapshot=m.{method}(); t.int(snapshot.len());'
+            write('snapshots-'+prefix+'-'+method+'-over-old-object-budget',source,['int 0'])
 
 def main() -> None:
     schema()

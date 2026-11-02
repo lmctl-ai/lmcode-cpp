@@ -47,6 +47,16 @@ class V3Vectors(unittest.TestCase):
         for name in ("v3-codecs-empty", "v3-codecs-all256", "v3-codecs-large", "v3-base64-alphabet", "v3-base64-pad-bits", "v3-hex-odd", "v3-snapshots-str", "v3-snapshots-int", "v3-snapshots-float"):
             self.assertIn(name, names)
 
+    def test_snapshots_are_successful_above_the_old_shared_object_budget(self):
+        by_name={v['name']:v for v in self.manifest['vectors']}
+        for typ in ('str','int','float'):
+            for method in ('keys','values'):
+                name=f'v3-snapshots-{typ}-{method}-over-old-object-budget'
+                self.assertEqual(by_name[name]['expect'], {'trace':['int 0']})
+                self.assertTrue((OUT / by_name[name]['bytecode']).is_file())
+        expectation='\n'.join(p.read_text() for p in OUT.glob('v3-snapshots-*.expect'))
+        self.assertNotIn('object limit exceeded (65536)',expectation)
+
     def test_manifest_has_all_generated_vectors(self):
         names = {v["name"] for v in self.manifest["vectors"]}
         self.assertEqual({p.stem for p in OUT.glob("v3-*.dsl")}, {n for n in names if n.startswith("v3-")})

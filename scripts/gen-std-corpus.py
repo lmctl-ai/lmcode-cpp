@@ -141,10 +141,11 @@ def cases(seeds, rounds):
     out = {}
     for seed in seeds:
         c=success(seed,rounds);out[f'fuzz-{seed:010d}']=(c.source,['trace',*c.expected])
-        errors=[('split-empty','str_split(bytes("00ff"), "");','str_split: separator must not be empty'),('repeat-negative','str_repeat(bytes("00ff"), -1);','str_repeat: count must be nonnegative and result at most 67108864 bytes'),('map-missing','let m = str_map(); m.get(bytes("00ff"));','StrMap.get: missing key')]
+        errors=[('split-empty','str_split(bytes("00ff"), "");','str_split: separator must not be empty'),('repeat-negative','str_repeat(bytes("00ff"), -1);','str_repeat: count must be nonnegative'),('map-missing','let m = str_map(); m.get(bytes("00ff"));','StrMap.get: missing key')]
         for typ,ctor in [('StrList','str_list'),('IntList','int_list'),('FloatList','float_list')]:
             for index in [-1,I64_MAX,I64_MIN]: errors.append((typ.lower()+str(index),f'let x = {ctor}(); x.at({integer(index)});',f'{typ}.at: index out of range: {index}'))
         for name,source,message in errors: out[f'fuzz-{seed:010d}-{name}']=([source],['runtime_error_exact','RUN_HOST',message])
+    out['repeat-negative']=(['str_repeat(bytes("00ff"), -1);'],['runtime_error_exact','RUN_HOST','str_repeat: count must be nonnegative'])
     c=Case();c.emit('let path = test_temp_dir() + "/large.bin"; let chunk = str_repeat(bytes("00ff0a"), 400001); file_write(path, chunk); file_append(path, bytes("ff00"));')
     c.trace('str_len(file_read(path))',1200005);c.trace('str_substr(file_read(path), 1200000, 5)',bytes.fromhex('00ff0aff00'))
     c.emit('let lines = file_lines(path);');c.trace('lines.len()',400002);c.trace('lines.at(400001)',bytes.fromhex('ff00'));c.emit('file_write(path, "");');c.trace('str_len(file_read(path))',0)
@@ -160,7 +161,19 @@ def cases(seeds, rounds):
     c.trace('good',True);c.trace('m.len()',2048)
     c.emit('let sum = 0; for (i in range(0, 2048)) { sum = sum + str_to_int(m.key_at(i)); }')
     c.trace('sum',2048**2);c.emit('m.set("0", "reinsert");');c.trace('m.key_at(2048)',b'0');c.trace('m.key_at(0)',b'1')
-    out['fuzz-map-churn']=(c.source,['trace',*c.expected]);return out
+    out['fuzz-map-churn']=(c.source,['trace',*c.expected])
+    c=Case();c.trace('str_len(str_repeat("x", 67108865))',67108865)
+    out['repeat-limit']=(c.source,['trace',*c.expected])
+    c=Case();c.trace('str_len(str_replace(str_repeat("x", 65), "x", str_repeat("y", 1048576)))',65*1048576)
+    out['replace-over-old-size-ceiling']=(c.source,['trace',*c.expected])
+    c=Case();c.emit('let text = str_repeat(bytes("5b"), 135); let pattern = str_repeat(bytes("5b"), 1048576);')
+    c.trace('str_match(text, pattern)',False)
+    out['glob-over-old-work-budget']=(c.source,['trace',*c.expected])
+    c=Case();c.emit('let i = 0; while (i < 65537) { str_list(); i = i + 1; }');c.trace('i',65537)
+    out['collections-arena-limit']=(c.source,['trace',*c.expected])
+    c=Case();c.emit('let i = 0; while (i < 65537) { json_parse("null"); i = i + 1; }');c.trace('i',65537)
+    out['json-arena-over-old-object-budget']=(c.source,['trace',*c.expected])
+    return out
 
 def generate(directory,seeds,rounds,check=False,compile_bytecode=False):
     generated=cases(seeds,rounds); files={'fuzz.schema.json':schema()}; entries=[]
@@ -170,7 +183,8 @@ def generate(directory,seeds,rounds,check=False,compile_bytecode=False):
         entries.append(entry)
     manifest_path=directory/'manifest.json'
     manifest=json.loads(manifest_path.read_text()) if manifest_path.exists() else {'format':'dsl-conformance/2','bytecode_version':6,'schema':'fuzz.schema.json','host':{'description':'Canonical std plus bytes(hex), Trace int/float/bool/hex and a per-vector test_temp_dir fixture.'},'vectors':[]}
-    manifest['vectors']=sorted([v for v in manifest['vectors'] if not v['name'].startswith('fuzz-')]+entries, key=lambda v:v['name'])
+    generated_names=set(generated)
+    manifest['vectors']=sorted([v for v in manifest['vectors'] if v['name'] not in generated_names]+entries, key=lambda v:v['name'])
     files['manifest.json']=json.dumps(manifest,indent=2)+'\n'
     for name,content in files.items():
         path=directory/name

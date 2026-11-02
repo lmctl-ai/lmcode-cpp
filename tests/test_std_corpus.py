@@ -18,6 +18,20 @@ class CorpusTests(unittest.TestCase):
         self.assertEqual(corpus.numeric(b'9223372036854775807')[:2],(True,corpus.I64_MAX))
         self.assertEqual(corpus.numeric(b'9223372036854775808')[:2],(False,0))
         self.assertFalse(corpus.numeric(b'1\x00')[2]);self.assertFalse(corpus.numeric(b'1e-999')[2]);self.assertTrue(corpus.numeric(b'5e-324')[2])
+    def test_wp143_old_cap_boundaries_are_success_vectors(self):
+        generated=corpus.cases([7],1)
+        expected={
+            'repeat-limit':['trace','int 67108865'],
+            'replace-over-old-size-ceiling':['trace','int 68157440'],
+            'glob-over-old-work-budget':['trace','bool false'],
+            'collections-arena-limit':['trace','int 65537'],
+            'json-arena-over-old-object-budget':['trace','int 65537'],
+        }
+        for name,lines in expected.items(): self.assertEqual(generated[name][1],lines,name)
+        self.assertIn('str_repeat: count must be nonnegative',generated['repeat-negative'][1][-1])
+        all_expectations='\n'.join('\n'.join(value[1]) for value in generated.values())
+        for retired in ('67108864 bytes','2^27 work limit','object limit exceeded (65536)'):
+            self.assertNotIn(retired,all_expectations)
     def test_stale_source_detected(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);corpus.generate(root,[7],1)
