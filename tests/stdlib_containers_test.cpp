@@ -168,8 +168,8 @@ int main(int argc, char** argv) {
   assert(std::signbit(m("method FloatPQ.pop() -> float", fp.obj).f));
   while (arena.size() < 65536)
     fn("fn int_stack() -> IntStack");
-  fail([&] { fn("fn str_queue() -> StrQueue"); },
-       "StrQueue object limit exceeded (65536)");
+  auto extra_queue = fn("fn str_queue() -> StrQueue");
+  assert(extra_queue.type == "StrQueue" && arena.size() == 65537);
   std::cout << "containers pass\n";
   return 0;
 }

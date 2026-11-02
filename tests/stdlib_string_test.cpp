@@ -32,6 +32,21 @@ int main(int argc, char** argv) {
   }
   int passed = 0;
   auto check = [&](bool ok) { if (!ok) { std::cerr << "failed string check " << passed + 1 << '\n'; std::abort(); } ++passed; };
+  if (argc == 2 && std::string(argv[1]) == "--accept-repeat-above-old-cap") {
+    try { return str_repeat("x", 64 * 1024 * 1024 + 1).size() == 64u * 1024u * 1024u + 1 ? 0 : 1; }
+    catch (const dslvm::Error& e) { std::cerr << e.what() << '\n'; return 1; }
+  }
+  if (argc == 2 && std::string(argv[1]) == "--accept-replace-above-old-cap") {
+    try {
+      const auto result = str_replace(std::string(65, 'x'), "x", std::string(1024 * 1024, 'y'));
+      return result.size() == 65u * 1024u * 1024u && result.front() == 'y' && result.back() == 'y' ? 0 : 1;
+    } catch (const dslvm::Error& e) { std::cerr << e.what() << '\n'; return 1; }
+  }
+  if (argc == 2 && std::string(argv[1]) == "--accept-glob-work-above-old-cap") {
+    const std::string text(135, '['), pattern(1024 * 1024, '[');
+    try { return str_match(text, pattern) ? 1 : 0; }
+    catch (const dslvm::Error& e) { std::cerr << e.what() << '\n'; return 1; }
+  }
   check(str_starts_with("alpha", "al") && str_starts_with("", "") && !str_starts_with("a", "ab"));
   check(str_ends_with("alpha", "ha") && str_ends_with("", "") && !str_ends_with("a", "ba"));
   check(str_contains("abc", "") && str_contains("abc", "b") && !str_contains("abc", "z"));
@@ -52,21 +67,21 @@ int main(int argc, char** argv) {
   check(str_replace(std::string("a\0a", 3), std::string("\0", 1), "X") == "aXa");
   {
     const std::string megabyte(1024 * 1024, 'x');
-    bool refused = false;
-    try { (void)str_replace(std::string(65, 'x'), "x", megabyte); }
-    catch (const dslvm::Error& e) { refused = e.code == "RUN_HOST" && e.message == "str_replace: result must be at most 67108864 bytes"; }
-    check(refused);
+    check(str_replace(std::string(65, 'x'), "x", megabyte).size() == 65u * 1024u * 1024u);
     check(str_replace(std::string(64, 'x'), "x", megabyte).size() == 64u * 1024u * 1024u);
     check(str_replace("aaaaa", "aa", "b") == "bba" && str_replace("aaa", "a", "").empty());
   }
   check(str_trim(" \tvalue\r\n") == "value" && str_trim("\xC2\xA0x\xC2\xA0") == "\xC2\xA0x\xC2\xA0");
   check(str_repeat("xy", 3) == "xyxyxy" && str_repeat("x", 0).empty() && str_repeat("", INT64_MAX).empty());
-  bool repeat_refused = false; try { (void)str_repeat("ab", INT64_MAX); } catch (const dslvm::Error&) { repeat_refused = true; }
-  check(repeat_refused);
+  check(str_repeat("x", 64 * 1024 * 1024 + 1).size() == 64u * 1024u * 1024u + 1);
+  bool repeat_overflow = false;
+  try { (void)str_repeat("ab", INT64_MAX); }
+  catch (const dslvm::Error& e) { repeat_overflow = e.code == "RUN_HOST" && e.message == "str_repeat: result size exceeds platform capacity"; }
+  check(repeat_overflow);
   for (int64_t count : {int64_t(-1), INT64_MIN}) for (const auto& value : {std::string(), std::string("x")}) {
     bool refused = false;
     try { (void)str_repeat(value, count); }
-    catch (const dslvm::Error& e) { refused = e.code == "RUN_HOST" && e.message == "str_repeat: count must be nonnegative and result at most 67108864 bytes"; }
+    catch (const dslvm::Error& e) { refused = e.code == "RUN_HOST" && e.message == "str_repeat: count must be nonnegative"; }
     check(refused);
   }
   const std::string old_locale = std::setlocale(LC_NUMERIC, nullptr);
@@ -118,14 +133,7 @@ int main(int argc, char** argv) {
   check(str_match(std::string("a\0b", 3), std::string("a?b", 3)));
   std::string adversarial(12000, 'a');
   check(!str_match(adversarial, "*aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"));
-  // A malformed class used to rescan the remaining pattern without charging
-  // any work, bypassing the advertised limit even without star backtracking.
-  for (int repeat = 0; repeat < 2; ++repeat) {
-    bool refused = false;
-    try { (void)str_match(std::string(20000, '['), std::string(20000, '[')); }
-    catch (const dslvm::Error& e) { refused = e.code == "RUN_HOST" && e.message == "str_match: pattern exceeds the 2^27 work limit"; }
-    check(refused);
-  }
+  check(!str_match(std::string(135, '['), std::string(1024 * 1024, '[')));
   // Binder signatures and an actual callback dispatch are covered in the host.
   auto entry = reg.function_by_signature("fn str_upper(string) -> string");
   dslvm::Args args{dslvm::Value::string("mixed")};

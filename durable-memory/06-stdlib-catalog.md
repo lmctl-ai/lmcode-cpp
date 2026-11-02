@@ -35,7 +35,7 @@ Until compiler injection is released, migrated hosts keep only host declarations
 
 ### Collection lifetime and native adapters
 
-A default registry owns its std collection arena. A run starts with an empty arena and clears it on success or exception; list/map handles are valid only during that run. All four collection types share the existing 65,536-allocation budget. Clearing an object does not reclaim an allocation slot. Registry copies sharing runtime state cannot execute overlapping/nested runs; SDKs must reject such reuse rather than invalidate live handles. The guard is shared and atomic; a loaded program guards its bound standard state even when the run call supplies another registry. Separate registries can execute independent runs.
+A default registry owns its std collection arena. A run starts with an empty arena and clears it on success or exception; list/map handles are valid only during that run. There is no implicit collection or Json object-count budget. Allocation and platform representability failures remain errors. Registry copies sharing runtime state cannot execute overlapping/nested runs; SDKs must reject such reuse rather than invalidate live handles. The guard is shared and atomic; a loaded program guards its bound standard state even when the run call supplies another registry. Separate registries can execute independent runs.
 
 C++ native callbacks create lists/maps through `registry.std_collections().make_*` while a run is active. Host-owned context values can be exposed through a small value-copy adapter; a copied list is an independent snapshot and mutations do not modify its source. The existing explicit `Collections` binder remains a manual/opt-out compatibility API, but default std no longer needs a host arena member. `foreach` continues to use the built-in `len` and `at` methods.
 
@@ -136,11 +136,11 @@ convert explicitly (validated or lossy). Rust follows the same rule with a byte-
 | `str_substr(s, start, count) -> string` | byte offsets; start < 0 clamps to 0; start >= len or count <= 0 gives empty; count clamps to the remaining bytes |
 | `str_lower`, `str_upper` | ASCII `A-Z` / `a-z` only |
 | `str_trim` | strips bytes ` ` and `\t`..`\r` from both ends |
-| `str_repeat(s, n)` | error if n < 0 or the result exceeds 64 MiB (67108864 bytes); empty `s` with n >= 0 gives empty |
-| `str_replace(s, from, to)` | all non-overlapping occurrences left to right; empty `from` is a no-op; error if the result exceeds 64 MiB |
+| `str_repeat(s, n)` | error if n < 0 or the result size is not representable; empty `s` with n >= 0 gives empty; no implicit output budget |
+| `str_replace(s, from, to)` | all non-overlapping occurrences left to right; empty `from` is a no-op; only unrepresentable result sizes fail |
 | `str_is_int(s)`, `str_to_int(s)` | optional single leading `+` or `-`, decimal digits only, must fit int64; `str_to_int` returns 0 when not an int |
 | `str_is_float(s)`, `str_to_float(s)` | decimal syntax `[+-]digits[.digits][e[+-]digits]` (digits before or after the dot), no whitespace/hex/nan/inf; C locale; overflow or underflow-to-zero is not a float; `str_to_float` returns 0.0 when invalid |
-| `str_match(text, pattern) -> bool` | glob over bytes: `*`, `?`, `[abc]`, `[a-z]`, `[!x]`, backslash escape; unterminated `[` is literal, `]` first in a class is literal, descending ranges are empty; error after 2^27 work steps |
+| `str_match(text, pattern) -> bool` | glob over bytes: `*`, `?`, `[abc]`, `[a-z]`, `[!x]`, backslash escape; unterminated `[` is literal, `]` first in a class is literal, descending ranges are empty; no implicit work budget |
 
 `stdlib/string.hpp` is the exact specification for edge cases; ports must reproduce it byte for byte.
 
@@ -176,7 +176,7 @@ Integer domain errors have code `RUN_HOST`, with exact messages `math_pow: integ
 
 For float powers, any base to either signed zero exponent and base `+1` to any exponent return `1`, including NaN operands. Base `-1` to an infinite exponent also returns `1`. Other NaN inputs produce NaN. Finite negative bases with non-integral finite exponents produce NaN; signed-zero powers retain the IEEE odd-integer sign rules. Overflow produces signed infinity and underflow produces signed zero or a representable subnormal. Float operations retain infinity and NaN classification; NaN payload and sign are not part of the catalog contract. Finite non-exact libm results use the shared 1e-12 relative trace tolerance, rather than requiring cross-platform bit identity.
 
-The 11 `math-*.dsl` vectors in `conformance/stdlib-vectors/` use `math.schema.json` and compiler-emitted bytecode. They cover every overload, wrapping arithmetic, exact large integer roots, ties-away rounding, NaN rules, signed zero and located domain errors. Together with the 18 string vectors, the string/math portion contains 29 vectors.
+The 11 `math-*.dsl` vectors in `conformance/stdlib-vectors/` use `math.schema.json` and compiler-emitted bytecode. They cover every overload, wrapping arithmetic, exact large integer roots, ties-away rounding, NaN rules, signed zero and located domain errors. Together with the 16 string vectors, the string/math portion contains 27 vectors.
 
 ## Collections catalog
 
@@ -187,7 +187,7 @@ Common rules (every list and map type):
 - Elements are values by kind: `StrList` holds byte strings, `IntList` int64, `FloatList` binary64. Insertion order is preserved.
 - Index arguments are 0-based; an out-of-range `at`/`set` is a host error `"<Type>.<method>: index out of range: <i>"` (code `RUN_HOST`).
 - C++ and Go bind a `Collections` arena to the registry; hosts may reset it between runs only after old handles expire. Go creates a private arena when none is supplied. Rust and C# store collection values in each run's `Context` arena. Handles must not be shared between runs.
-- The shared collection budget is 65536 allocated objects across all four types, excluding unrelated host context objects. The next allocation raises `"<Type> object limit exceeded (65536)"` with code `RUN_HOST`. Clearing a collection does not reset this budget.
+- Collections and Json roots have no implicit allocation-count budget. Containers still fail clearly when their own size or allocation is not representable.
 - Mutators return the receiver (`returns: "<Type>"`) so calls chain. `clear()` keeps the object valid.
 
 | Type | Methods |
@@ -211,7 +211,7 @@ Constructors: `str_list()`, `int_list()`, `float_list()`, `str_map()` return a n
 C++ hosts vendor `include/dslvm.hpp` plus the stdlib headers they use (`stdlib/string.hpp`, `collections.hpp`, `math.hpp`, `testing.hpp`) through `scripts/sync-sdk.sh`,
 with every vendored file pinned (path, sha256) in `sdk.lock`. The host schema embeds the fragment entries unchanged; a host with a narrower type keeps it under its own name.
 
-C++ uses `dslvm::stdlib::Collections` with stable-address `std::deque` storage per type. Native hosts create objects through `make_str_list(values)`, `make_int_list(values)`, `make_float_list(values)` and `make_str_map()` so host-returned collections obey the same shared arena limit. List elements are in `.items`; native maps use `set(key, value)` to insert and `entries()` for live insertion-ordered snapshots. Their `.items` is physical backing storage, which can contain tombstones and must not be mutated directly. `reset()` invalidates every handle and is permitted only between runs after all prior handles have expired. Collection `clear()` methods remove elements without freeing an arena slot or invalidating their receiver.
+C++ uses `dslvm::stdlib::Collections` with stable-address `std::deque` storage per type. Native hosts create objects through `make_str_list(values)`, `make_int_list(values)`, `make_float_list(values)` and `make_str_map()` so host-returned collections share the run arena without an implicit count budget. List elements are in `.items`; native maps use `set(key, value)` to insert and `entries()` for live insertion-ordered snapshots. Their `.items` is physical backing storage, which can contain tombstones and must not be mutated directly. `reset()` invalidates every handle and is permitted only between runs after all prior handles have expired. Collection `clear()` methods remove elements without freeing an arena slot or invalidating their receiver.
 
 ## Collection/testing integration in the SDKs
 
@@ -226,8 +226,7 @@ Go exports collection types with snapshot `Values()`/`Entries()` accessors;
 C# exposes read-only `Values`/`Entries` views. Rust and C++ collection structs
 expose their item storage to host callbacks. Strings remain bytes at these boundaries.
 
-The shared suite contains 118 vectors: 18 string, 11 math, 32
-collection/optional-testing cases, 16 file cases, and 41 seeded property cases. `runtime_error_exact` pins error codes and complete
+The shared suite contains 271 vectors: 74 base catalog, 38 v3 byte-codec/snapshot, 112 data-contract, and 47 seeded byte/property cases. `runtime_error_exact` pins error codes and complete
 base messages after removal of an SDK source-location prefix. Captured print
 output is compared as hexadecimal bytes. The assertion comparison is exactly
 `abs(a-b) <= tolerance`: equal infinities fail because their difference is NaN;
@@ -250,11 +249,11 @@ Go `Entries` returns a snapshot; C# `Entries` remains a live read-only view.
 ## Version 2 document/container catalog
 
 The canonical v2 fragment has 171 signatures: the original 72 plus 99 for IntMap/FloatMap, nine Int/Float/Str Stack/Queue/PQ types, and immutable Json. `containers.hpp` and `json.hpp` are installed by default through `std.hpp`; optional testing stays separate. `std/std.lock` is the canonical digest lock, with byte-identical root `std.lock` retained for existing sync clients.
-New objects use the same registry-owned 65,536-object/run arena. Json roots count once, navigation borrows nodes, and keys allocates a StrList; failed parsing does not consume a slot. Float parsing uses a private C numeric locale; compact JSON preserves raw key/value string and numeric token spellings. UTF-8 errors identify the start of the malformed byte sequence.
+New objects use the same registry-owned run arena without an implicit count budget. Json roots count once, navigation borrows nodes, and keys allocates a StrList; failed parsing does not retain a root. Float parsing uses a private C numeric locale; compact JSON preserves raw key/value string and numeric token spellings. UTF-8 errors identify the start of the malformed byte sequence.
 Stacks/queues iterate in non-consuming pop order through len/at. PQs use a stable min heap, treat signed-zero priorities as equal, and reject nonfinite priorities or exhausted insertion sequence without mutation; clear resets the sequence. Typed maps preserve insertion order on overwrite and append on reinsertion.
 The literal/data contract is in lmctl-mono requirements/design `lmcode-literals.md` (d15a0ab1, amended 2acccdb2). Shared v2 vectors declare the complete catalog explicitly, so lmscript 0.2.420 can compile their literal-free calls before its bundle changes. Matrix stdlib stages whose SDK digest differs are explicitly SKIP, never v2 PASS; their legacy unit/core stages still run. Runtime ports and sample-host SDK pin updates are required before cross-SDK v2 interoperability can be claimed.
 
 
 ## v3 byte codecs and map snapshots
 Canonical v3 adds ten signatures (181 total): str_base64_encode/decode, str_hex_encode/decode and keys()/values() on StrMap, IntMap and FloatMap. The compiler requirement/design is lmcode-std-v3.md at mono 3bb73deb. `encoding.hpp` uses canonical padded RFC 4648 Base64 (rejecting whitespace, URL-safe alphabet and nonzero pad bits), lowercase hex encoding and strict even-length mixed-case hex decoding; every string remains bytes. Decoders trap FUNCTION: invalid encoding; checked encoder size overflow traps FUNCTION: size overflow. No crypto or third-party dependency is added.
-Map snapshot calls allocate one independent existing typed list in the shared 65,536-object arena; insertion order, bytes and float payload bits are retained. Mutating source or result never aliases the other. The compatibility fragments, canonical locks and generated inventory carry the same ten signatures; older SDKs remain explicitly pending until registry/vector parity passes.
+Map snapshot calls allocate one independent existing typed list in the shared run arena; insertion order, bytes and float payload bits are retained. Mutating source or result never aliases the other. The compatibility fragments, canonical locks and generated inventory carry the same ten signatures; older SDKs remain explicitly pending until registry/vector parity passes.

@@ -100,10 +100,19 @@ int main(int argc, char **argv) {
       std::cout << signature << '\n';
     return 0;
   }
+  if (argc == 2 && std::string(argv[1]) == "--accept-json-roots-above-old-cap") {
+    Collections unbounded;
+    try { for (size_t i = 0; i < 65537; ++i) unbounded.make_object<Json>("Json"); }
+    catch (const Error& e) { std::cerr << e.what() << '\n'; return 1; }
+    return unbounded.size() == 65537 ? 0 : 1;
+  }
   templates();
   Registry r(StdMode::Disabled);
   Collections arena;
   register_json(r, arena);
+  Collections unbounded;
+  for (size_t i = 0; i < 65537; ++i) unbounded.make_object<Json>("Json");
+  assert(unbounded.size() == 65537);
   auto root = fn(r, "fn json_parse(string) -> Json",
                  {Value::string("{\"a\":1,\"b\":[true,\"x\"]}")});
   assert(arena.size() == 1); // Json root; navigation borrows its children.

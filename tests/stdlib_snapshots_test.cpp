@@ -97,12 +97,12 @@ int main() {
   assert(m("method StrMap.len() -> int", empty.obj).i == 0);
   assert(m("method StrList.len() -> int", empty_values.obj).i == 0);
 
-  auto cap_check = [&](const std::string &constructor, const std::string &method,
-                       const std::string &length, const std::string &error,
-                       const std::function<void(Registry &, Value)> &seed) {
-    Collections capped;
+  auto large_snapshot = [&](const std::string &constructor, const std::string &method,
+                            const std::string &length,
+                            const std::function<void(Registry &, Value)> &seed) {
+    Collections unbounded;
     Registry cr(StdMode::Disabled);
-    register_collections(cr, capped); register_containers(cr, capped);
+    register_collections(cr, unbounded); register_containers(cr, unbounded);
     Args no_args;
     auto object = cr.function_by_signature(constructor)->fn(no_args);
     seed(cr, object);
@@ -110,27 +110,28 @@ int main() {
       auto *entry = cr.method_by_signature(sig); assert(entry); return entry->fn(p, args);
     };
     const auto before = call_method(length, object.obj).i;
-    while (capped.size() < 65536) { Args none; cr.function_by_signature("fn int_stack() -> IntStack")->fn(none); }
-    try { call_method(method, object.obj); assert(false); }
-    catch (const Error &e) { assert(e.what() == error); }
+    while (unbounded.size() < 65536) { Args none; cr.function_by_signature("fn int_stack() -> IntStack")->fn(none); }
+    auto large_result = call_method(method, object.obj);
+    assert(unbounded.size() == 65537);
+    assert(call_method("method " + large_result.type + ".len() -> int", large_result.obj).i == 1);
     assert(call_method(length, object.obj).i == before);
-    capped.reset();
+    unbounded.reset();
     Args fresh_args;
     auto fresh = cr.function_by_signature(constructor)->fn(fresh_args);
     auto snapshot = call_method(method, fresh.obj);
     assert(call_method("method " + snapshot.type + ".len() -> int", snapshot.obj).i == 0);
   };
-  cap_check("fn str_map() -> StrMap", "method StrMap.keys() -> StrList", "method StrMap.len() -> int", "StrList object limit exceeded (65536)",
+  large_snapshot("fn str_map() -> StrMap", "method StrMap.keys() -> StrList", "method StrMap.len() -> int",
     [](Registry &rr, Value o) { auto *x = rr.method_by_signature("method StrMap.set(string, string) -> StrMap"); Args a{Value::string("k"), Value::string("v")}; x->fn(o.obj, a); });
-  cap_check("fn str_map() -> StrMap", "method StrMap.values() -> StrList", "method StrMap.len() -> int", "StrList object limit exceeded (65536)",
+  large_snapshot("fn str_map() -> StrMap", "method StrMap.values() -> StrList", "method StrMap.len() -> int",
     [](Registry &rr, Value o) { auto *x = rr.method_by_signature("method StrMap.set(string, string) -> StrMap"); Args a{Value::string("k"), Value::string("v")}; x->fn(o.obj, a); });
-  cap_check("fn int_map() -> IntMap", "method IntMap.keys() -> StrList", "method IntMap.len() -> int", "StrList object limit exceeded (65536)",
+  large_snapshot("fn int_map() -> IntMap", "method IntMap.keys() -> StrList", "method IntMap.len() -> int",
     [](Registry &rr, Value o) { auto *x = rr.method_by_signature("method IntMap.set(string, int) -> IntMap"); Args a{Value::string("k"), Value::integer(1)}; x->fn(o.obj, a); });
-  cap_check("fn int_map() -> IntMap", "method IntMap.values() -> IntList", "method IntMap.len() -> int", "IntList object limit exceeded (65536)",
+  large_snapshot("fn int_map() -> IntMap", "method IntMap.values() -> IntList", "method IntMap.len() -> int",
     [](Registry &rr, Value o) { auto *x = rr.method_by_signature("method IntMap.set(string, int) -> IntMap"); Args a{Value::string("k"), Value::integer(1)}; x->fn(o.obj, a); });
-  cap_check("fn float_map() -> FloatMap", "method FloatMap.keys() -> StrList", "method FloatMap.len() -> int", "StrList object limit exceeded (65536)",
+  large_snapshot("fn float_map() -> FloatMap", "method FloatMap.keys() -> StrList", "method FloatMap.len() -> int",
     [](Registry &rr, Value o) { auto *x = rr.method_by_signature("method FloatMap.set(string, float) -> FloatMap"); Args a{Value::string("k"), Value::real(1)}; x->fn(o.obj, a); });
-  cap_check("fn float_map() -> FloatMap", "method FloatMap.values() -> FloatList", "method FloatMap.len() -> int", "FloatList object limit exceeded (65536)",
+  large_snapshot("fn float_map() -> FloatMap", "method FloatMap.values() -> FloatList", "method FloatMap.len() -> int",
     [](Registry &rr, Value o) { auto *x = rr.method_by_signature("method FloatMap.set(string, float) -> FloatMap"); Args a{Value::string("k"), Value::real(1)}; x->fn(o.obj, a); });
 
   std::cout << "snapshot pass\n";

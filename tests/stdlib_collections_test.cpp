@@ -8,6 +8,12 @@ int main(int argc, char** argv) {
   if (argc == 2 && std::string(argv[1]) == "--signatures") { for (const auto& s : r.signatures()) std::cout << s << '\n'; return 0; }
   int checks = 0;
   auto check = [&](bool ok) { if (!ok) { std::cerr << "collection check " << checks + 1 << " failed\n"; std::abort(); } ++checks; };
+  if (argc == 2 && std::string(argv[1]) == "--accept-objects-above-old-cap") {
+    Collections unbounded;
+    try { for (size_t i = 0; i < 65537; ++i) unbounded.make_str_list(); }
+    catch (const Error& e) { std::cerr << e.what() << '\n'; return 1; }
+    return unbounded.size() == 65537 ? 0 : 1;
+  }
   auto call = [&](const std::string& sig, void* self, Args args = {}) { auto entry = r.method_by_signature(sig); if (!entry) throw Error("missing " + sig); return entry->fn(self, args); };
   auto construct = [&](const std::string& sig, Args args = {}) { auto entry = r.function_by_signature(sig); if (!entry) throw Error("missing " + sig); return entry->fn(args); };
   auto refused = [&](auto fn, const std::string& message) { try { fn(); check(false); } catch (const Error& e) { check(e.code == "RUN_HOST" && e.what() == message); } };
@@ -77,10 +83,11 @@ int main(int argc, char** argv) {
   check(key_at(bulk.obj, 10000) == "0" && key_at(bulk.obj, 0) == "1");
   while (arena.size() < 65536) arena.make_int_list();
   check(static_cast<StrList*>(s.obj)->items.empty());
-  refused([&] { arena.make_str_list(); }, "StrList object limit exceeded (65536)");
-  refused([&] { arena.make_int_list(); }, "IntList object limit exceeded (65536)");
-  refused([&] { arena.make_float_list(); }, "FloatList object limit exceeded (65536)");
-  refused([&] { arena.make_str_map(); }, "StrMap object limit exceeded (65536)");
+  auto* extra_str = arena.make_str_list();
+  auto* extra_int = arena.make_int_list();
+  auto* extra_float = arena.make_float_list();
+  auto* extra_map = arena.make_str_map();
+  check(arena.size() == 65540 && extra_str && extra_int && extra_float && extra_map);
   arena.reset(); check(arena.size() == 0 && arena.make_str_list()->items.empty());
   check(r.signatures().size() == 37);
   std::cout << "stdlib collections: " << checks << " checks passed\n";

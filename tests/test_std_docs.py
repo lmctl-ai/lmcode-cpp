@@ -24,7 +24,10 @@ assert len(docs["signatures"]) == 206
 assert docs["notes"]["bytes"]
 assert "StrMap.set" not in docs["signatures"]["method StrMap.set(string, string) -> StrMap"]["errors"]
 assert docs["signatures"]["fn math_pow(float, float) -> float"]["errors"] == []
-assert "StrList object limit exceeded (65536)" in docs["signatures"]["fn file_lines(string) -> StrList"]["errors"]
+assert "StrList object limit exceeded (65536)" not in docs["signatures"]["fn file_lines(string) -> StrList"]["errors"]
+assert "str_repeat: result size exceeds platform capacity" in docs["signatures"]["fn str_repeat(string, int) -> string"]["errors"]
+assert "str_replace: result size exceeds platform capacity" in docs["signatures"]["fn str_replace(string, string, string) -> string"]["errors"]
+assert docs["signatures"]["fn str_match(string, string) -> bool"]["errors"] == []
 for signature, meta in docs["signatures"].items():
     assert meta["area"] in {"string", "math", "collections", "file", "json", "encoding", "containers", "return"}, signature
     assert meta["summary"].strip(), signature

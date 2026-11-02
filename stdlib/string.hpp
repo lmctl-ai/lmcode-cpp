@@ -14,6 +14,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <cstdlib>
 #include <locale.h>
@@ -58,10 +59,10 @@ inline int64_t str_find(const std::string& s, const std::string& needle) {
 }
 // Replaces every non-overlapping occurrence; an empty search string is a no-op.
 inline std::string str_replace(const std::string& s, const std::string& from, const std::string& to) {
-  constexpr size_t max_bytes = 64u * 1024u * 1024u;
+  const size_t max_size = std::string{}.max_size();
   size_t result_size = 0;
   auto add_size = [&](size_t n) {
-    if (n > max_bytes - result_size) throw Error("str_replace: result must be at most 67108864 bytes");
+    if (n > max_size - result_size) throw Error("str_replace: result size exceeds platform capacity");
     result_size += n;
   };
   if (from.empty()) { add_size(s.size()); return s; }
@@ -87,12 +88,21 @@ inline std::string str_trim(const std::string& s) {
   return s.substr(a, b - a);
 }
 inline std::string str_repeat(const std::string& s, int64_t count) {
-  constexpr size_t max_bytes = 64u * 1024u * 1024u;
-  if (s.empty() && count >= 0) return {};
-  if (count < 0 || (s.size() && static_cast<uint64_t>(count) > max_bytes / s.size()))
-    throw Error("str_repeat: count must be nonnegative and result at most 67108864 bytes");
-  std::string out; out.reserve(s.size() * static_cast<size_t>(count));
-  for (int64_t i = 0; i < count; ++i) out += s;
+  if (count < 0) throw Error("str_repeat: count must be nonnegative");
+  if (s.empty() || count == 0) return {};
+  const std::string empty;
+  const auto max_size = empty.max_size();
+  if (static_cast<uint64_t>(count) > static_cast<uint64_t>(max_size / s.size()))
+    throw Error("str_repeat: result size exceeds platform capacity");
+  const size_t result_size = s.size() * static_cast<size_t>(count);
+  std::string out(result_size, '\0');
+  std::copy(s.begin(), s.end(), out.begin());
+  size_t copied = s.size();
+  while (copied < result_size) {
+    const size_t chunk = std::min(copied, result_size - copied);
+    std::memmove(out.data() + copied, out.data(), chunk);
+    copied += chunk;
+  }
   return out;
 }
 inline bool str_is_int(const std::string& s) {
@@ -171,24 +181,16 @@ inline double str_to_float(const std::string& s) {
 }
 
 namespace detail {
-struct GlobWork {
-  uint64_t steps = 0;
-  void step() {
-    if (steps == (uint64_t(1) << 27)) throw Error("str_match: pattern exceeds the 2^27 work limit");
-    ++steps;
-  }
-};
 // One glob token (never '*'): ?; escaped byte; or [class], [!class], ranges.
 // Unterminated '[' is a literal, ']' is literal at the start, descending ranges
 // are empty, matching lmhtml's documented byte-oriented catalog behavior.
-inline bool glob_token(const std::string& p, size_t i, unsigned char c, size_t& next, GlobWork& work) {
+inline bool glob_token(const std::string& p, size_t i, unsigned char c, size_t& next) {
   if (p[i] == '\\' && i + 1 < p.size()) { next = i + 2; return static_cast<unsigned char>(p[i + 1]) == c; }
   if (p[i] == '?') { next = i + 1; return true; }
   if (p[i] == '[') {
     size_t q = i + 1; bool negate = q < p.size() && p[q] == '!'; if (negate) ++q;
     size_t first = q; bool hit = false;
     while (q < p.size() && (p[q] != ']' || q == first)) {
-      work.step();
       auto byte = [&]() {
         if (p[q] == '\\' && q + 1 < p.size()) ++q;
         return static_cast<unsigned char>(p[q++]);
@@ -205,20 +207,17 @@ inline bool glob_token(const std::string& p, size_t i, unsigned char c, size_t& 
 }
 }
 // *, ?, classes and backslash escapes operate on bytes (including NUL). The
-// last-star algorithm uses O(1) auxiliary memory. Charge each matcher iteration,
-// character-class entry scanned, and trailing star skipped to a 2^27 work limit.
+// last-star algorithm uses O(1) auxiliary memory and has no implicit work budget.
 inline bool str_match(const std::string& text, const std::string& pattern) {
-  detail::GlobWork work;
   size_t t = 0, p = 0, star_p = std::string::npos, star_t = 0;
   while (t < text.size()) {
-    work.step();
     size_t next = 0;
     if (p < pattern.size() && pattern[p] == '*') { star_p = p++; star_t = t; }
-    else if (p < pattern.size() && detail::glob_token(pattern, p, static_cast<unsigned char>(text[t]), next, work)) { p = next; ++t; }
+    else if (p < pattern.size() && detail::glob_token(pattern, p, static_cast<unsigned char>(text[t]), next)) { p = next; ++t; }
     else if (star_p != std::string::npos) { p = star_p + 1; t = ++star_t; }
     else return false;
   }
-  while (p < pattern.size() && pattern[p] == '*') { work.step(); ++p; }
+  while (p < pattern.size() && pattern[p] == '*') ++p;
   return p == pattern.size();
 }
 
