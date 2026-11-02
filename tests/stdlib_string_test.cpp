@@ -5,6 +5,16 @@
 #include <iostream>
 #include <locale>
 
+// One-shot allocation failure: error reporting can still allocate after rejection.
+static bool reject_allocation = false;
+void* operator new(std::size_t n) {
+  if (reject_allocation) { reject_allocation = false; throw std::bad_alloc(); }
+  if (void* p = std::malloc(n ? n : 1)) return p;
+  throw std::bad_alloc();
+}
+void operator delete(void* p) noexcept { std::free(p); }
+void operator delete(void* p, std::size_t) noexcept { std::free(p); }
+
 using namespace dslvm::stdlib;
 // Two independent chunks call the same catalog and host callback. No VM changes.
 static std::string upper_chunk(const std::string& schema, const std::string& input) {
@@ -19,7 +29,7 @@ static std::string upper_chunk(const std::string& schema, const std::string& inp
   u16(b, 0); u16(b, 0); u16(b, 1); // contexts, locals, max_stack
   std::string code; code += char(dslvm::PUSH_STR); u32(code, 0);
   for (unsigned f : {0u, 1u}) { code += char(dslvm::CALL_FN); u16(code, f); code += char(1); }
-  code += char(dslvm::HALT); u32(b, uint32_t(code.size())); b += code; u32(b, 0);
+  code += char(dslvm::HALT); u32(b, uint32_t(code.size())); b += code; u32(b, 1); u32(b, 0); u32(b, 12); u16(b, 8);
   u16(b, 0); // entries
   return b;
 }
@@ -29,6 +39,17 @@ int main(int argc, char** argv) {
   if (argc == 2 && std::string(argv[1]) == "--signatures") {
     for (const auto& s : reg.signatures()) std::cout << s << '\n';
     return 0;
+  }
+  // Real allocation rejection, not a policy quota or an oversized integer.
+  for (bool replace : {false, true}) {
+    const std::string source(128, 'x'), replacement(128, 'y');
+    bool structured = false;
+    reject_allocation = true;
+    try { if (replace) (void)str_replace(source, "x", replacement); else (void)str_repeat(source, 128); }
+    catch (const dslvm::Error& error) { structured = error.code == "RUN_HOST" && error.message.find("platform capacity") != std::string::npos; }
+    catch (const std::bad_alloc&) {}
+    reject_allocation = false;
+    if (!structured) { std::cerr << "allocation did not become SDK Error\n"; return 1; }
   }
   int passed = 0;
   auto check = [&](bool ok) { if (!ok) { std::cerr << "failed string check " << passed + 1 << '\n'; std::abort(); } ++passed; };
@@ -140,6 +161,29 @@ int main(int argc, char** argv) {
   check(entry && entry->fn(args).s == "MIXED");
   args = {dslvm::Value::string(std::string("a\0b", 3))};
   check(entry->fn(args).s == std::string("A\0B", 3));
+  {
+    dslvm::stdlib::Collections arena;
+    bool structured = false;
+    reject_allocation = true;
+    try { (void)arena.make_object<int>("int", 7); }
+    catch (const dslvm::Error& error) { structured = error.code == "RUN_HOST" && error.message.find("allocation") != std::string::npos; }
+    catch (const std::bad_alloc&) {}
+    reject_allocation = false;
+    check(structured && arena.objects.empty());
+  }
+  for (bool length_error : {false, true}) {
+    dslvm::Registry failing(dslvm::StdMode::Disabled); register_string(failing);
+    failing.function("capture", {"string"}, "void", [=](dslvm::Args&) -> dslvm::Value {
+      if (length_error) throw std::length_error("growth");
+      throw std::bad_alloc();
+    });
+    const std::string schema = R"({"dsl.schema":2,"name":"oom","functions":{"str_upper":[{"params":["string"],"returns":"string"}],"capture":[{"params":["string"],"returns":"void"}]}})";
+    auto program = dslvm::Program::load(upper_chunk(schema, "x"), schema, failing);
+    bool translated = false;
+    try { dslvm::Context context; program.run(context, failing); }
+    catch (const dslvm::Error& error) { translated = error.code == "RUN_HOST" && error.line == 12 && error.column == 8 && error.message.find("allocation") != std::string::npos; }
+    check(translated);
+  }
   std::vector<std::string> captured;
   reg.function("capture", {"string"}, "void", [&](dslvm::Args& a) { captured.push_back(a[0].s); return dslvm::Value::none(); });
   const std::string schema = R"({"dsl.schema":2,"name":"two_chunks","types":{},"context":{},"functions":{"str_upper":[{"params":["string"],"returns":"string"}],"capture":[{"params":["string"],"returns":"void"}]}})";

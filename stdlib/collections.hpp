@@ -102,16 +102,16 @@ struct Collections {
     return total;
   }
   void reset() { objects.clear(); str_lists.clear(); int_lists.clear(); float_lists.clear(); str_maps.clear(); }
-  template<class T, class... Args> T* make_object(const char*, Args&&... args) {
+  template<class T, class... Args> T* make_object(const char*, Args&&... args) try {
     auto value = std::make_shared<T>(std::forward<Args>(args)...);
     auto* pointer = value.get();
     objects.push_back(std::move(value));
     return pointer;
-  }
-  StrList* make_str_list(std::vector<std::string> values = {}) { str_lists.push_back({std::move(values)}); return &str_lists.back(); }
-  IntList* make_int_list(std::vector<int64_t> values = {}) { int_lists.push_back({std::move(values)}); return &int_lists.back(); }
-  FloatList* make_float_list(std::vector<double> values = {}) { float_lists.push_back({std::move(values)}); return &float_lists.back(); }
-  StrMap* make_str_map() { str_maps.emplace_back(); return &str_maps.back(); }
+  } catch (const std::bad_alloc&) { throw Error("collection allocation failed"); } catch (const std::length_error&) { throw Error("collection allocation exceeds platform capacity"); }
+  StrList* make_str_list(std::vector<std::string> values = {}) try { str_lists.push_back({std::move(values)}); return &str_lists.back(); } catch (const std::bad_alloc&) { throw Error("collection allocation failed"); } catch (const std::length_error&) { throw Error("collection allocation exceeds platform capacity"); }
+  IntList* make_int_list(std::vector<int64_t> values = {}) try { int_lists.push_back({std::move(values)}); return &int_lists.back(); } catch (const std::bad_alloc&) { throw Error("collection allocation failed"); } catch (const std::length_error&) { throw Error("collection allocation exceeds platform capacity"); }
+  FloatList* make_float_list(std::vector<double> values = {}) try { float_lists.push_back({std::move(values)}); return &float_lists.back(); } catch (const std::bad_alloc&) { throw Error("collection allocation failed"); } catch (const std::length_error&) { throw Error("collection allocation exceeds platform capacity"); }
+  StrMap* make_str_map() try { str_maps.emplace_back(); return &str_maps.back(); } catch (const std::bad_alloc&) { throw Error("collection allocation failed"); } catch (const std::length_error&) { throw Error("collection allocation exceeds platform capacity"); }
 };
 
 namespace detail {

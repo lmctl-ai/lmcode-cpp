@@ -58,7 +58,7 @@ inline int64_t str_find(const std::string& s, const std::string& needle) {
   return p == std::string::npos ? -1 : static_cast<int64_t>(p);
 }
 // Replaces every non-overlapping occurrence; an empty search string is a no-op.
-inline std::string str_replace(const std::string& s, const std::string& from, const std::string& to) {
+inline std::string str_replace(const std::string& s, const std::string& from, const std::string& to) try {
   const size_t max_size = std::string{}.max_size();
   size_t result_size = 0;
   auto add_size = [&](size_t n) {
@@ -79,7 +79,7 @@ inline std::string str_replace(const std::string& s, const std::string& from, co
   }
   out.append(s, at, std::string::npos);
   return out;
-}
+} catch (const std::bad_alloc&) { throw Error("str_replace: result size exceeds platform capacity"); } catch (const std::length_error&) { throw Error("str_replace: result size exceeds platform capacity"); }
 inline std::string str_trim(const std::string& s) {
   auto ws = [](unsigned char c) { return c == ' ' || (c >= '\t' && c <= '\r'); };
   size_t a = 0, b = s.size();
@@ -87,7 +87,7 @@ inline std::string str_trim(const std::string& s) {
   while (b > a && ws(static_cast<unsigned char>(s[b - 1]))) --b;
   return s.substr(a, b - a);
 }
-inline std::string str_repeat(const std::string& s, int64_t count) {
+inline std::string str_repeat(const std::string& s, int64_t count) try {
   if (count < 0) throw Error("str_repeat: count must be nonnegative");
   if (s.empty() || count == 0) return {};
   const std::string empty;
@@ -104,7 +104,7 @@ inline std::string str_repeat(const std::string& s, int64_t count) {
     copied += chunk;
   }
   return out;
-}
+} catch (const std::bad_alloc&) { throw Error("str_repeat: result size exceeds platform capacity"); } catch (const std::length_error&) { throw Error("str_repeat: result size exceeds platform capacity"); }
 inline bool str_is_int(const std::string& s) {
   if (s.empty()) return false;
   const char* begin = s.data();

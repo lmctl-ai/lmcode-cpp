@@ -786,6 +786,16 @@ class Program {
           return Value::none();
         default: throw Error("RUN_ERROR", "unknown opcode " + std::to_string(op));
         }
+      } catch (const std::bad_alloc&) {
+        Error e("RUN_HOST", "allocation failed");
+        const Line* line = line_of(lines, fault_pc);
+        if (line) e.locate(line->line, line->column);
+        throw e;
+      } catch (const std::length_error&) {
+        Error e("RUN_HOST", "allocation exceeds platform capacity");
+        const Line* line = line_of(lines, fault_pc);
+        if (line) e.locate(line->line, line->column);
+        throw e;
       } catch (Error& e) {
         const Line* line = line_of(lines, fault_pc);
         if (line) e.locate(line->line, line->column);
