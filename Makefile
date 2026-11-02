@@ -1,5 +1,10 @@
 CXX ?= g++
 CXXFLAGS ?= -std=c++17 -O1 -Wall -Wextra -pedantic
+# The allocation-failure test replaces operator new. MinGW's DLL allocator
+# cannot be interposed by the executable; keep that test's C++ runtime local.
+ifeq ($(OS),Windows_NT)
+STRING_TEST_LINK_FLAGS = -static-libstdc++ -static-libgcc
+endif
 BUILD ?= build
 EXEEXT ?=
 ifeq ($(OS),Windows_NT)
@@ -24,7 +29,7 @@ test: $(BUILD)/dslvm_test
 
 $(BUILD)/stdlib_string_test: tests/stdlib_string_test.cpp stdlib/string.hpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
 	@mkdir -p $(BUILD)
-	$(CXX) $(CXXFLAGS) -I include -o $@ tests/stdlib_string_test.cpp
+	$(CXX) $(CXXFLAGS) $(STRING_TEST_LINK_FLAGS) -I include -o $@ tests/stdlib_string_test.cpp
 
 $(BUILD)/stdlib_string_header.o: tests/stdlib_string_header.cpp stdlib/string.hpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
 	@mkdir -p $(BUILD)
