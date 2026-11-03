@@ -9,9 +9,9 @@ with tempfile.TemporaryDirectory(prefix='invocation-faults-',dir=ROOT/'build')as
  (work/'tests').mkdir();shutil.copy2(ROOT/'tests/invocation_results_test.cpp',work/'tests/invocation_results_test.cpp')
  paths=['stdlib/invocation.hpp','stdlib/result.hpp','stdlib/result_json.hpp','stdlib/result_contract.hpp']
  original={p:(work/p).read_text()for p in paths}
- def run(case=''):
+ def run(case='',flags=()):
   binary=work/'unit'
-  p=subprocess.run([*cxx,'-std=c++17','-O0','-I',str(work/'include'),str(work/'tests/invocation_results_test.cpp'),'-o',str(binary)],capture_output=True)
+  p=subprocess.run([*cxx,'-std=c++17','-O0',*flags,'-I',str(work/'include'),str(work/'tests/invocation_results_test.cpp'),'-o',str(binary)],capture_output=True)
   assert p.returncode==0,p.stderr.decode(errors='replace')
   return subprocess.run([str(binary),case],capture_output=True)
  baseline=run();assert baseline.returncode==0,(baseline.stdout,baseline.stderr)
@@ -37,7 +37,15 @@ with tempfile.TemporaryDirectory(prefix='invocation-faults-',dir=ROOT/'build')as
   result=run(case);assert result.returncode==1 and b'FAIL 'in result.stderr,(name,result.returncode,result.stdout,result.stderr)
   print('CAUGHT',name,flush=True)
  for p,text in original.items():(work/p).write_text(text)
- path=work/'stdlib/result_json.hpp';text=original['stdlib/result_json.hpp'];start=text.index('auto r=std::to_chars(');end=text.index('return std::string(b,r.ptr);',start)+len('return std::string(b,r.ptr);')
- path.write_text(text[:start]+'std::snprintf(b,sizeof b,"%.15g",value);return std::string(b);'+text[end:])
- result=run('one frame and shortest');assert result.returncode==1 and b'0.3,'in result.stderr,(result.stdout,result.stderr)
- print('CAUGHT actual %.15g envelope formatter',flush=True)
+ path=work/'stdlib/result_json.hpp';text=original['stdlib/result_json.hpp']
+ # Mutate the formatter function, not one preprocessor branch or an incidental local name.
+ signature='inline std::string float_json(double value) {'
+ start=text.index(signature);end=text.index('\n}',start)+2
+ fault=signature+'char b[64];std::snprintf(b,sizeof b,"%.15g",value);return std::string(b);}'
+ for mode,flags in [('native',()),('portable',('-DFORCE_PORTABLE_FLOAT_JSON',))]:
+  path.write_text(text)
+  good=run('one frame and shortest',flags);assert good.returncode==0,(mode,good.stdout,good.stderr)
+  path.write_text(text[:start]+fault+text[end:])
+  result=run('one frame and shortest',flags)
+  assert result.returncode==1 and b'0.3,'in result.stderr,(mode,result.stdout,result.stderr)
+  print('CAUGHT actual %.15g envelope formatter '+mode,flush=True)
