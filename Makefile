@@ -211,3 +211,7 @@ test-invocation-vectors: $(BUILD)/invocation_conformance$(EXEEXT)
 	PYTHONDONTWRITEBYTECODE=1 python3 scripts/gen-invocation-expectations.py --check
 test: test-invocations
 conformance: test-invocation-vectors
+
+# The compiler lives in a scoped npm package; Windows launchers are real .cmd files.
+test:
+	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_fixture_compiler.py
