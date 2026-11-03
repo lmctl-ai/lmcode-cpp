@@ -42,7 +42,7 @@ with tempfile.TemporaryDirectory(prefix='return-controls-',dir=ROOT/'build') as 
  for file,text in originals.items():(work/file).write_text(text)
  path=work/'stdlib/result_json.hpp';source=originals['stdlib/result_json.hpp']
  start=source.index('auto r=std::to_chars(');end=source.index('return std::string(b,r.ptr);',start)+len('return std::string(b,r.ptr);')
- source=source[:start]+'std::snprintf(b,sizeof b,"%.15g",v);return std::string(b);'+source[end:]
+ source=source[:start]+'std::snprintf(b,sizeof b,"%.15g",value);return std::string(b);'+source[end:]
  path.write_text(source)
  result=run('result_sink_test.cpp','numeric boundary and shortest')
  assert result.returncode==1 and b'float formatter used %.15g' in result.stderr,(result.returncode,result.stdout,result.stderr)
