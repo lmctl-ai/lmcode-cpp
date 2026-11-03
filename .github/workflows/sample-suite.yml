@@ -33,4 +33,4 @@ jobs:
       - name: Run current SDK and canonical corpus against the pinned reference host
         run: make -C lmcode-cpp sample-suite
       - name: Recompile supported source wrappers and report compiler feature gaps
-        run: cd lmcode-cpp && lmscript --no-preflight sample-suite/check-recompile.lms
+        run: cd lmcode-cpp && lmscript sample-suite/check-recompile.lms

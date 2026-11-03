@@ -213,5 +213,7 @@ test: test-invocations
 conformance: test-invocation-vectors
 
 # The compiler lives in a scoped npm package; Windows launchers are real .cmd files.
-test:
+.PHONY: test-fixture-compiler
+test: test-fixture-compiler
+test-fixture-compiler:
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_fixture_compiler.py
