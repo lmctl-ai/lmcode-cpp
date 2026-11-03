@@ -38,6 +38,6 @@ with tempfile.TemporaryDirectory(prefix='invocation-faults-',dir=ROOT/'build')as
   print('CAUGHT',name,flush=True)
  for p,text in original.items():(work/p).write_text(text)
  path=work/'stdlib/result_json.hpp';text=original['stdlib/result_json.hpp'];start=text.index('auto r=std::to_chars(');end=text.index('return std::string(b,r.ptr);',start)+len('return std::string(b,r.ptr);')
- path.write_text(text[:start]+'std::snprintf(b,sizeof b,"%.15g",v);return std::string(b);'+text[end:])
+ path.write_text(text[:start]+'std::snprintf(b,sizeof b,"%.15g",value);return std::string(b);'+text[end:])
  result=run('one frame and shortest');assert result.returncode==1 and b'0.3,'in result.stderr,(result.stdout,result.stderr)
  print('CAUGHT actual %.15g envelope formatter',flush=True)
