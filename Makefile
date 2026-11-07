@@ -217,3 +217,26 @@ conformance: test-invocation-vectors
 test: test-fixture-compiler
 test-fixture-compiler:
 	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_fixture_compiler.py
+
+# Opt-in `rest` std module (stdlib/rest.hpp): a REST server over stdio. Not part of the default catalog or `register_std`.
+$(BUILD)/rest_serve$(EXEEXT): examples/rest_serve.cpp stdlib/rest.hpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+$(BUILD)/stdlib_rest_test$(EXEEXT): tests/stdlib_rest_test.cpp stdlib/rest.hpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -I include -o $@ $<
+
+$(BUILD)/stdlib_rest_header.o: tests/stdlib_rest_header.cpp stdlib/rest.hpp include/dslvm.hpp $(wildcard stdlib/*.hpp)
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) -Werror -I include -c -o $@ $<
+
+.PHONY: test-rest verify-rest-suite
+verify-rest-suite:
+	PYTHONDONTWRITEBYTECODE=1 python3 scripts/sync-rest.py --verify
+
+test-rest: verify-rest-suite $(BUILD)/stdlib_rest_test$(EXEEXT) $(BUILD)/rest_serve$(EXEEXT) $(BUILD)/stdlib_rest_header.o
+	$(BUILD)/stdlib_rest_test $(BUILD)/rest_serve$(EXEEXT) conformance/rest-suite
+	PYTHONDONTWRITEBYTECODE=1 python3 tests/test_rest_schema.py "$(abspath $(BUILD)/stdlib_rest_test$(EXEEXT))"
+
+test: test-rest

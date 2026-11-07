@@ -22,3 +22,9 @@ conformance/return-vectors/*.dslb binary
 # Native invocation goldens are byte exact on all operating systems.
 conformance/invocation-vectors/** text eol=lf
 conformance/invocation-vectors/*.dslb binary
+
+# The shared REST suite and its pin are byte-for-byte fixtures (the bytecode binds to the schema bytes).
+conformance/rest-suite/** -text
+conformance/rest-suite/*.dslb binary
+rest-suite.lock text eol=lf
+stdlib/rest.schema-fragment.json -text

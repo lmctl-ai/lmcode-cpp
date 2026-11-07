@@ -362,6 +362,11 @@ unframed report helpers are removed rather than retained as compatibility APIs.
 
 Boundary and malformed-wire coverage is described in [conformance/BOUNDARIES.md](conformance/BOUNDARIES.md).
 
+## Opt-in REST server over stdio
+
+`stdlib/rest.hpp` is an opt-in std module (`lmcode_std_rest_v1`, 18 signatures, not part of `register_std`) that serves
+HTTP/1.1 messages from an input stream to an output stream with routes bound to annotated entries; see [docs/rest.md](docs/rest.md).
+
 ## Historical literal names
 
 The documentation calls the language lmcode. `--lmcode`, `--lmcode-schema` and `--lmcode-signatures` are current host flag literals; `DSLB` is the bytecode magic and `DSLB v6` is the current format name; `.dslb` is the current bytecode filename extension; `_dsl_` is the historical block spelling; `dsl.schema` is the current schema JSON key. Other code-formatted API names, paths, manifest names and diagnostic text retain their current literal spellings.
