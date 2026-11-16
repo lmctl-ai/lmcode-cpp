@@ -7,12 +7,13 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 fragment = json.load(open(os.path.join(root, 'stdlib', 'rest.schema-fragment.json'), encoding='utf-8'))
 declared = [f'fn {n}({", ".join(d["params"])}) -> {d["returns"]}' for n, ds in fragment['functions'].items() for d in ds]
 declared += [f'method {t}.{n}({", ".join(d["params"])}) -> {d["returns"]}' for t, td in fragment['types'].items() for n, ds in td['methods'].items() for d in ds]
-assert len(declared) == 18, f'expected 18 declarations, found {len(declared)}'
+assert len(declared) == 20, f'expected 20 declarations, found {len(declared)}'
 assert fragment['name'] == 'lmcode_std_rest_v1', fragment['name']
 
 default_schema = json.load(open(os.path.join(root, 'std', 'lmcode-std.schema.json'), encoding='utf-8'))
-assert not any(n.startswith('rest_') for n in default_schema['functions']), 'rest leaked into the default std schema'
-assert 'RestExchange' not in default_schema.get('types', {}), 'RestExchange leaked into the default std schema'
+assert all(n in default_schema['functions'] for n in fragment['functions']), 'rest functions missing from default std schema'
+assert 'RestExchange' in default_schema.get('types', {}), 'RestExchange missing from default std schema'
+assert default_schema.get('interfaces') == fragment.get('interfaces'), 'std interfaces drift from rest fragment'
 
 host = sys.argv[1]
 registered = subprocess.run([host, '--signatures'], check=True, capture_output=True, text=True).stdout.split('\n')

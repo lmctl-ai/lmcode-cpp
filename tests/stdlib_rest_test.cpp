@@ -213,6 +213,7 @@ TEST("http: framing off a stream (split reads, limits, truncation)", http_framin
 static const std::vector<std::string>& declared_signatures() {
   static const std::vector<std::string> d = [] {
     std::vector<std::string> v{
+      "fn rest_cli(StrList) -> string", "fn rest_config(string, string) -> void",
       "fn rest_route(string, string, string) -> void", "fn rest_serve() -> void", "fn rest_stop() -> void",
       "method RestExchange.method() -> string", "method RestExchange.path() -> string", "method RestExchange.query(string) -> string",
       "method RestExchange.has_query(string) -> bool", "method RestExchange.param(string) -> string", "method RestExchange.header(string) -> string",
@@ -229,20 +230,43 @@ static std::vector<std::string> rest_signatures(const Registry& r) {
   return out;
 }
 
-TEST("registration: exactly the 18 declared signatures, absent from the default registry", registration) {
-  CHECK_EQ(declared_signatures().size(), size_t(18));
+TEST("registration: all 20 declared signatures are in the default registry and bare register_rest", registration) {
+  CHECK_EQ(declared_signatures().size(), size_t(20));
   Registry plain;
-  CHECK_EQ(plain.signatures().size(), size_t(206));   // the default catalog is unchanged
-  CHECK(rest_signatures(plain).empty());
+  CHECK_EQ(plain.signatures().size(), size_t(226));
+  CHECK_EQ(rest_signatures(plain), declared_signatures());
+  CHECK_EQ(plain.host_signatures().size(), size_t(0));
   auto rest = register_rest(plain);
   CHECK_EQ(rest_signatures(plain), declared_signatures());
-  CHECK_EQ(plain.signatures().size(), size_t(224));
-  CHECK_EQ(plain.host_signatures().size(), size_t(18));   // they are host signatures, not std ones
-  Registry again;
-  CHECK(rest_signatures(again).empty());   // nothing leaked into a fresh default registry
+  CHECK_EQ(plain.signatures().size(), size_t(226));
+  CHECK_EQ(plain.host_signatures().size(), size_t(0));
   Registry bare(StdMode::Disabled);
   register_rest(bare);
-  CHECK_EQ(bare.signatures().size(), size_t(18));
+  CHECK_EQ(bare.signatures().size(), size_t(20));
+}
+
+TEST("annotated std interfaces and colon params auto-register routes and support stateless CLI", annotated_rest_and_cli) {
+  Route colon = parse_route("GET", "/users/:id/files/:path...");
+  CHECK_EQ(colon.segments.size(), size_t(4));
+  CHECK(colon.segments[1].kind == Segment::PARAM && colon.segments[1].text == "id");
+  CHECK(colon.segments[3].kind == Segment::REST && colon.segments[3].text == "path");
+
+  Registry registry;
+  auto c = controller_with(registry, {
+    entry("/items/:id", REST_GET_INTERFACE, "get_item"),
+    entry("/items", REST_POST_INTERFACE, "post_item"),
+    entry("DELETE /items/:id", HANDLER_INTERFACE, "del_item"),
+    entry("status", CLI_COMMAND_INTERFACE, "cmd_status"),
+    entry("--verbose", CLI_OPTION_INTERFACE, "opt_verbose")
+  });
+  c->config("prefix", "/api");
+  c->serve();
+  CHECK(c->serving());
+  CHECK_EQ(c->table().match("GET", "/api/items/42").status, 0);
+  CHECK_EQ(c->table().match("GET", "/api/items/42").params.at("id"), std::string("42"));
+  CHECK_EQ(c->table().match("POST", "/api/items").status, 0);
+  CHECK_EQ(c->table().match("DELETE", "/api/items/42").status, 0);
+  CHECK_EQ(c->table().match("GET", "/api/status").status, 0);
 }
 
 TEST("serve validation happens before any byte is read", serve_validation) {
@@ -610,6 +634,17 @@ TEST("dispatch: percent escapes are validated before routing; serving continues"
   CHECK_EQ(get("/hello/%zz"), 400);
   Response r = rest->dispatch(Request{"HEAD", "/health", {}, ""});
   CHECK_EQ(r.status, 200); CHECK_EQ(r.body, std::string("{\"status\":\"ok\"}"));   // the body is dropped only when written
+
+  Response r_item = rest->dispatch(Request{"GET", "/items/42/detail", {}, ""});
+  CHECK_EQ(r_item.status, 200); CHECK_EQ(r_item.body, std::string("item:42"));
+  Response r_aget = rest->dispatch(Request{"GET", "/annotated/get/world", {}, ""});
+  CHECK_EQ(r_aget.status, 200); CHECK_EQ(r_aget.body, std::string("annotated-get:world"));
+  Response r_apost = rest->dispatch(Request{"POST", "/annotated/post", {}, "hello"});
+  CHECK_EQ(r_apost.status, 201); CHECK_EQ(r_apost.body, std::string("annotated-post:hello"));
+  Response r_ahand = rest->dispatch(Request{"GET", "/annotated/handler/ping", {}, ""});
+  CHECK_EQ(r_ahand.status, 200); CHECK_EQ(r_ahand.body, std::string("annotated-handler:GET:ping"));
+  Response r_cli = rest->dispatch(Request{"POST", "/cli-run", {}, "--format=json scan -- item1"});
+  CHECK_EQ(r_cli.status, 200); CHECK_EQ(r_cli.body, std::string("cli:scan:json:item1"));
 }
 
 int main(int argc, char** argv) {

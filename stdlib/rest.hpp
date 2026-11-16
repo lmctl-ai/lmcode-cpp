@@ -20,6 +20,14 @@
 #ifndef DSLVM_STD_BUILDING
 #undef DSLVM_STD_DEFER
 #endif
+#ifndef DSLVM_STD_BUILDING
+#define DSLVM_STD_BUILDING
+#include "collections.hpp"
+#undef DSLVM_STD_BUILDING
+#else
+#include "collections.hpp"
+#endif
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <iostream>
@@ -40,10 +48,36 @@ struct Response { int status = 200; Headers headers; std::string body; };
 
 constexpr size_t MAX_HEADER_BYTES = 16 * 1024;
 inline const char* HANDLER_INTERFACE = "interface RestHandler(RestExchange) -> void";
+inline const char* REST_GET_INTERFACE = "interface RestGet(RestExchange) -> void";
+inline const char* REST_POST_INTERFACE = "interface RestPost(RestExchange) -> void";
+inline const char* REST_PUT_INTERFACE = "interface RestPut(RestExchange) -> void";
+inline const char* REST_DELETE_INTERFACE = "interface RestDelete(RestExchange) -> void";
+inline const char* REST_PATCH_INTERFACE = "interface RestPatch(RestExchange) -> void";
+inline const char* REST_HEAD_INTERFACE = "interface RestHead(RestExchange) -> void";
+inline const char* REST_OPTIONS_INTERFACE = "interface RestOptions(RestExchange) -> void";
+inline const char* CLI_COMMAND_INTERFACE = "interface CliCommand(RestExchange) -> void";
+inline const char* CLI_OPTION_INTERFACE = "interface CliOption(RestExchange) -> void";
+
+inline const char* method_for_rest_interface(const std::string& iface) {
+  if (iface == REST_GET_INTERFACE) return "GET";
+  if (iface == REST_POST_INTERFACE) return "POST";
+  if (iface == REST_PUT_INTERFACE) return "PUT";
+  if (iface == REST_DELETE_INTERFACE) return "DELETE";
+  if (iface == REST_PATCH_INTERFACE) return "PATCH";
+  if (iface == REST_HEAD_INTERFACE) return "HEAD";
+  if (iface == REST_OPTIONS_INTERFACE) return "OPTIONS";
+  return nullptr;
+}
+
+inline bool is_rest_or_cli_interface(const std::string& iface) {
+  return iface == HANDLER_INTERFACE || method_for_rest_interface(iface) != nullptr ||
+         iface == CLI_COMMAND_INTERFACE || iface == CLI_OPTION_INTERFACE;
+}
 
 // ---- bytes helpers: whitespace is ASCII only (0x00-0x20, 0x7f); 0xA0 is an ordinary byte ----
 inline bool is_ws(char c) { unsigned char u = static_cast<unsigned char>(c); return u <= 0x20 || u == 0x7f; }
 inline std::string lower(std::string s) { for (char& c : s) if (c >= 'A' && c <= 'Z') c = static_cast<char>(c + 32); return s; }
+inline std::string upper(std::string s) { for (char& c : s) if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 32); return s; }
 inline int hex_digit(char c) { return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1; }
 inline Error host_error(const std::string& message) { return Error("RUN_HOST", message); }
 
@@ -103,6 +137,16 @@ inline Route parse_route(const std::string& method, const std::string& path) {
       if (!ok) invalid("invalid parameter name '" + name + "'");
       if (!names.insert(name).second) invalid("duplicate parameter '" + name + "'");
       if (rest && !last) invalid("'{" + name + "...}' must be the last segment");
+      seg.kind = rest ? Segment::REST : Segment::PARAM; seg.text = name;
+    } else if (!text.empty() && text.front() == ':') {
+      std::string name = text.substr(1);
+      const bool rest = name.size() >= 3 && name.compare(name.size() - 3, 3, "...") == 0;
+      if (rest) name.resize(name.size() - 3);
+      bool ok = !name.empty() && !(name[0] >= '0' && name[0] <= '9');
+      for (char c : name) if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')) ok = false;
+      if (!ok) invalid("invalid parameter name '" + name + "'");
+      if (!names.insert(name).second) invalid("duplicate parameter '" + name + "'");
+      if (rest && !last) invalid("':" + name + "...' must be the last segment");
       seg.kind = rest ? Segment::REST : Segment::PARAM; seg.text = name;
     } else {
       if (text.find_first_of("{}") != std::string::npos) invalid("malformed placeholder in segment '" + text + "'");
@@ -354,6 +398,8 @@ class RestController {
   RestController(const RestController&) = delete;
   RestController& operator=(const RestController&) = delete;
 
+  void bind_registry(Registry* registry) { registry_ = registry; }
+
   State& state() { return state_; }
   const RouteTable& table() const { return table_; }
   bool serving() const { return serving_; }
@@ -364,13 +410,47 @@ class RestController {
    * rest_stop() or a framing error. `program` and the registry must outlive the call.
    */
   void run(const Program& program, const Context& context = Context()) {
+    struct RunFlag { bool& f; ~RunFlag() { f = false; } } flag{in_controller_run_};
+    in_controller_run_ = true;
     program_ = &program; context_ = context; stopped_ = false;
     bind_entries(program.entries());
     program.run(context_, *registry_);
     if (serving_ && !stopped_) pump();
   }
 
+  bool before_body_run(const Program& program, const Context& context, const Registry& registry) {
+    if (in_controller_run_) return false;
+    registry_ = const_cast<Registry*>(&registry);
+    program_ = &program;
+    context_ = context;
+    table_ = RouteTable{};
+    serving_ = false;
+    stopped_ = false;
+    bind_entries(program.entries());
+    return true;
+  }
+
+  void after_body_run() {
+    if (serving_ && !stopped_) pump();
+  }
+
   // ---- lmcode-facing operations -------------------------------------------------------------------------
+  void config(const std::string& key, const std::string& value) {
+    if (serving_) throw host_error("rest: routes are frozen once rest_serve has been called");
+    state_.values[key] = value;
+    if (key == "prefix" || key == "base_path") {
+      config_prefix_ = value;
+    } else if (key == "max_body_bytes" && !value.empty()) {
+      uint64_t n = 0;
+      bool ok = true;
+      for (char c : value) {
+        if (c < '0' || c > '9') { ok = false; break; }
+        n = n * 10 + uint64_t(c - '0');
+      }
+      if (ok && n > 0) options_.max_body_bytes = n;
+    }
+  }
+
   void route(const std::string& method, const std::string& path, const std::string& annotation) {
     if (serving_) throw host_error("rest: routes are frozen once rest_serve has been called");
     table_.add(method, path, annotation);
@@ -380,6 +460,7 @@ class RestController {
   void serve() {
     if (serving_) throw host_error("rest: rest_serve already called");
     if (!bound_) throw host_error("rest: no program is bound (run the program through the controller)");
+    materialize_auto_routes();
     validate();
     serving_ = true;
   }
@@ -388,10 +469,149 @@ class RestController {
   void stop() { stopped_ = true; }
 
   /** Offers the entries a program provides (run() does this); exposed for validation tests. */
-  void bind_entries(const std::vector<Program::Entry>& entries) { entries_ = entries; bound_ = true; }
+  void bind_entries(const std::vector<Program::Entry>& entries) {
+    entries_ = entries;
+    bound_ = true;
+    auto_routes_materialized_ = false;
+    auto_entry_index_.clear();
+    auto_entry_indices_.clear();
+    entry_index_.clear();
+    cli_options_.clear();
+    config_prefix_.clear();
+  }
+
+  std::string cli(const std::vector<std::string>& argv) {
+    if (!bound_ || !program_ || !registry_)
+      throw host_error("rest: no program is bound (run the program through the controller)");
+    ensure_dispatch_ready();
+
+    std::string method = "GET";
+    std::string body;
+    bool method_explicit = false;
+    std::vector<std::string> positionals;
+    struct OptVal { std::string flag, key, val; };
+    std::vector<OptVal> parsed_opts;
+
+    for (size_t i = 0; i < argv.size(); ++i) {
+      const std::string& arg = argv[i];
+      if (arg == "--") {
+        std::string rest_body;
+        for (size_t j = i + 1; j < argv.size(); ++j) {
+          if (!rest_body.empty()) rest_body += " ";
+          rest_body += argv[j];
+        }
+        if (body.empty()) body = rest_body;
+        break;
+      }
+      if (arg.size() > 1 && arg[0] == '-') {
+        std::string flag = arg, key, val = "true";
+        const size_t eq = arg.find('=');
+        if (eq != std::string::npos) {
+          flag = arg.substr(0, eq);
+          val = arg.substr(eq + 1);
+          key = flag.rfind("--", 0) == 0 ? flag.substr(2) : flag.substr(1);
+        } else {
+          key = flag.rfind("--", 0) == 0 ? flag.substr(2) : flag.substr(1);
+          if (i + 1 < argv.size() && (argv[i + 1].empty() || argv[i + 1][0] != '-')) {
+            const std::string& next = argv[i + 1];
+            const bool is_special = (key == "method" || key == "X" || key == "body" || key == "d");
+            const std::string probe_path = next.front() == '/' ? next : ("/" + next);
+            const bool next_is_root_cmd = positionals.empty() && !is_special &&
+                                          table_.match("GET", probe_path).status != 404;
+            if (!next_is_root_cmd) {
+              val = argv[++i];
+            }
+          }
+        }
+        if (key == "method" || key == "X") {
+          method = upper(val);
+          method_explicit = true;
+        } else if (key == "body" || key == "d") {
+          body = val;
+        }
+        parsed_opts.push_back({flag, key, val});
+      } else {
+        positionals.push_back(arg);
+      }
+    }
+
+    std::string path = "/";
+    if (!positionals.empty()) {
+      std::string joined;
+      for (size_t i = 0; i < positionals.size(); ++i) {
+        const std::string& seg = positionals[i];
+        if (i == 0 && !seg.empty() && seg.front() == '/') joined = seg;
+        else joined += "/" + seg;
+      }
+      path = joined.empty() ? "/" : joined;
+    }
+    const std::string prefix = normalized_prefix();
+    if (!prefix.empty() && path.rfind(prefix, 0) != 0) {
+      path = (path == "/" ? prefix : prefix + path);
+    }
+
+    Exchange x;
+    x.state = &state_;
+    x.request.method = method;
+    x.request.target = path;
+    x.request.body = body;
+    x.path = path;
+    for (const auto& opt : parsed_opts) {
+      x.query[opt.key] = opt.val;
+      x.query[opt.flag] = opt.val;
+      state_.values[opt.key] = opt.val;
+    }
+
+    for (const auto& opt : parsed_opts) {
+      auto it = cli_options_.find(opt.flag);
+      if (it == cli_options_.end()) it = cli_options_.find(opt.key);
+      if (it != cli_options_.end()) {
+        call_entry_isolated(it->second.first, x);
+      }
+    }
+
+    if (stopped_) return response_of(x).body;
+
+    Match match = table_.match(method, path);
+    if (match.status == 405 && !method_explicit) {
+      if (!body.empty() && table_.match("POST", path).status == 0) {
+        x.request.method = "POST";
+        match = table_.match("POST", path);
+      } else {
+        for (const char* cand : {"POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"}) {
+          Match probe = table_.match(cand, path);
+          if (probe.status == 0) {
+            x.request.method = cand;
+            match = std::move(probe);
+            break;
+          }
+        }
+      }
+    }
+
+    if (match.status == 404) {
+      if (positionals.empty() && !x.body.empty()) return response_of(x).body;
+      return error_response(404).body;
+    }
+    if (match.status == 405) return error_response(405, {{"Allow", match.allow}}).body;
+    auto target = entry_index_.find(match.route->annotation);
+    if (target == entry_index_.end()) return error_response(500).body;
+    x.params = std::move(match.params);
+    try {
+      call_entry_isolated(target->second.first, x);
+    } catch (const std::exception& e) {
+      options_.on_handler_error(target->second.second, e.what());
+      return error_response(500).body;
+    } catch (...) {
+      options_.on_handler_error(target->second.second, "unknown error");
+      return error_response(500).body;
+    }
+    return response_of(x).body;
+  }
 
   // ---- the stream-independent core ---------------------------------------------------------------------------
   Response dispatch(const Request& request) {
+    ensure_dispatch_ready();
     const size_t mark = request.target.find('?');
     const std::string raw_path = mark == std::string::npos ? request.target : request.target.substr(0, mark);
     const std::string query_text = mark == std::string::npos ? "" : request.target.substr(mark + 1);
@@ -416,7 +636,7 @@ class RestController {
     if (target == entry_index_.end()) throw host_error("rest: no program is serving (call rest_serve first)");
     x.request = request; x.params = std::move(match.params);
     try {
-      program_->call(target->second.first, context_, *registry_, {Value::object("RestExchange", &x)});
+      call_entry_isolated(target->second.first, x);
     } catch (const std::exception& e) {
       options_.on_handler_error(target->second.second, e.what());
       return error_response(500);
@@ -428,11 +648,95 @@ class RestController {
   }
 
  private:
+  std::string normalized_prefix() const {
+    if (config_prefix_.empty()) return {};
+    std::string p = config_prefix_;
+    if (p.front() != '/') p = "/" + p;
+    while (p.size() > 1 && p.back() == '/') p.pop_back();
+    return p == "/" ? std::string{} : p;
+  }
+
+  void materialize_auto_routes() {
+    if (auto_routes_materialized_) return;
+    auto_routes_materialized_ = true;
+    const std::string prefix = normalized_prefix();
+    for (size_t i = 0; i < entries_.size(); ++i) {
+      const auto& e = entries_[i];
+      if (e.iface == CLI_OPTION_INTERFACE) {
+        cli_options_[e.annotation] = {i, e.name};
+        std::string stripped = e.annotation;
+        while (!stripped.empty() && stripped.front() == '-') stripped.erase(stripped.begin());
+        if (!stripped.empty()) cli_options_[stripped] = {i, e.name};
+        auto_entry_indices_.insert(i);
+        continue;
+      }
+      std::string method, path;
+      if (const char* m = method_for_rest_interface(e.iface)) {
+        const size_t sp = e.annotation.find(' ');
+        if (sp != std::string::npos) {
+          method = e.annotation.substr(0, sp);
+          path = e.annotation.substr(sp + 1);
+        } else if (!e.annotation.empty() && e.annotation.front() == '/') {
+          method = m;
+          path = e.annotation;
+        } else {
+          continue;
+        }
+      } else if (e.iface == HANDLER_INTERFACE) {
+        const size_t sp = e.annotation.find(' ');
+        if (sp != std::string::npos) {
+          method = e.annotation.substr(0, sp);
+          path = e.annotation.substr(sp + 1);
+        } else if (!e.annotation.empty() && e.annotation.front() == '/') {
+          method = "GET";
+          path = e.annotation;
+        } else {
+          continue;
+        }
+      } else if (e.iface == CLI_COMMAND_INTERFACE) {
+        const size_t sp = e.annotation.find(' ');
+        if (sp != std::string::npos) {
+          method = e.annotation.substr(0, sp);
+          path = e.annotation.substr(sp + 1);
+        } else {
+          method = "GET";
+          path = e.annotation;
+        }
+        if (path.empty() || path.front() != '/') path = "/" + path;
+      } else {
+        continue;
+      }
+      if (!prefix.empty() && path.rfind(prefix, 0) != 0) {
+        path = (path == "/" ? prefix : prefix + path);
+      }
+      const std::string tag = "__auto_entry_" + std::to_string(i);
+      table_.add(method, path, tag);
+      auto_entry_index_[tag] = {i, e.name};
+      auto_entry_indices_.insert(i);
+    }
+  }
+
+  void ensure_dispatch_ready() {
+    if (!bound_) return;
+    materialize_auto_routes();
+    if (entry_index_.empty() && !auto_entry_index_.empty()) {
+      entry_index_ = auto_entry_index_;
+      for (size_t i = 0; i < entries_.size(); ++i) {
+        if (!is_rest_or_cli_interface(entries_[i].iface) || entries_[i].iface == CLI_OPTION_INTERFACE) continue;
+        if (auto_entry_indices_.count(i)) continue;
+        entry_index_.emplace(entries_[i].annotation, std::make_pair(i, entries_[i].name));
+      }
+    }
+  }
+
+  void call_entry_isolated(size_t entry_idx, Exchange& x);
+
   void validate() {
     if (!table_.size()) throw host_error("rest: no routes registered");
-    std::map<std::string, std::pair<size_t, std::string>> index;
+    std::map<std::string, std::pair<size_t, std::string>> index = auto_entry_index_;
     for (size_t i = 0; i < entries_.size(); ++i) {
-      if (entries_[i].iface != HANDLER_INTERFACE) continue;
+      if (!is_rest_or_cli_interface(entries_[i].iface) || entries_[i].iface == CLI_OPTION_INTERFACE) continue;
+      if (auto_entry_indices_.count(i)) continue;
       if (!index.emplace(entries_[i].annotation, std::make_pair(i, entries_[i].name)).second) throw host_error("rest: duplicate annotation @" + entries_[i].annotation);
     }
     for (const auto& route : table_.routes()) {
@@ -474,23 +778,57 @@ class RestController {
   const Program* program_ = nullptr;
   Context context_;
   std::vector<Program::Entry> entries_;
+  std::map<std::string, std::pair<size_t, std::string>> auto_entry_index_;
+  std::set<size_t> auto_entry_indices_;
   std::map<std::string, std::pair<size_t, std::string>> entry_index_;   // annotation -> (entry index, function name)
+  std::map<std::string, std::pair<size_t, std::string>> cli_options_;
+  std::string config_prefix_;
   bool bound_ = false, serving_ = false, stopped_ = false;
+  bool auto_routes_materialized_ = false, in_controller_run_ = false;
 };
 
 // ---- registration ----------------------------------------------------------------------------------------------------
 inline Exchange& exchange_of(void* self) { if (!self) throw host_error("invalid exchange"); return *static_cast<Exchange*>(self); }
 
-/** Registers the 18 `rest` signatures in `registry` and returns the controller that owns serving. Opt-in: nothing else calls this. */
+/** Registers the 20 `rest` signatures in `registry` and returns the controller that owns serving. */
 inline std::shared_ptr<RestController> register_rest(Registry& registry, Options options = {}) {
   auto controller = std::make_shared<RestController>(registry, std::move(options));
   // The closures keep the controller alive (registry copies share it); the controller only points back at the registry.
   auto c = controller;
-  registry.function("rest_route", {"string", "string", "string"}, "void", [c](Args& a) { c->route(a[0].s, a[1].s, a[2].s); return Value::none(); });
-  registry.function("rest_serve", {}, "void", [c](Args&) { c->serve(); return Value::none(); });
-  registry.function("rest_stop", {}, "void", [c](Args&) { c->stop(); return Value::none(); });
+  registry.set_rest_hooks(
+      c,
+      [c](const Program& program, const Context& ctx, const Registry& reg) {
+        return c->before_body_run(program, ctx, reg);
+      },
+      [c]() { c->after_body_run(); });
+  registry.override_std_function(
+      "rest_config", {"string", "string"}, "void",
+      [c](Args& a) { c->config(a[0].s, a[1].s); return Value::none(); },
+      dry([](Args&) { return Value::none(); }));
+  registry.override_std_function(
+      "rest_route", {"string", "string", "string"}, "void",
+      [c](Args& a) { c->route(a[0].s, a[1].s, a[2].s); return Value::none(); },
+      dry([](Args&) { return Value::none(); }));
+  registry.override_std_function(
+      "rest_serve", {}, "void",
+      [c](Args&) { c->serve(); return Value::none(); },
+      dry([](Args&) { return Value::none(); }));
+  registry.override_std_function(
+      "rest_stop", {}, "void",
+      [c](Args&) { c->stop(); return Value::none(); },
+      dry([](Args&) { return Value::none(); }));
+  registry.override_std_function(
+      "rest_cli", {"StrList"}, "string",
+      [c](Args& a) {
+        const std::vector<std::string> argv = static_cast<stdlib::StrList*>(a[0].obj)->items;
+        return Value::string(c->cli(argv));
+      },
+      dry([](Args&) { return Value::string(""); }));
   const std::string T = "RestExchange";
-  auto method = [&](const char* name, std::vector<std::string> params, const char* returns, Method fn) { registry.method(T, name, std::move(params), returns, std::move(fn)); };
+  auto method = [&](const char* name, std::vector<std::string> params, const char* returns, Method fn) {
+    Method preview = fn;
+    registry.override_std_method(T, name, std::move(params), returns, std::move(fn), dry(std::move(preview)));
+  };
   method("method", {}, "string", [](void* s, Args&) { return Value::string(exchange_of(s).request.method); });
   method("path", {}, "string", [](void* s, Args&) { return Value::string(exchange_of(s).path); });
   method("query", {"string"}, "string", [](void* s, Args& a) { auto& q = exchange_of(s).query; auto it = q.find(a[0].s); return Value::string(it == q.end() ? "" : it->second); });

@@ -68,6 +68,9 @@ def numeric(raw):
 
 def schema():
     s = json.loads((ROOT / 'std/lmcode-std.schema.json').read_text())
+    for k in [k for k in s.get('functions', {}) if k.startswith('rest_')]: s['functions'].pop(k, None)
+    s.get('types', {}).pop('RestExchange', None)
+    s.pop('interfaces', None)
     s['name'] = 'stdlib_seeded_corpus'
     s['types']['Trace'] = {'methods': {name: [{'params':[typ], 'returns':'void'}] for name, typ in [('int','int'), ('float','float'), ('hex','string'), ('bool','bool')]}}
     s['context'] = {'t':'Trace'}

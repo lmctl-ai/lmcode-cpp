@@ -20,6 +20,7 @@ returns = ROOT/'conformance/return-vectors'
 for case in json.loads((returns/'manifest.json').read_text())['vectors']:
     if case['expect']['exit'] == 0:
         covered |= api['imports'](returns/case['bytecode'])
+covered |= api['imports'](ROOT/'conformance/rest-suite/app.dslb')
 missing = (canonical-legacy)-covered
 assert not missing, f'new signatures without successful execution coverage: {sorted(missing)}'
 print(f'PASS {len(canonical-legacy)}/{len(canonical-legacy)} new signatures in positive vectors')
