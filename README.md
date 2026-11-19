@@ -4,6 +4,8 @@ The C++ runtime for lmscript `_lmcode_` bytecode: loader, verifier, VM and host 
 C++17, standard library only, no dependencies. This repository is the single source of truth for the header; hosts vendor it
 by pinned hash (see "Consuming it").
 
+**Documentation:** [lmctl.com/tools/lmcode-cpp](https://www.lmctl.com/tools/lmcode-cpp/) · [skill](https://www.lmctl.com/tools/lmcode-cpp/skill.html) · [guide](https://www.lmctl.com/tools/lmcode-cpp/guide.html) · [reference](https://www.lmctl.com/tools/lmcode-cpp/reference.html) · [tutorial](https://www.lmctl.com/tools/lmcode-cpp/tutorial.html)
+
 ## Status
 
 Experimental. The current runtime reads bytecode version 6 only; older and newer versions are refused. Use a matching
